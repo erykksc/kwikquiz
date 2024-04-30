@@ -20,3 +20,10 @@ _If you have any resources you'd like to add, please submit a PR_
 - [100+ Docker Concepts you Need to Know](https://www.youtube.com/watch?v=rIrNIzy6U_g)
 - [Docker in 100 seconds by docker team](https://www.youtube.com/watch?v=IXifQ8mX8DE)
 - [Docker Get Started](https://docs.docker.com/guides/get-started/)
+
+
+## Git and Github
+- [How to use Git and Github](https://www.youtube.com/watch?v=HkdAHXoRtos)
+- [GitHub Pull Requests in 100 Seconds](https://www.youtube.com/watch?v=8lGpZkjnkt4)
+- [Git in 100 Seconds](https://www.youtube.com/watch?v=hwP7WQkmECE)
+- [Git MERGE vs REBASE](https://www.youtube.com/watch?v=0chZFIZLR_0)
