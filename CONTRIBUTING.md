@@ -3,7 +3,7 @@
 - Each pull request should have an issue it tries to solve/implement or a bug it tries to fix.
 - Each branch should be named according this this pattern:
     - `feat/issue_number/short_description` for new features
-    - `bug/issue_number/short_description` for bug fixes
+    - `bugfix/issue_number/short_description` for bug fixes
 
 ## Helpful Resources
 List of useful websites and resources for learning about the project's tech stack.
