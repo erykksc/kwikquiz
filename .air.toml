@@ -42,9 +42,9 @@ tmp_dir = "tmp"
   clean_on_exit = false
 
 [proxy]
-  app_port = 0
-  enabled = false
-  proxy_port = 0
+  enabled = true
+  proxy_port = 8080
+  app_port = 3000
 
 [screen]
   clear_on_rebuild = false
