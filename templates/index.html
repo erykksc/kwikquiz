@@ -1,26 +1,65 @@
-{{define "title"}}kwikquiz{{end}} {{define "body"}}
-<style>
-  .centered-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
-  a {
-    display: inline-block;
-    width: 200px;
-    height: 50px;
-    background-color: purple;
-    color: white;
-    text-align: center;
-    line-height: 50px;
-    margin: 10px;
-  }
-</style>
-<div class="centered-container">
-  <h1>kwikquiz</h1>
-  <a href="create-session">create session</a>
-  <a href="join-session">join session</a>
-</div>
-{{end}}
+{{define "title"}}KwikQuiz{{end}}
+
+<!doctype html>
+<html lang="en">
+  {{template "header" .}}
+  <body>
+    <style>
+      .centered-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      a {
+        display: inline-block;
+        width: 200px;
+        height: 50px;
+        background-color: purple;
+        color: white;
+        text-align: center;
+        line-height: 50px;
+        margin: 10px;
+      }
+    </style>
+    <div class="centered-container">
+      <script>
+        document.addEventListener("DOMContentLoaded", (event) => {
+          document.body.addEventListener("htmx:beforeSwap", function (evt) {
+            if (evt.detail.xhr.status === 404) {
+              // allow 404 responses to swap as we are using this as a signal
+              // to inform there is no game with the given ID
+              // set isError to false to avoid error logging in console
+              evt.detail.shouldSwap = true;
+              evt.detail.isError = false;
+            }
+          });
+        });
+      </script>
+      <h1>kwikquiz</h1>
+      <a href="/games/create">create game</a>
+      {{ define "join-form" }}
+      <form
+        method="GET"
+        hx-get="/games/join"
+        hx-include="#gid"
+        hx-swap="outerHTML"
+      >
+        <div>
+          <input
+            type="text"
+            id="gid"
+            name="gid"
+            placeholder="Game PIN"
+            required
+          />
+          <!-- red error string -->
+          <p id="error" style="color: red">{{.GamePinError}}</p>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+      {{ end }} {{ template "join-form" . }}
+    </div>
+  </body>
+</html>

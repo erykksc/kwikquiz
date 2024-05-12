@@ -1,0 +1,44 @@
+{{define "title"}}KwikQuiz Create Game{{end}} {{ template "header" . }}
+<style>
+  .centered-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  a {
+    display: inline-block;
+    width: 200px;
+    height: 50px;
+    background-color: purple;
+    color: white;
+    text-align: center;
+    line-height: 50px;
+    margin: 10px;
+  }
+</style>
+<div class="centered-container">
+  <h1>kwikquiz</h1>
+  <form
+    method="POST"
+    hx-post="/games/"
+    hx-target="#responseArea"
+    hx-swap="outerHTML"
+  >
+    <div>
+      <label for="gid">New Game ID:</label>
+      <input type="text" id="gid" name="gid" required />
+    </div>
+    <div>
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required />
+    </div>
+    <div>
+      <label for="quizname">Quizname:</label>
+      <input type="text" id="quizname" name="quizname" required />
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+  <div id="responseArea"></div>
+</div>

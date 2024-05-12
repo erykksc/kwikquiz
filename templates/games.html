@@ -1,0 +1,15 @@
+{{define "title"}}KwikQuiz All Games{{end}}
+<!doctype html>
+<html lang="en">
+  {{template "header" .}}
+  <body>
+    <h1>Games</h1>
+    {{range .}}
+    <div>
+      <a href="/games/{{.ID}}">{{.QuizName}}</a>
+    </div>
+    {{else}}
+    <p>No games found</p>
+    {{end}}
+  </body>
+</html>
