@@ -39,7 +39,7 @@ type inMemoryGameRepository struct {
 	games map[GameID]Game
 }
 
-func NewInMemoryGameRepository() GameRepository {
+func NewInMemoryGameRepository() *inMemoryGameRepository {
 	return &inMemoryGameRepository{
 		games: make(map[GameID]Game),
 	}

@@ -16,7 +16,7 @@ const (
 	GamesCreateTemplate = "templates/games-create.html"
 )
 
-var gamesRepo = NewInMemoryGameRepository()
+var gamesRepo GameRepository = NewInMemoryGameRepository()
 var DEBUG = common.DebugOn()
 
 // Returns a handler for routes starting with /games
