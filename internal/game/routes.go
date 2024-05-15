@@ -77,6 +77,13 @@ func getGamesGidHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, game)
 }
 
+type createGameForm struct {
+	Gid       string
+	Username  string
+	Quizname  string
+	FormError string
+}
+
 func postGamesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	gid := r.FormValue("gid") // Game ID
@@ -109,7 +116,17 @@ func postGamesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := gamesRepo.AddGame(game); err != nil {
-		common.ErrorHandler(w, r, http.StatusInternalServerError)
+		slog.Error("Error adding game", "error", err)
+		tmpl := template.Must(template.ParseFiles(GamesCreateTemplate, BaseTemplate))
+		err = tmpl.ExecuteTemplate(w, "create-form", createGameForm{
+			Gid:       gid,
+			Username:  username,
+			Quizname:  quizname,
+			FormError: err.Error(),
+		})
+		if err != nil {
+			slog.Error("Error rendering template", "error", err)
+		}
 		return
 	}
 
