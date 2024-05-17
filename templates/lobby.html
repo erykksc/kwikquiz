@@ -1,4 +1,4 @@
-{{define "title"}}KwikQuiz Game {{.ID}}{{end}}
+{{define "title"}}KwikQuiz Lobby {{.Pin}}{{end}}
 
 <!doctype html>
 <html lang="en">
@@ -24,9 +24,9 @@
       }
     </style>
     <div class="centered-container">
-      <h1>Session: {{.QuizName}}</h1>
-      <p>host: {{.Host.Name}}</p>
-      <p>id: {{.ID}}</p>
+      <h1>Pin: {{.Pin}}</h1>
+      <p>created at: {{.CreatedAt}}</p>
+      <p>time per question: {{.Game.TimePerQuestion}}</p>
     </div>
   </body>
 </html>

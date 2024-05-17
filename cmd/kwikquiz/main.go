@@ -46,7 +46,7 @@ func main() {
 
 	router := http.NewServeMux()
 
-	router.Handle("/games/", game.NewGamesRouter())
+	router.Handle("/lobbies/", game.NewGamesRouter())
 	router.HandleFunc("/{$}", common.IndexHandler)
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 

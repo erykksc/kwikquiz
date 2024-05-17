@@ -1,91 +1,77 @@
 package game
 
-type User struct {
-	ID        string
-	Name      string
-	Anonymous bool
+type ErrLobbyNotFound struct{}
+
+func (ErrLobbyNotFound) Error() string {
+	return "lobby not found"
 }
 
-type GameID string
+type ErrLobbyAlreadyExists struct{}
 
-type Game struct {
-	ID       GameID
-	Host     User
-	QuizName string
-}
-
-type ErrGameNotFound struct{}
-
-func (ErrGameNotFound) Error() string {
-	return "game not found"
-}
-
-type ErrGameAlreadyExists struct{}
-
-func (ErrGameAlreadyExists) Error() string {
+func (ErrLobbyAlreadyExists) Error() string {
 	return "game already exists"
 }
 
-type GameRepository interface {
-	AddGame(game Game) error
-	UpdateGame(game Game) error
-	GetGame(id GameID) (Game, error)
-	DeleteGame(id GameID) error
-	GetAllGames() ([]Game, error)
+type LobbyRepository interface {
+	AddLobby(lobby Lobby) error
+	UpdateLobby(lobby Lobby) error
+	GetLobby(pin string) (Lobby, error)
+	DeleteLobby(pin string) error
+	GetAllLobbies() ([]Lobby, error)
 }
 
 // In-memory store for games
-type inMemoryGameRepository struct {
-	games map[GameID]Game
+type inMemoryLobbyRepository struct {
+	lobbies map[string]Lobby
 }
 
-func NewInMemoryGameRepository() *inMemoryGameRepository {
-	return &inMemoryGameRepository{
-		games: make(map[GameID]Game),
+func NewInMemoryLobbyRepository() *inMemoryLobbyRepository {
+	return &inMemoryLobbyRepository{
+		lobbies: make(map[string]Lobby),
 	}
 }
 
-func (s *inMemoryGameRepository) AddGame(game Game) error {
-	if _, ok := s.games[game.ID]; ok {
-		return ErrGameAlreadyExists{}
+func (s *inMemoryLobbyRepository) AddLobby(lobby Lobby) error {
+	if _, ok := s.lobbies[lobby.Pin]; ok {
+		return ErrLobbyAlreadyExists{}
 	}
 
-	s.games[game.ID] = game
+	s.lobbies[lobby.Pin] = lobby
 	return nil
 }
 
-func (s *inMemoryGameRepository) UpdateGame(game Game) error {
-	if _, ok := s.games[game.ID]; !ok {
-		return ErrGameNotFound{}
+func (s *inMemoryLobbyRepository) UpdateLobby(lobby Lobby) error {
+	if _, ok := s.lobbies[lobby.Pin]; !ok {
+		return ErrLobbyNotFound{}
 	}
 
-	s.games[game.ID] = game
+	s.lobbies[lobby.Pin] = lobby
 	return nil
 }
 
-func (s *inMemoryGameRepository) GetGame(id GameID) (Game, error) {
-	game, ok := s.games[id]
+func (s *inMemoryLobbyRepository) GetLobby(pin string) (Lobby, error) {
+	lobby, ok := s.lobbies[pin]
 	if !ok {
-		return Game{}, ErrGameNotFound{}
+		return Lobby{}, ErrLobbyNotFound{}
 	}
 
-	return game, nil
+	return lobby, nil
 }
 
-func (s *inMemoryGameRepository) DeleteGame(id GameID) error {
-	if _, ok := s.games[id]; !ok {
-		return ErrGameNotFound{}
+func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
+	if _, ok := s.lobbies[pin]; !ok {
+		return ErrLobbyNotFound{}
 	}
 
-	delete(s.games, id)
+	delete(s.lobbies, pin)
 	return nil
 }
 
-func (s *inMemoryGameRepository) GetAllGames() ([]Game, error) {
-	var games []Game
-	for _, game := range s.games {
-		games = append(games, game)
+func (s *inMemoryLobbyRepository) GetAllLobbies() ([]Lobby, error) {
+	var lobbies []Lobby
+	for _, lobby := range s.lobbies {
+		lobbies = append(lobbies, lobby)
 	}
 
-	return games, nil
+	return lobbies, nil
 }

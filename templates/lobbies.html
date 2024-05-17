@@ -1,15 +1,15 @@
-{{define "title"}}KwikQuiz All Games{{end}}
+{{define "title"}}KwikQuiz All Lobbies{{end}}
 <!doctype html>
 <html lang="en">
   {{template "header" .}}
   <body>
-    <h1>Games</h1>
+    <h1>Lobbies</h1>
     {{range .}}
     <div>
-      <a href="/games/{{.ID}}">{{.QuizName}}</a>
+      <a href="/lobbies/{{.Pin}}">{{.Game}}</a>
     </div>
     {{else}}
-    <p>No games found</p>
+    <p>No lobbies found</p>
     {{end}}
   </body>
 </html>
