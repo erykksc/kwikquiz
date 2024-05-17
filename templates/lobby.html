@@ -2,31 +2,25 @@
 
 <!doctype html>
 <html lang="en">
-  {{template "header" .}}
+  <head>
+    {{ template "header-content" . }}
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+  </head>
   <body>
-    <style>
-      .centered-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-      }
-      a {
-        display: inline-block;
-        width: 200px;
-        height: 50px;
-        background-color: purple;
-        color: white;
-        text-align: center;
-        line-height: 50px;
-        margin: 10px;
-      }
-    </style>
-    <div class="centered-container">
-      <h1>Pin: {{.Pin}}</h1>
-      <p>created at: {{.CreatedAt}}</p>
-      <p>time per question: {{.Game.TimePerQuestion}}</p>
+    <h1>Pin: {{.Pin}}</h1>
+    <p>created at: {{.CreatedAt}}</p>
+    <p>time per question: {{.Game.TimePerQuestion}}</p>
+
+    <div hx-ext="ws" ws-connect="/lobbies/{{.Pin}}/ws">
+      <div id="lobby-content"></div>
     </div>
   </body>
 </html>
+
+{{define "username-form" }}
+<form id="lobby-content" ws-send>
+  <label for="username">username:</label>
+  <input id="username" name="username" />
+  <button type="submit">Join</button>
+</form>
+{{end}}

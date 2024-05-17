@@ -1,11 +1,13 @@
 package game
 
 import (
-	"github.com/erykksc/kwikquiz/internal/common"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -26,6 +28,7 @@ func NewGamesRouter() http.Handler {
 
 	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
+	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
 	mux.HandleFunc("GET /lobbies/create", getLobbyCreateHandler)
@@ -78,6 +81,66 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
 	tmpl.Execute(w, game)
+}
+
+func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("handling request", "method", r.Method, "path", r.URL.Path)
+	// pin := r.PathValue("pin")
+
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 4 * 1024,
+	}
+
+	slog.Info("Upgrading connection")
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		slog.Error("Failed to upgrade to websocket", "err", err)
+		return
+	}
+	defer ws.Close()
+
+	slog.Info("Sending Username")
+	// Send html for choosing username
+	writer, err := ws.NextWriter(websocket.TextMessage)
+	defer writer.Close()
+	if err != nil {
+		slog.Error("Error while creating a writer from ws", "err", err)
+	}
+	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
+	err = tmpl.ExecuteTemplate(writer, "username-form", nil)
+	if err != nil {
+		slog.Error("Error by executing template", "err", err)
+		return
+	}
+	writer.Close()
+
+	for {
+		messageType, message, err := ws.ReadMessage()
+		if err != nil {
+			slog.Error("Error reading ws message", "err", err)
+			break
+		}
+		if messageType != websocket.TextMessage {
+			continue
+		}
+
+		slog.Info("Received ws message", "message", string(message))
+	}
+	// var wsMu sync.Mutex
+	// var broadcast = GameEventBroadcaster{}
+	//
+	// // Handle game events
+	//
+	// // Subscribe to game events
+	// ch := broadcast.Subscribe()
+	// defer close(ch)
+	// switch event := <-ch; event.(type) {
+	// case GEUserJoined:
+	// 	// TODO: Send updated page with current usernames
+	// case GEUsernameUpdated:
+	// 	// TODO: Send updated page with current usernames
+	// }
 }
 
 type joinFormData struct {
