@@ -1,0 +1,47 @@
+{{define "title"}}KwikQuiz Lobby {{.Pin}}{{end}}
+
+<!doctype html>
+<html lang="en">
+  <head>
+    {{ template "header-content" . }}
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+  </head>
+  <body>
+    <h1>Pin: {{.Pin}}</h1>
+    <p>created at: {{.CreatedAt}}</p>
+    <p>time per question: {{.TimePerQuestion}}</p>
+
+    <div hx-ext="ws" ws-connect="/lobbies/{{.Pin}}/ws">
+      <div id="lobby-content"></div>
+    </div>
+  </body>
+</html>
+
+{{define "username-form" }}
+<form
+  id="lobby-content"
+  hx-headers='{"EventType": "LESubmittedUsername"}'
+  ws-send
+>
+  <label for="username">username:</label>
+  <input id="username" name="Username" />
+  <button type="submit">Join</button>
+</form>
+{{end}}
+<!---->
+
+{{define "player-lobby-screen"}}
+<div id="lobby-content">
+  <form hx-headers='{"EventType": "LESubmittedUsername"}' ws-send>
+    <label for="username">username:</label>
+    <input id="username" name="Username" />
+    <button type="submit">Change</button>
+  </form>
+  <h2>Players</h2>
+  <ul>
+    {{range $key, $value := .Players}}
+    <li>{{$key}}</li>
+    {{end}}
+  </ul>
+</div>
+{{end}}

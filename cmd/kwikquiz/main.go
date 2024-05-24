@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/game"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/lobby"
 )
 
 var DEBUG = common.DebugOn()
@@ -46,7 +47,7 @@ func main() {
 
 	router := http.NewServeMux()
 
-	router.Handle("/games/", game.NewGamesRouter())
+	router.Handle("/lobbies/", lobby.NewLobbiesRouter())
 	router.HandleFunc("/{$}", common.IndexHandler)
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
