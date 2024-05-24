@@ -5,51 +5,19 @@ import (
 	"errors"
 	"html/template"
 	"log/slog"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
+// Initiator is a user that initiates a lobby event
+type Initiator struct {
+	Username string
+	Conn     *websocket.Conn
+}
+
 type LobbyEvent interface {
 	String() string
-	Handle(lobby *Lobby, initiator *Player) error
-}
-
-type GameEventBroadcaster struct {
-	mu    sync.Mutex
-	chans []chan LobbyEvent // subscriber channels
-}
-
-func (b *GameEventBroadcaster) Subscribe() chan LobbyEvent {
-	ch := make(chan LobbyEvent)
-	b.mu.Lock()
-	b.chans = append(b.chans, ch)
-	b.mu.Unlock()
-	return ch
-}
-
-func (b *GameEventBroadcaster) Broadcast(event LobbyEvent) {
-	b.mu.Lock()
-	for _, ch := range b.chans {
-		ch <- event
-	}
-	b.mu.Unlock()
-}
-
-// LEUserConnected is a game event that is broadcasted when a user connects to the lobby
-type LEUserConnected struct {
-}
-
-func (e LEUserConnected) String() string {
-	return "GEUserConnected"
-}
-
-type LEUSubmittedUsername struct {
-	Username string
-}
-
-func (e LEUSubmittedUsername) String() string {
-	return "GEUserSubmittedUsername: " + e.Username
+	Handle(lobby *Lobby, initiator *Initiator) error
 }
 
 // ParseLobbyEvent parses a GameEvent from a JSON in a byte slice
@@ -82,14 +50,23 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 	}
 }
 
-func (event LEUserConnected) Handle(l *Lobby, initiator *Player) error {
+// LEUserConnected is a game event that is broadcasted when a user connects to the lobby
+type LEUserConnected struct {
+}
+
+func (e LEUserConnected) String() string {
+	return "GEUserConnected"
+}
+
+func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 	slog.Debug("Handling User Connected", "event", event, "initiator", initiator)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	// Check if the player is already in the lobby
 	if _, ok := l.Players[initiator.Username]; ok {
-		// TODO: Player already in lobby
+		// TODO: Player already in lobby, check if they want to reconnect
+		// (the current connection is unresponsive)
 		return errors.New("player already in lobby")
 	}
 
@@ -108,7 +85,15 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Player) error {
 	return nil
 }
 
-func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Player) error {
+type LEUSubmittedUsername struct {
+	Username string
+}
+
+func (e LEUSubmittedUsername) String() string {
+	return "GEUserSubmittedUsername: " + e.Username
+}
+
+func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	slog.Debug("Handling Submitted Username", "event", event, "initiator", initiator)
 	l.mu.Lock()
 	defer l.mu.Unlock()
