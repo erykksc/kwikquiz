@@ -38,19 +38,19 @@
         });
       </script>
       <h1>kwikquiz</h1>
-      <a href="/games/create">create game</a>
+      <a href="/lobbies/create">create game</a>
       {{ define "join-form" }}
       <form
         method="GET"
-        hx-get="/games/join"
-        hx-include="#gid"
+        hx-get="/lobbies/join"
+        hx-include="#pin"
         hx-swap="outerHTML"
       >
         <div>
           <input
             type="text"
-            id="gid"
-            name="gid"
+            id="pin"
+            name="pin"
             placeholder="Game PIN"
             required
           />
