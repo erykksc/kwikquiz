@@ -189,7 +189,9 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 func getLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	tmpl := template.Must(template.ParseFiles(LobbyCreateTemplate, BaseTemplate))
-	tmpl.Execute(w, nil)
+	if err := tmpl.Execute(w, nil); err != nil {
+		slog.Error("Error rendering template", "error", err)
+	}
 }
 
 type createGameForm struct {

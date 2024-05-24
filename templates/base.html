@@ -1,18 +1,15 @@
-{{ define "header" }}
-<head>
-  {{ template "header-content" . }}
-</head>
-{{ end }}
-
 <!-- If one decides to put aditional field in the header -->
 {{ define "header-content" }}
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>{{template "title" .}}</title>
 <script
   src="https://unpkg.com/htmx.org@1.9.12"
   integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
   crossorigin="anonymous"
 ></script>
 <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+<link
+  href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+  rel="stylesheet"
+/>
 {{ end }}
