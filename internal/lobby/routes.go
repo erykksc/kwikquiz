@@ -1,4 +1,4 @@
-package game
+package lobby
 
 import (
 	"html/template"
@@ -23,7 +23,7 @@ var lobbiesRepo LobbyRepository = NewInMemoryLobbyRepository()
 var DEBUG = common.DebugOn()
 
 // Returns a handler for routes starting with /games
-func NewGamesRouter() http.Handler {
+func NewLobbiesRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
@@ -34,16 +34,14 @@ func NewGamesRouter() http.Handler {
 	mux.HandleFunc("GET /lobbies/create", getLobbyCreateHandler)
 	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)
 
-	// TODO: Remove this after testing
+	// Add test lobby
 	if DEBUG {
-		testLobby := Lobby{
-			Pin:       "1234",
-			CreatedAt: time.Now(),
-			Game: Game{
-				Hostname:        "erykk",
-				TimePerQuestion: 30 * time.Second,
-			},
+		lOptions := LobbyOptions{
+			TimePerQuestion: 30 * time.Second,
+			Pin:             "1234",
 		}
+		testLobby := CreateLobby(lOptions)
+
 		lobbiesRepo.AddLobby(testLobby)
 		slog.Info("Adding test lobby", "lobby", testLobby)
 	}
@@ -51,23 +49,28 @@ func NewGamesRouter() http.Handler {
 	return mux
 }
 
+// TODO: Make it only accessible by admin
 func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	games, err := lobbiesRepo.GetAllLobbies()
+	lobbies, err := lobbiesRepo.GetAllLobbies()
 	if err != nil {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
 	}
 	tmpl := template.Must(template.ParseFiles(LobbiesTemplate, BaseTemplate))
 
-	tmpl.Execute(w, games)
+	if err := tmpl.Execute(w, lobbies); err != nil {
+		slog.Error("Error rendering template", "err", err)
+	}
 }
 
+// getLobbyByPinHandler handles requests to /lobbies/{pin}
+// It renders the lobby page with username form
 func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.PathValue("pin")
 
-	game, err := lobbiesRepo.GetLobby(pin)
+	lobby, err := lobbiesRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
 		case ErrLobbyNotFound:
@@ -80,41 +83,49 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
-	tmpl.Execute(w, game)
+	if err := tmpl.Execute(w, &lobby); err != nil {
+		slog.Error("Error rendering template", "err", err)
+	}
 }
 
+// getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
+// It handles websocket connections for the lobby and game events
 func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("handling request", "method", r.Method, "path", r.URL.Path)
-	// pin := r.PathValue("pin")
+	pin := r.PathValue("pin")
 
+	lobby, err := lobbiesRepo.GetLobby(pin)
+	switch err.(type) {
+	case nil:
+		break
+	case ErrLobbyNotFound:
+		slog.Error("Error trying to connet to not existing lobby", "err", err)
+		common.ErrorHandler(w, r, http.StatusNotFound)
+		return
+	default:
+		slog.Error("Error getting lobby", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
+		return
+	}
+
+	// UPGRADE CONNECTION TO WEBSOCKET
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 4 * 1024,
 	}
-
 	slog.Info("Upgrading connection")
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Error("Failed to upgrade to websocket", "err", err)
 		return
 	}
-	defer ws.Close()
 
-	slog.Info("Sending Username")
-	// Send html for choosing username
-	writer, err := ws.NextWriter(websocket.TextMessage)
-	defer writer.Close()
-	if err != nil {
-		slog.Error("Error while creating a writer from ws", "err", err)
-	}
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
-	err = tmpl.ExecuteTemplate(writer, "username-form", nil)
-	if err != nil {
-		slog.Error("Error by executing template", "err", err)
-		return
-	}
-	writer.Close()
+	username := ""
+	player := Player{Username: username, Conn: ws}
 
+	(LEUserConnected{}).Handle(lobby, &player)
+
+	// HANDLE REQUESTS
 	for {
 		messageType, message, err := ws.ReadMessage()
 		if err != nil {
@@ -122,25 +133,21 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if messageType != websocket.TextMessage {
+			slog.Warn("Received non-text message", "messageType", messageType, "ws", ws)
+			continue
+		}
+		slog.Debug("Received ws message", "message", string(message))
+
+		event, err := ParseLobbyEvent(message)
+		if err != nil {
+			slog.Error("Error parsing lobby event", "err", err)
 			continue
 		}
 
-		slog.Info("Received ws message", "message", string(message))
+		if err := event.Handle(lobby, &player); err != nil {
+			slog.Error("Error handling lobby event", "err", err)
+		}
 	}
-	// var wsMu sync.Mutex
-	// var broadcast = GameEventBroadcaster{}
-	//
-	// // Handle game events
-	//
-	// // Subscribe to game events
-	// ch := broadcast.Subscribe()
-	// defer close(ch)
-	// switch event := <-ch; event.(type) {
-	// case GEUserJoined:
-	// 	// TODO: Send updated page with current usernames
-	// case GEUsernameUpdated:
-	// 	// TODO: Send updated page with current usernames
-	// }
 }
 
 type joinFormData struct {
@@ -208,17 +215,7 @@ func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new game
-	game := Game{
-		Hostname:        username,
-		TimePerQuestion: 30 * time.Second,
-	}
-
-	lobby := Lobby{
-		Pin:       pin,
-		Game:      game,
-		CreatedAt: time.Now(),
-	}
+	lobby := CreateLobby(LobbyOptions{})
 
 	if err := lobbiesRepo.AddLobby(lobby); err != nil {
 		slog.Error("Error adding game", "error", err)

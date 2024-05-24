@@ -1,4 +1,4 @@
-package game
+package lobby
 
 type ErrLobbyNotFound struct{}
 
@@ -13,25 +13,25 @@ func (ErrLobbyAlreadyExists) Error() string {
 }
 
 type LobbyRepository interface {
-	AddLobby(lobby Lobby) error
-	UpdateLobby(lobby Lobby) error
-	GetLobby(pin string) (Lobby, error)
+	AddLobby(lobby *Lobby) error
+	UpdateLobby(lobby *Lobby) error
+	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error
-	GetAllLobbies() ([]Lobby, error)
+	GetAllLobbies() ([]*Lobby, error)
 }
 
 // In-memory store for games
 type inMemoryLobbyRepository struct {
-	lobbies map[string]Lobby
+	lobbies map[string]*Lobby
 }
 
 func NewInMemoryLobbyRepository() *inMemoryLobbyRepository {
 	return &inMemoryLobbyRepository{
-		lobbies: make(map[string]Lobby),
+		lobbies: make(map[string]*Lobby),
 	}
 }
 
-func (s *inMemoryLobbyRepository) AddLobby(lobby Lobby) error {
+func (s *inMemoryLobbyRepository) AddLobby(lobby *Lobby) error {
 	if _, ok := s.lobbies[lobby.Pin]; ok {
 		return ErrLobbyAlreadyExists{}
 	}
@@ -40,7 +40,7 @@ func (s *inMemoryLobbyRepository) AddLobby(lobby Lobby) error {
 	return nil
 }
 
-func (s *inMemoryLobbyRepository) UpdateLobby(lobby Lobby) error {
+func (s *inMemoryLobbyRepository) UpdateLobby(lobby *Lobby) error {
 	if _, ok := s.lobbies[lobby.Pin]; !ok {
 		return ErrLobbyNotFound{}
 	}
@@ -49,10 +49,10 @@ func (s *inMemoryLobbyRepository) UpdateLobby(lobby Lobby) error {
 	return nil
 }
 
-func (s *inMemoryLobbyRepository) GetLobby(pin string) (Lobby, error) {
+func (s *inMemoryLobbyRepository) GetLobby(pin string) (*Lobby, error) {
 	lobby, ok := s.lobbies[pin]
 	if !ok {
-		return Lobby{}, ErrLobbyNotFound{}
+		return &Lobby{}, ErrLobbyNotFound{}
 	}
 
 	return lobby, nil
@@ -67,8 +67,8 @@ func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
 	return nil
 }
 
-func (s *inMemoryLobbyRepository) GetAllLobbies() ([]Lobby, error) {
-	var lobbies []Lobby
+func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
+	var lobbies []*Lobby
 	for _, lobby := range s.lobbies {
 		lobbies = append(lobbies, lobby)
 	}
