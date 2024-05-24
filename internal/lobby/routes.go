@@ -65,7 +65,6 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLobbyByPinHandler handles requests to /lobbies/{pin}
-// It renders the lobby page with username form
 func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.PathValue("pin")
@@ -89,7 +88,6 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
-// It handles websocket connections for the lobby and game events
 func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.PathValue("pin")
@@ -121,7 +119,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := ""
-	player := Player{Username: username, Conn: ws}
+	player := Initiator{Username: username, Conn: ws}
 
 	(LEUserConnected{}).Handle(lobby, &player)
 
@@ -154,6 +152,7 @@ type joinFormData struct {
 	GamePinError string
 }
 
+// getLobbyJoinHandler handles requests to /lobbies/join
 func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
@@ -186,6 +185,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getLobbyCreateHandler handles requests to /lobbies/create
 func getLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	tmpl := template.Must(template.ParseFiles(LobbyCreateTemplate, BaseTemplate))
@@ -198,6 +198,7 @@ type createGameForm struct {
 	FormError string
 }
 
+// postLobbyCreateHandler handles requests to POST /lobbies/create
 func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.FormValue("pin") // Game Pin

@@ -35,20 +35,3 @@ func CreateLobby(options LobbyOptions) *Lobby {
 		Players:         make(map[string]*websocket.Conn),
 	}
 }
-
-type Player struct {
-	Username string
-	Conn     *websocket.Conn
-}
-
-func (l *Lobby) AddPlayer(username string, conn *websocket.Conn) {
-	l.mu.Lock()
-	l.Players[username] = conn
-	l.mu.Unlock()
-}
-
-func (l *Lobby) RemovePlayer(username string) {
-	l.mu.Lock()
-	delete(l.Players, username)
-	l.mu.Unlock()
-}
