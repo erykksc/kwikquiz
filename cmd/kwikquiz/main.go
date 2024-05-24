@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/game"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"log/slog"
 	"net/http"
 	"os"
@@ -47,6 +48,7 @@ func main() {
 	router := http.NewServeMux()
 
 	router.Handle("/games/", game.NewGamesRouter())
+	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.HandleFunc("/{$}", common.IndexHandler)
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 

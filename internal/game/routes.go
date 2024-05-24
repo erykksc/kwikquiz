@@ -10,10 +10,10 @@ import (
 const (
 	NotFoundPage        = "static/notfound.html"
 	BaseTemplate        = "templates/base.html"
-	GamesTemplate       = "templates/games.html"
-	GamesGidTemplate    = "templates/games-gid.html"
+	GamesTemplate       = "templates/games/games.html"
+	GamesGidTemplate    = "templates/games/games-gid.html"
 	IndexTemplate       = "templates/index.html"
-	GamesCreateTemplate = "templates/games-create.html"
+	GamesCreateTemplate = "templates/games/games-create.html"
 )
 
 var gamesRepo GameRepository = NewInMemoryGameRepository()

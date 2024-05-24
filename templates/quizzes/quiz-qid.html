@@ -1,0 +1,32 @@
+{{define "title"}}KwikQuiz {{.ID}}{{end}}
+
+<!DOCTYPE html>
+<html lang="en">
+    {{template "header" .}}
+    <body>
+    <style>
+      .centered-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      a {
+        display: inline-block;
+        width: 200px;
+        height: 50px;
+        background-color: blue;
+        color: white;
+        text-align: center;
+        line-height: 50px;
+        margin: 10px;
+      }
+    </style>
+            <div class="centered-container">
+                <h1>Title: {{.Title}}</h1>
+                <p>id: {{.ID}}</p>
+                <p>Description: {{.Description}}</p>
+        </div>
+    </body>
+</html>
