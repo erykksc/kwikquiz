@@ -1,15 +1,13 @@
 package quiz
 
 type Quiz struct {
-	ID                  int
-	Title               string
-	Description         string
-	TimePerQuestion     int
-	QuestionOrderRandom bool
-	Questions           []Question
+	ID              int
+	Title           string
+	Description     string
+	TimePerQuestion int
+	QuestionOrder   string
+	Questions       []Question
 }
-
-type QuizID string
 
 type Question struct {
 	Text    string

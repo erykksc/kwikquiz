@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 	BaseTemplate       = "templates/base.html"
 	IndexTemplate      = "templates/index.html"
 	QuizzesTemplate    = "templates/quizzes/quizzes.html"
-	QuizTemplate       = ""
-	QuizCreateTemplate = "templates/quizzes/quiz-create.html"
+	QuizTemplate       = "templates/quizzes/quiz-qid.html"
+	QuizCreateTemplate = "templates/quizzes/quiz-create-v2.html"
 )
 
 var quizzesRepo QuizRepository = NewInMemoryQuizRepository()
@@ -24,7 +25,7 @@ func NewQuizzesRouter() http.Handler {
 
 	mux.HandleFunc("GET /quizzes/{$}", getAllQuizzesHandler)
 	mux.HandleFunc("GET /quizzes/{qid}", getQuizHandler)
-	mux.HandleFunc("POST /quizzes/{$}", postQuizHandler)
+	mux.HandleFunc("POST /quizzes/create/{$}", postQuizHandler)
 	mux.HandleFunc("GET /quizzes/create", getQuizCreateHandler)
 	return mux
 
@@ -44,9 +45,18 @@ func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 
 func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	qid := r.PostFormValue("gid")
 
-	quiz, err := quizzesRepo.GetQuiz(QuizID(qid))
+	qidStr := r.PathValue("qid")
+
+	// Convert the string to an integer
+	qid, err := strconv.Atoi(qidStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		http.Error(w, "Invalid quid value", http.StatusBadRequest)
+		return
+	}
+
+	quiz, err := quizzesRepo.GetQuiz(qid)
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:
@@ -63,59 +73,56 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type createQuizForm struct {
-	Qid         string
-	Title       string
-	Description string
-	Owner       string
-	FormError   string
+	Qid             int
+	Title           string
+	Description     string
+	TimePerQuestion int
+	QuestionOrder   string
+	FormError       string
 }
 
 func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	qid := r.FormValue("qid")
+	qidStr := r.FormValue("qid")
 	title := r.FormValue("title")
 	description := r.FormValue("description")
-	owner := r.FormValue("owner")
+	timePerQuestionStr := r.FormValue("time-per-question")
+	questionOrder := r.FormValue("question-order")
 
-	if qid == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("qid in form is required"))
+	// Convert the string to an integer
+	timePerQuestion, err := strconv.Atoi(timePerQuestionStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		http.Error(w, "Invalid time-per-question value", http.StatusBadRequest)
 		return
 	}
 
-	if title == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("title in form is required"))
-		return
-	}
-
-	if description == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("description in form is required"))
-		return
-	}
-	if owner == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("owner in form is required"))
+	// Convert the string to an integer
+	qid, err := strconv.Atoi(qidStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		http.Error(w, "Invalid quid value", http.StatusBadRequest)
 		return
 	}
 
 	// Create new quiz
 	quiz := Quiz{
-		ID:          QuizID(qid),
-		Title:       title,
-		Description: description,
-		Owner:       owner,
+		ID:              qid,
+		Title:           title,
+		Description:     description,
+		TimePerQuestion: timePerQuestion,
+		QuestionOrder:   questionOrder,
 	}
 
 	if err := quizzesRepo.AddQuiz(quiz); err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
 		err := tmpl.ExecuteTemplate(w, "create-form", createQuizForm{
-			Qid:         qid,
-			Title:       title,
-			Description: description,
-			Owner:       owner,
+			Qid:             qid,
+			Title:           title,
+			Description:     description,
+			TimePerQuestion: timePerQuestion,
+			QuestionOrder:   questionOrder,
 		})
 		if err != nil {
 			slog.Error("Error rendering quiz", "error", err)
@@ -124,7 +131,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirecting to the quiz
-	w.Header().Add("HX-Redirect", "/quizzes/"+qid)
+	w.Header().Add("HX-Redirect", "/quizzes/"+qidStr)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -133,3 +140,21 @@ func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
 	tmpl.Execute(w, nil)
 }
+
+//func (s *InMemoryQuizRepository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	// Serialize the repository data
+//	serializedData, err := s.Serialize()
+//	if err != nil {
+//		http.Error(w, "Failed to serialize data", http.StatusInternalServerError)
+//		return
+//	}
+//	// Set the content type to JSON
+//	w.Header().Set("Content-Type", "application/json")
+//
+//	// Write the serialized data to the response
+//	_, err = w.Write([]byte(serializedData))
+//	if err != nil {
+//		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+//		return
+//	}
+//}
