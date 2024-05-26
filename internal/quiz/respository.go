@@ -3,6 +3,7 @@ package quiz
 type Quiz struct {
 	ID              int
 	Title           string
+	Password        string
 	Description     string
 	TimePerQuestion int
 	QuestionOrder   string
@@ -10,13 +11,9 @@ type Quiz struct {
 }
 
 type Question struct {
-	Text    string
-	Answers []Answer
-}
-
-type Answer struct {
-	Text      string
-	IsCorrect bool
+	Text          string
+	Answers       []string
+	CorrectAnswer int
 }
 
 type ErrQuizNotFound struct{}
@@ -88,4 +85,8 @@ func (s *InMemoryQuizRepository) GetAllQuizzes() ([]Quiz, error) {
 		quizzes = append(quizzes, quiz)
 	}
 	return quizzes, nil
+}
+
+func (q *Quiz) AddQuestion(question Question) {
+	q.Questions = append(q.Questions, question)
 }

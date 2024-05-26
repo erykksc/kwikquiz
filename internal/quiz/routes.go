@@ -1,6 +1,7 @@
 package quiz
 
 import (
+	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"html/template"
 	"log/slog"
@@ -78,6 +79,7 @@ type createQuizForm struct {
 	Description     string
 	TimePerQuestion int
 	QuestionOrder   string
+	Questions       []Question
 	FormError       string
 }
 
@@ -96,7 +98,6 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid time-per-question value", http.StatusBadRequest)
 		return
 	}
-
 	// Convert the string to an integer
 	qid, err := strconv.Atoi(qidStr)
 	if err != nil {
@@ -104,7 +105,37 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid quid value", http.StatusBadRequest)
 		return
 	}
+	var questions []Question
+	questionIndex := 1
+	for {
+		questionText := r.FormValue("question-" + strconv.Itoa(questionIndex))
+		if questionText == "" {
+			break
+		}
+		answer := []string{
+			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-1"),
+			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-2"),
+			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-3"),
+			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-4"),
+		}
 
+		correctAnswerStr := r.FormValue("answer-options")
+		correctAnswer, err := strconv.Atoi(correctAnswerStr)
+		if err != nil {
+			http.Error(w, "Invalid answer option value", http.StatusBadRequest)
+			return
+		}
+
+		questions = append(questions, Question{
+			Text:          questionText,
+			Answers:       answer,
+			CorrectAnswer: correctAnswer,
+		})
+		fmt.Print(questionText)
+		fmt.Print(answer)
+		fmt.Print(correctAnswer)
+		questionIndex++
+	}
 	// Create new quiz
 	quiz := Quiz{
 		ID:              qid,
@@ -112,6 +143,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		Description:     description,
 		TimePerQuestion: timePerQuestion,
 		QuestionOrder:   questionOrder,
+		Questions:       questions,
 	}
 
 	if err := quizzesRepo.AddQuiz(quiz); err != nil {
@@ -123,6 +155,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 			Description:     description,
 			TimePerQuestion: timePerQuestion,
 			QuestionOrder:   questionOrder,
+			Questions:       questions,
 		})
 		if err != nil {
 			slog.Error("Error rendering quiz", "error", err)
@@ -133,6 +166,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirecting to the quiz
 	w.Header().Add("HX-Redirect", "/quizzes/"+qidStr)
 	w.WriteHeader(http.StatusCreated)
+
 }
 
 func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
