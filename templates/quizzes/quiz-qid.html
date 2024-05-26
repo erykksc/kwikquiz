@@ -1,7 +1,5 @@
 {{define "title"}}KwikQuiz {{.ID}}{{end}}
 
-<!DOCTYPE html>
-<html lang="en">
     {{template "header" .}}
     <body>
     <style>
@@ -23,9 +21,10 @@
         margin: 10px;
       }
     </style>
-            <div class="centered-container">
+        <div class="centered-container">
                 <h1>id: {{.ID}}</h1>
                 <p>Title: {{.Title}}</p>
+                <p>Password: {{.Password}}</p>
                 <p>Description: {{.Description}}</p>
                 <p>TimePerQuestion: {{.TimePerQuestion}}</p>
                 <p>QuestionOrder: {{.QuestionOrder}}</p>

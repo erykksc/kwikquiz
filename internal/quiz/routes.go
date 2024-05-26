@@ -87,6 +87,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	qidStr := r.FormValue("qid")
 	title := r.FormValue("title")
+	password := r.FormValue("password")
 	description := r.FormValue("description")
 	timePerQuestionStr := r.FormValue("time-per-question")
 	questionOrder := r.FormValue("question-order")
@@ -131,13 +132,14 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 			Answers:       answer,
 			CorrectAnswer: correctAnswer,
 		})
-		fmt.Println("%+v", questions)
+		fmt.Println(questions)
 		questionIndex++
 	}
 	// Create new quiz
 	quiz := Quiz{
 		ID:              qid,
 		Title:           title,
+		Password:        password,
 		Description:     description,
 		TimePerQuestion: timePerQuestion,
 		QuestionOrder:   questionOrder,
