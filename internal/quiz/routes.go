@@ -27,7 +27,7 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("GET /quizzes/{$}", getAllQuizzesHandler)
 	mux.HandleFunc("GET /quizzes/{qid}", getQuizHandler)
 	mux.HandleFunc("POST /quizzes/create/{$}", postQuizHandler)
-	mux.HandleFunc("GET /quizzes/create", getQuizCreateHandler)
+	mux.HandleFunc("GET /quizzes/create/", getQuizCreateHandler)
 	return mux
 
 }
@@ -119,7 +119,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-4"),
 		}
 
-		correctAnswerStr := r.FormValue("answer-options")
+		correctAnswerStr := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex))
 		correctAnswer, err := strconv.Atoi(correctAnswerStr)
 		if err != nil {
 			http.Error(w, "Invalid answer option value", http.StatusBadRequest)
@@ -131,9 +131,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 			Answers:       answer,
 			CorrectAnswer: correctAnswer,
 		})
-		fmt.Print(questionText)
-		fmt.Print(answer)
-		fmt.Print(correctAnswer)
+		fmt.Println("%+v", questions)
 		questionIndex++
 	}
 	// Create new quiz
@@ -145,6 +143,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		QuestionOrder:   questionOrder,
 		Questions:       questions,
 	}
+	fmt.Println("%+v", quiz)
 
 	if err := quizzesRepo.AddQuiz(quiz); err != nil {
 		slog.Error("Error adding quiz", "error", err)
@@ -174,21 +173,3 @@ func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
 	tmpl.Execute(w, nil)
 }
-
-//func (s *InMemoryQuizRepository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//	// Serialize the repository data
-//	serializedData, err := s.Serialize()
-//	if err != nil {
-//		http.Error(w, "Failed to serialize data", http.StatusInternalServerError)
-//		return
-//	}
-//	// Set the content type to JSON
-//	w.Header().Set("Content-Type", "application/json")
-//
-//	// Write the serialized data to the response
-//	_, err = w.Write([]byte(serializedData))
-//	if err != nil {
-//		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-//		return
-//	}
-//}
