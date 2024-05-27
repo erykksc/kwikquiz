@@ -40,7 +40,7 @@
   <h2>Players</h2>
   <ul>
     {{range $key, $value := .Players}}
-    <li>{{$key}}</li>
+    <li>{{$value.Username}}</li>
     {{end}}
   </ul>
 </div>
