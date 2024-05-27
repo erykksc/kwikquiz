@@ -11,7 +11,7 @@ import (
 
 type Lobby struct {
 	mu              sync.Mutex
-	Host            websocket.Conn
+	Host            ClientID
 	Pin             string
 	TimePerQuestion time.Duration // time per question
 	common.Game
