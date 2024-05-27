@@ -1,5 +1,7 @@
 package lobby
 
+import "sync"
+
 type ErrLobbyNotFound struct{}
 
 func (ErrLobbyNotFound) Error() string {
@@ -23,6 +25,7 @@ type LobbyRepository interface {
 // In-memory store for games
 type inMemoryLobbyRepository struct {
 	lobbies map[string]*Lobby
+	mu      sync.Mutex
 }
 
 func NewInMemoryLobbyRepository() *inMemoryLobbyRepository {
@@ -32,6 +35,8 @@ func NewInMemoryLobbyRepository() *inMemoryLobbyRepository {
 }
 
 func (s *inMemoryLobbyRepository) AddLobby(lobby *Lobby) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.lobbies[lobby.Pin]; ok {
 		return ErrLobbyAlreadyExists{}
 	}
@@ -41,6 +46,8 @@ func (s *inMemoryLobbyRepository) AddLobby(lobby *Lobby) error {
 }
 
 func (s *inMemoryLobbyRepository) UpdateLobby(lobby *Lobby) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.lobbies[lobby.Pin]; !ok {
 		return ErrLobbyNotFound{}
 	}
@@ -50,6 +57,8 @@ func (s *inMemoryLobbyRepository) UpdateLobby(lobby *Lobby) error {
 }
 
 func (s *inMemoryLobbyRepository) GetLobby(pin string) (*Lobby, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	lobby, ok := s.lobbies[pin]
 	if !ok {
 		return &Lobby{}, ErrLobbyNotFound{}
@@ -59,6 +68,8 @@ func (s *inMemoryLobbyRepository) GetLobby(pin string) (*Lobby, error) {
 }
 
 func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.lobbies[pin]; !ok {
 		return ErrLobbyNotFound{}
 	}
@@ -68,6 +79,8 @@ func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
 }
 
 func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var lobbies []*Lobby
 	for _, lobby := range s.lobbies {
 		lobbies = append(lobbies, lobby)
