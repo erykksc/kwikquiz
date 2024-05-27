@@ -18,7 +18,7 @@ type Lobby struct {
 	CreatedAt              time.Time
 	CurrentQuestion        common.Question
 	CurrentQuestionTimeout time.Time // timestamp (when the server should not accept answers anymore for the current question, the host can send a request to shorten the answer time)
-	Players                map[ClientID]Player
+	Players                map[ClientID]*Player
 }
 
 type ClientID string
@@ -48,6 +48,6 @@ func CreateLobby(options LobbyOptions) *Lobby {
 		Pin:             options.Pin,
 		Game:            common.Game{},
 		CreatedAt:       time.Now(),
-		Players:         make(map[ClientID]Player),
+		Players:         make(map[ClientID]*Player),
 	}
 }

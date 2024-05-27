@@ -133,7 +133,7 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Update the player's username
-	l.Players[initiator.ClientID] = Player{
+	l.Players[initiator.ClientID] = &Player{
 		Conn:     initiator.Conn,
 		Username: event.Username,
 	}
