@@ -11,8 +11,8 @@ import (
 
 // Initiator is a user that initiates a lobby event
 type Initiator struct {
-	Username string
-	Conn     *websocket.Conn
+	ClientID
+	Conn *websocket.Conn
 }
 
 type LobbyEvent interface {
@@ -64,13 +64,23 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 	defer l.mu.Unlock()
 
 	// Check if the player is already in the lobby
-	if _, ok := l.Players[initiator.Username]; ok {
-		// TODO: Player already in lobby, check if they want to reconnect
-		// (the current connection is unresponsive)
-		return errors.New("player already in lobby")
+	if player, ok := l.Players[initiator.ClientID]; ok {
+		// Player already in the lobby, assuming they want to reconnect
+		player.Conn = initiator.Conn
+		// Send the lobby screen to the player
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
+		w, err := initiator.Conn.NextWriter(websocket.TextMessage)
+		if err != nil {
+			return err
+		}
+		defer w.Close()
+		if err := tmpl.ExecuteTemplate(w, "player-lobby-screen", l); err != nil {
+			return err
+		}
+		return nil
+
 	}
 
-	// If player is not in the lobby, send choose username form
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
 	w, err := initiator.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
@@ -101,41 +111,46 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	// Check if the username is empty
 	if event.Username == "" {
 		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Username cannot be empty"))
-		return nil
+		return errors.New("new username is empty")
 	}
 
 	// Check if game hasn't started yet
 	if !l.StartedAt.IsZero() {
 		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Game already started"))
-		return nil
+		return errors.New("game already started")
+	}
+
+	// Create a set of all usernames in the lobby
+	usernames := make(map[string]bool)
+	for _, player := range l.Players {
+		usernames[player.Username] = true
 	}
 
 	// Check if the username is already in the lobby
-	if _, ok := l.Players[initiator.Username]; ok {
+	if _, ok := usernames[event.Username]; ok {
 		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("This username is already in the lobby"))
-		return nil
+		return errors.New("username already in the lobby")
 	}
 
-	// Remove old username if it exists
-	for oldUsername, conn := range l.Players {
-		if conn == initiator.Conn {
-			delete(l.Players, oldUsername)
-			break
-		}
+	// Update the player's username
+	l.Players[initiator.ClientID] = Player{
+		Conn:     initiator.Conn,
+		Username: event.Username,
 	}
 
-	// Add player to the lobby
-	l.Players[event.Username] = initiator.Conn
+	// Send the lobby screen to all players
 
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
-	w, err := initiator.Conn.NextWriter(websocket.TextMessage)
-	if err != nil {
-		return err
-	}
-	defer w.Close()
+	for _, player := range l.Players {
+		w, err := player.Conn.NextWriter(websocket.TextMessage)
+		if err != nil {
+			return err
+		}
 
-	if err := tmpl.ExecuteTemplate(w, "player-lobby-screen", l); err != nil {
-		return err
+		if err := tmpl.ExecuteTemplate(w, "player-lobby-screen", l); err != nil {
+			return err
+		}
+		w.Close()
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package lobby
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -17,8 +18,23 @@ type Lobby struct {
 	CreatedAt              time.Time
 	CurrentQuestion        common.Question
 	CurrentQuestionTimeout time.Time // timestamp (when the server should not accept answers anymore for the current question, the host can send a request to shorten the answer time)
-	// Username -> Conn
-	Players map[string]*websocket.Conn
+	Players                map[ClientID]Player
+}
+
+type ClientID string
+
+func NewClientID() (ClientID, error) {
+	randomStr, err := common.RandomHexString(200)
+	if err != nil {
+		return "", err
+	}
+	clientID := strconv.FormatInt(time.Now().Unix(), 16) + randomStr
+	return ClientID(clientID), nil
+}
+
+type Player struct {
+	Conn     *websocket.Conn
+	Username string
 }
 
 type LobbyOptions struct {
@@ -32,6 +48,6 @@ func CreateLobby(options LobbyOptions) *Lobby {
 		Pin:             options.Pin,
 		Game:            common.Game{},
 		CreatedAt:       time.Now(),
-		Players:         make(map[string]*websocket.Conn),
+		Players:         make(map[ClientID]Player),
 	}
 }

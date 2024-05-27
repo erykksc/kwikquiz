@@ -81,6 +81,28 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// GET CLIENT ID from COOKIE
+	var clientID ClientID
+	clientIDCookie, err := r.Cookie("client-id")
+	if err == http.ErrNoCookie {
+		// Generate new client id
+		clientID, err = NewClientID()
+		if err != nil {
+			slog.Error("Error generating new client id", "err", err)
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
+		}
+	} else {
+		clientID = ClientID(clientIDCookie.Value)
+	}
+
+	// SET CLIENT ID COOKIE or UPDATE EXPIRATION
+	http.SetCookie(w, &http.Cookie{
+		Name:    "client-id",
+		Value:   string(clientID),
+		Expires: time.Now().Add(6 * time.Hour),
+	})
+
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
 	if err := tmpl.Execute(w, &lobby); err != nil {
 		slog.Error("Error rendering template", "err", err)
@@ -118,8 +140,16 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := ""
-	player := Initiator{Username: username, Conn: ws}
+	// GET CLIENT ID from COOKIE
+	clientIDCookie, err := r.Cookie("client-id")
+	if err == http.ErrNoCookie {
+		slog.Error("Client ID cookie not found")
+		common.ErrorHandler(w, r, http.StatusForbidden)
+		return
+	}
+	clientID := ClientID(clientIDCookie.Value)
+
+	player := Initiator{ClientID: clientID, Conn: ws}
 
 	(LEUserConnected{}).Handle(lobby, &player)
 
