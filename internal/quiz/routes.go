@@ -28,6 +28,7 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("GET /quizzes/{qid}", getQuizHandler)
 	mux.HandleFunc("POST /quizzes/create/{$}", postQuizHandler)
 	mux.HandleFunc("GET /quizzes/create/", getQuizCreateHandler)
+	mux.HandleFunc("GET /quizzes/create", getQuizCreateHandler)
 	return mux
 
 }
@@ -85,35 +86,61 @@ type createQuizForm struct {
 
 func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	qidStr := r.FormValue("qid")
+
+	quiz, err := parseQuizForm(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	quizID, err := quizzesRepo.AddQuiz(quiz)
+	if err != nil {
+		slog.Error("Error adding quiz", "error", err)
+		renderQuizCreateForm(w, quiz, err)
+		return
+	}
+
+	redirectToQuiz(w, quizID)
+}
+
+func parseQuizForm(r *http.Request) (Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
 	timePerQuestionStr := r.FormValue("time-per-question")
 	questionOrder := r.FormValue("question-order")
 
-	// Convert the string to an integer
 	timePerQuestion, err := strconv.Atoi(timePerQuestionStr)
 	if err != nil {
-		// Handle the error if conversion fails
-		http.Error(w, "Invalid time-per-question value", http.StatusBadRequest)
-		return
+		return Quiz{}, fmt.Errorf("invalid time-per-question value")
 	}
-	// Convert the string to an integer
-	qid, err := strconv.Atoi(qidStr)
+
+	questions, err := parseQuestions(r)
 	if err != nil {
-		// Handle the error if conversion fails
-		http.Error(w, "Invalid quid value", http.StatusBadRequest)
-		return
+		return Quiz{}, err
 	}
+
+	return Quiz{
+		Title:           title,
+		Password:        password,
+		Description:     description,
+		TimePerQuestion: timePerQuestion,
+		QuestionOrder:   questionOrder,
+		Questions:       questions,
+	}, nil
+}
+
+func parseQuestions(r *http.Request) ([]Question, error) {
 	var questions []Question
 	questionIndex := 1
+
 	for {
 		questionText := r.FormValue("question-" + strconv.Itoa(questionIndex))
 		if questionText == "" {
 			break
 		}
-		answer := []string{
+
+		answers := []string{
 			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-1"),
 			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-2"),
 			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-3"),
@@ -123,51 +150,34 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		correctAnswerStr := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex))
 		correctAnswer, err := strconv.Atoi(correctAnswerStr)
 		if err != nil {
-			http.Error(w, "Invalid answer option value", http.StatusBadRequest)
-			return
+			return nil, fmt.Errorf("invalid answer option value")
 		}
 
 		questions = append(questions, Question{
 			Text:          questionText,
-			Answers:       answer,
+			Answers:       answers,
 			CorrectAnswer: correctAnswer,
 		})
-		fmt.Println(questions)
 		questionIndex++
 	}
-	// Create new quiz
-	quiz := Quiz{
-		ID:              qid,
-		Title:           title,
-		Password:        password,
-		Description:     description,
-		TimePerQuestion: timePerQuestion,
-		QuestionOrder:   questionOrder,
-		Questions:       questions,
-	}
-	fmt.Println("%+v", quiz)
+	return questions, nil
+}
 
-	if err := quizzesRepo.AddQuiz(quiz); err != nil {
-		slog.Error("Error adding quiz", "error", err)
-		tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
-		err := tmpl.ExecuteTemplate(w, "create-form", createQuizForm{
-			Qid:             qid,
-			Title:           title,
-			Description:     description,
-			TimePerQuestion: timePerQuestion,
-			QuestionOrder:   questionOrder,
-			Questions:       questions,
-		})
-		if err != nil {
-			slog.Error("Error rendering quiz", "error", err)
-		}
-		return
-	}
+func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
+	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
+	tmpl.ExecuteTemplate(w, "create-form", createQuizForm{
+		Title:           quiz.Title,
+		Description:     quiz.Description,
+		TimePerQuestion: quiz.TimePerQuestion,
+		QuestionOrder:   quiz.QuestionOrder,
+		Questions:       quiz.Questions,
+		FormError:       err.Error(),
+	})
+}
 
-	// Redirecting to the quiz
-	w.Header().Add("HX-Redirect", "/quizzes/"+qidStr)
+func redirectToQuiz(w http.ResponseWriter, quizID int) {
+	w.Header().Add("HX-Redirect", fmt.Sprintf("/quizzes/%d", quizID))
 	w.WriteHeader(http.StatusCreated)
-
 }
 
 func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {

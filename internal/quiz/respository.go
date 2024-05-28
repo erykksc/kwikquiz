@@ -1,5 +1,7 @@
 package quiz
 
+import "sync"
+
 type Quiz struct {
 	ID              int
 	Title           string
@@ -25,7 +27,7 @@ type ErrQuizAlreadyExists struct{}
 func (ErrQuizAlreadyExists) Error() string { return "Quiz already exists" }
 
 type QuizRepository interface {
-	AddQuiz(quiz Quiz) error
+	AddQuiz(quiz Quiz) (int, error)
 	UpdateQuiz(quiz Quiz) error
 	GetQuiz(id int) (Quiz, error)
 	DeleteQuiz(id int) error
@@ -35,24 +37,36 @@ type QuizRepository interface {
 // In-mem store for quizzes
 type InMemoryQuizRepository struct {
 	quizzes map[int]Quiz
+	mutex   sync.RWMutex
+	counter int
 }
 
 func NewInMemoryQuizRepository() *InMemoryQuizRepository {
 	return &InMemoryQuizRepository{
 		quizzes: make(map[int]Quiz),
+		counter: 0,
 	}
 }
 
-func (s *InMemoryQuizRepository) AddQuiz(quiz Quiz) error {
+func (s *InMemoryQuizRepository) AddQuiz(quiz Quiz) (int, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	quiz.ID = s.counter
+	s.counter++
+
 	if _, ok := s.quizzes[quiz.ID]; ok {
-		return ErrQuizAlreadyExists{}
+		return 0, ErrQuizAlreadyExists{}
 	}
 
 	s.quizzes[quiz.ID] = quiz
-	return nil
+	return quiz.ID, nil
 }
 
 func (s *InMemoryQuizRepository) UpdateQuiz(quiz Quiz) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	if _, ok := s.quizzes[quiz.ID]; !ok {
 		return ErrQuizNotFound{}
 	}
@@ -62,6 +76,9 @@ func (s *InMemoryQuizRepository) UpdateQuiz(quiz Quiz) error {
 }
 
 func (s *InMemoryQuizRepository) GetQuiz(id int) (Quiz, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
 	quiz, ok := s.quizzes[id]
 	if !ok {
 		return Quiz{}, ErrQuizNotFound{}
@@ -71,6 +88,9 @@ func (s *InMemoryQuizRepository) GetQuiz(id int) (Quiz, error) {
 }
 
 func (s *InMemoryQuizRepository) DeleteQuiz(id int) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	if _, ok := s.quizzes[id]; !ok {
 		return ErrQuizNotFound{}
 	}
@@ -80,6 +100,9 @@ func (s *InMemoryQuizRepository) DeleteQuiz(id int) error {
 }
 
 func (s *InMemoryQuizRepository) GetAllQuizzes() ([]Quiz, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
 	var quizzes []Quiz
 	for _, quiz := range s.quizzes {
 		quizzes = append(quizzes, quiz)

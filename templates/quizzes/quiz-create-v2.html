@@ -18,12 +18,6 @@
     <form id="quiz-form" class="flex-grow flex flex-col" hx-post="/quizzes/create/" hx-trigger="submit" hx-target="this">
       {{define "create-form"}}
 
-      <!-- Quiz ID -->
-      <div class="mb-4">
-        <label for="qid" class="block text-gray-700 font-semibold mb-2">Quiz ID</label>
-        <input type="number" id="qid" name="qid" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{.Qid}}" placeholder="Enter Quiz ID" required>
-      </div>
-
       <!-- Quiz Title -->
       <div class="mb-4">
         <label for="title" class="block text-gray-700 font-semibold mb-2">Quiz Title</label>
