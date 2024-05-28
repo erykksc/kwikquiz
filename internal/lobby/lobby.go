@@ -1,7 +1,9 @@
 package lobby
 
 import (
-	"strconv"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/binary"
 	"sync"
 	"time"
 
@@ -24,12 +26,23 @@ type Lobby struct {
 type ClientID string
 
 func NewClientID() (ClientID, error) {
-	randomStr, err := common.RandomHexString(200)
-	if err != nil {
+	// Generate 8 bytes from the timestamp (64 bits)
+	timestamp := time.Now().Unix()
+	timestampBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(timestampBytes, uint64(timestamp))
+
+	// Generate 8 random bytes (64 bits)
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
 		return "", err
 	}
-	clientID := strconv.FormatInt(time.Now().Unix(), 16) + randomStr
-	return ClientID(clientID), nil
+
+	// Combine the two byte slices into 128 bits
+	combinedBytes := append(timestampBytes, randomBytes...)
+
+	// Encode the 128 bits into a base64 string
+	encoded := base64.StdEncoding.EncodeToString(combinedBytes)
+	return ClientID(encoded), nil
 }
 
 type Player struct {
