@@ -3,13 +3,12 @@ package quiz
 import "sync"
 
 type Quiz struct {
-	ID              int
-	Title           string
-	Password        string
-	Description     string
-	TimePerQuestion int
-	QuestionOrder   string
-	Questions       []Question
+	ID            int
+	Title         string
+	Password      string
+	Description   string
+	QuestionOrder string
+	Questions     []Question
 }
 
 type Question struct {

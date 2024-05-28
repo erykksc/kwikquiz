@@ -15,7 +15,7 @@ const (
 	IndexTemplate      = "templates/index.html"
 	QuizzesTemplate    = "templates/quizzes/quizzes.html"
 	QuizTemplate       = "templates/quizzes/quiz-qid.html"
-	QuizCreateTemplate = "templates/quizzes/quiz-create-v2.html"
+	QuizCreateTemplate = "templates/quizzes/quiz-create.html"
 )
 
 var quizzesRepo QuizRepository = NewInMemoryQuizRepository()
@@ -75,13 +75,12 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type createQuizForm struct {
-	Qid             int
-	Title           string
-	Description     string
-	TimePerQuestion int
-	QuestionOrder   string
-	Questions       []Question
-	FormError       string
+	Qid           int
+	Title         string
+	Description   string
+	QuestionOrder string
+	Questions     []Question
+	FormError     string
 }
 
 func postQuizHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,13 +106,7 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
-	timePerQuestionStr := r.FormValue("time-per-question")
 	questionOrder := r.FormValue("question-order")
-
-	timePerQuestion, err := strconv.Atoi(timePerQuestionStr)
-	if err != nil {
-		return Quiz{}, fmt.Errorf("invalid time-per-question value")
-	}
 
 	questions, err := parseQuestions(r)
 	if err != nil {
@@ -121,12 +114,11 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	}
 
 	return Quiz{
-		Title:           title,
-		Password:        password,
-		Description:     description,
-		TimePerQuestion: timePerQuestion,
-		QuestionOrder:   questionOrder,
-		Questions:       questions,
+		Title:         title,
+		Password:      password,
+		Description:   description,
+		QuestionOrder: questionOrder,
+		Questions:     questions,
 	}, nil
 }
 
@@ -166,12 +158,11 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
 	tmpl.ExecuteTemplate(w, "create-form", createQuizForm{
-		Title:           quiz.Title,
-		Description:     quiz.Description,
-		TimePerQuestion: quiz.TimePerQuestion,
-		QuestionOrder:   quiz.QuestionOrder,
-		Questions:       quiz.Questions,
-		FormError:       err.Error(),
+		Title:         quiz.Title,
+		Description:   quiz.Description,
+		QuestionOrder: quiz.QuestionOrder,
+		Questions:     quiz.Questions,
+		FormError:     err.Error(),
 	})
 }
 
