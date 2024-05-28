@@ -45,6 +45,9 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 			return nil, err
 		}
 		return event, nil
+	case "LEGameStarted":
+		var event LEGameStarted
+		return event, nil
 	default:
 		return nil, errors.New("unknown event type")
 	}
@@ -67,7 +70,7 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 	if player, ok := l.Players[initiator.ClientID]; ok {
 		// Player already in the lobby, assuming they want to reconnect
 		player.Conn = initiator.Conn
-		// Send the lobby screen to the player
+		// TODO: Send the current state screen to the player instead of the lobby screen every time
 		tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
 		w, err := initiator.Conn.NextWriter(websocket.TextMessage)
 		if err != nil {
@@ -78,7 +81,6 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 			return err
 		}
 		return nil
-
 	}
 
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
@@ -110,13 +112,13 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 
 	// Check if the username is empty
 	if event.Username == "" {
-		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Username cannot be empty"))
+		// TODO: Send error message to the initiator: "Username cannot be empty"
 		return errors.New("new username is empty")
 	}
 
 	// Check if game hasn't started yet
 	if l.State != WaitingForPlayers {
-		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Game already started"))
+		// TODO: Send error message to the initiator: "Game already started"
 		return errors.New("game already started")
 	}
 
@@ -128,7 +130,7 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 
 	// Check if the username is already in the lobby
 	if _, ok := usernames[event.Username]; ok {
-		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("This username is already in the lobby"))
+		// TODO: Send error message to the initiator: "Username already in the lobby"
 		return errors.New("username already in the lobby")
 	}
 
@@ -139,7 +141,8 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Send the lobby screen to all players
-
+	// TODO: Make it more robust, so that if one player fails to receive the message, the others still do
+	// maybe try with a retry mechanism
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
 	for _, player := range l.Players {
 		w, err := player.Conn.NextWriter(websocket.TextMessage)
@@ -164,20 +167,20 @@ func (e LEGameStarted) String() string {
 func (event LEGameStarted) Handle(l *Lobby, initiator *Initiator) error {
 	// Check if the initiator is the host
 	if l.Host != initiator.ClientID {
-		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Only the host can start the game"))
+		// TODO: Send error message to the initiator "Only the host can start the game"
 		return errors.New("Non-host tried to start the game")
-	}
-
-	// Check if the game has already started
-	if l.State != WaitingForPlayers {
-		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Game already started"))
-		return errors.New("Game already started")
 	}
 
 	// Check if there are enough players
 	if len(l.Players) == 0 {
-		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Not enough players"))
+		// TODO: Send error message to the initiator "Not enough players"
 		return errors.New("Not enough players")
+	}
+
+	// Check if the game has already started
+	if l.State != WaitingForPlayers {
+		// TODO: Send the current state to the initiator
+		return errors.New("Game already started")
 	}
 
 	// TODO: CHeck if the quiz is choosen
