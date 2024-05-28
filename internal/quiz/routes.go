@@ -54,7 +54,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	qid, err := strconv.Atoi(qidStr)
 	if err != nil {
 		// Handle the error if conversion fails
-		http.Error(w, "Invalid quid value", http.StatusBadRequest)
+		http.Error(w, "Invalid qid value", http.StatusBadRequest)
 		return
 	}
 
@@ -72,6 +72,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	tmpl := template.Must(template.ParseFiles(QuizTemplate, BaseTemplate))
 	tmpl.Execute(w, quiz)
+	fmt.Println(quiz)
 }
 
 type createQuizForm struct {
