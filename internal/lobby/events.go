@@ -115,7 +115,7 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Check if game hasn't started yet
-	if !l.StartedAt.IsZero() {
+	if l.State != WaitingForPlayers {
 		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Game already started"))
 		return errors.New("game already started")
 	}
@@ -152,5 +152,42 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 		}
 		w.Close()
 	}
+	return nil
+}
+
+type LEGameStarted struct{}
+
+func (e LEGameStarted) String() string {
+	return "GEGameStarted"
+}
+
+func (event LEGameStarted) Handle(l *Lobby, initiator *Initiator) error {
+	// Check if the initiator is the host
+	if l.Host != initiator.ClientID {
+		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Only the host can start the game"))
+		return errors.New("Non-host tried to start the game")
+	}
+
+	// Check if the game has already started
+	if l.State != WaitingForPlayers {
+		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Game already started"))
+		return errors.New("Game already started")
+	}
+
+	// Check if there are enough players
+	if len(l.Players) == 0 {
+		initiator.Conn.WriteMessage(websocket.TextMessage, []byte("Not enough players"))
+		return errors.New("Not enough players")
+	}
+
+	// TODO: CHeck if the quiz is choosen
+
+	// TODO: Check if the quiz has at least one question
+
+	// Start game: go to the first question
+	if err := l.StartNextQuestion(); err != nil {
+		return err
+	}
+
 	return nil
 }
