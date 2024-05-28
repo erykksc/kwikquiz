@@ -173,7 +173,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := event.Handle(lobby, &player); err != nil {
-			slog.Error("Error handling lobby event", "err", err)
+			slog.Error("Error handling lobby event", "event", event, "err", err)
 		}
 	}
 }
