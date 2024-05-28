@@ -12,15 +12,17 @@ import (
 )
 
 type Lobby struct {
-	mu              sync.Mutex
-	Host            ClientID
-	Pin             string
-	TimePerQuestion time.Duration // time per question
-	common.Game
+	mu                     sync.Mutex
+	Host                   ClientID
+	Pin                    string
+	TimePerQuestion        time.Duration // time per question
+	Game                   common.Game
 	CreatedAt              time.Time
-	CurrentQuestion        common.Question
 	CurrentQuestionTimeout time.Time // timestamp (when the server should not accept answers anymore for the current question, the host can send a request to shorten the answer time)
+	questionTimer          *CancellableTimer
 	Players                map[ClientID]*Player
+	State                  LobbyState
+	CurrentQuestion        int
 }
 
 type ClientID string
@@ -55,6 +57,15 @@ type LobbyOptions struct {
 	Pin             string
 }
 
+type LobbyState int
+
+const (
+	WaitingForPlayers = iota
+	Question
+	Answer
+	FinalResults
+)
+
 func CreateLobby(options LobbyOptions) *Lobby {
 	return &Lobby{
 		TimePerQuestion: options.TimePerQuestion,
@@ -62,5 +73,51 @@ func CreateLobby(options LobbyOptions) *Lobby {
 		Game:            common.Game{},
 		CreatedAt:       time.Now(),
 		Players:         make(map[ClientID]*Player),
+		State:           WaitingForPlayers,
+		CurrentQuestion: -1,
 	}
+}
+
+func (l *Lobby) StartNextQuestion() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.CurrentQuestion++
+	l.State = Question
+
+	// TODO:Check if the game is over (no more questions)
+
+	// TODO: Send the question screen to host
+
+	// TODO: Send the question screen to all players
+
+	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
+
+	// Start the question timer
+	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)
+	go func() {
+		select {
+		case <-l.questionTimer.timer.C:
+			// Time completed
+			l.ShowAnswer()
+			break
+		case <-l.questionTimer.cancelChan:
+			// Timer cancelled
+			l.ShowAnswer()
+			break
+		}
+	}()
+	return nil
+}
+
+func (l *Lobby) ShowAnswer() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.State = Answer
+
+	// TODO: Send the answer screen to host
+
+	// TODO: Send the answer screen to all players
+	return nil
 }
