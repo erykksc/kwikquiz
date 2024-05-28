@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    {{template "header-content" .}}
+    <title>KwikQuiz Create game</title>
+  <style>
+    .centered-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    a {
+      display: inline-block;
+      width: 200px;
+      height: 50px;
+      background-color: purple;
+      color: white;
+      text-align: center;
+      line-height: 50px;
+      margin: 10px;
+    }
+  </style>
+  <div class="centered-container">
+    <h1>kwikquiz</h1>
+    <form method="post" hx-post="/lobbies/create">
+      {{define "create-form"}}
+      <div>
+        <label for="pin">new game pin:</label>
+        <input type="text" id="pin" name="pin" value="{{.pin}}" required />
+      </div>
+      <div>
+        <label for="username">username:</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          value="{{.username}}"
+          required
+        />
+      </div>
+      <!-- red error string -->
+      <p id="error" style="color: red">{{.formerror}}</p>
+      <button type="submit">submit</button>
+      {{ end }} {{template "create-form" .}}
+    </form>
+    <div id="responsearea"></div>
+  </div>
+</html>

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>KwikQuizz(Admin) All Lobbies</title>
+    {{template "header-content" .}}
+  </head>
+  <body>
+    <h1>Lobbies</h1>
+    {{range .}}
+    <div>
+      <a href="/lobbies/{{.Pin}}">Lobby by {{.Host}}</a>
+    </div>
+    {{else}}
+    <p>No lobbies found</p>
+    {{end}}
+  </body>
+</html>

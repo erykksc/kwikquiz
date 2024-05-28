@@ -1,65 +1,63 @@
-{{define "title"}}KwikQuiz{{end}}
-
 <!doctype html>
 <html lang="en">
-  {{template "header" .}}
-  <body>
-    <style>
-      .centered-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-      }
-      a {
-        display: inline-block;
-        width: 200px;
-        height: 50px;
-        background-color: purple;
-        color: white;
-        text-align: center;
-        line-height: 50px;
-        margin: 10px;
-      }
-    </style>
-    <div class="centered-container">
-      <script>
-        document.addEventListener("DOMContentLoaded", (event) => {
-          document.body.addEventListener("htmx:beforeSwap", function (evt) {
-            if (evt.detail.xhr.status === 404) {
-              // allow 404 responses to swap as we are using this as a signal
-              // to inform there is no game with the given ID
-              // set isError to false to avoid error logging in console
-              evt.detail.shouldSwap = true;
-              evt.detail.isError = false;
-            }
-          });
+  <head>
+    {{template "header-content" .}}
+    <title>KWIKQUIZ</title>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <script>
+      document.addEventListener("DOMContentLoaded", (event) => {
+        document.body.addEventListener("htmx:beforeSwap", function (evt) {
+          if (evt.detail.xhr.status === 404) {
+            // allow 404 responses to swap as we are using this as a signal
+            // to inform there is no game with the given ID
+            // set isError to false to avoid error logging in console
+            evt.detail.shouldSwap = true;
+            evt.detail.isError = false;
+          }
         });
-      </script>
-      <h1>kwikquiz</h1>
-      <a href="/games/create">create game</a>
-      {{ define "join-form" }}
-      <form
-        method="GET"
-        hx-get="/games/join"
-        hx-include="#gid"
-        hx-swap="outerHTML"
-      >
-        <div>
-          <input
-            type="text"
-            id="gid"
-            name="gid"
-            placeholder="Game PIN"
-            required
-          />
-          <!-- red error string -->
-          <p id="error" style="color: red">{{.GamePinError}}</p>
-        </div>
-        <button type="submit">Submit</button>
-      </form>
-      {{ end }} {{ template "join-form" . }}
+      });
+    </script>
+
+    <div class="text-center">
+      <h1 class="text-4xl md:text-6xl font-bold text-gray-800 mb-4">
+        KWIKQUIZ
+      </h1>
+      <h2 class="text-lg md:text-xl text-gray-600 mb-8">Learning is Fun!</h2>
+      <div class="flex justify-center space-x-4">
+        {{ define "join-form" }}
+        <form
+          method="GET"
+          hx-get="/lobbies/join"
+          hx-include="#pin"
+          hx-swap="outerHTML"
+        >
+          <div>
+            <input
+              type="text"
+              id="pin"
+              name="pin"
+              placeholder="Game PIN"
+              required
+            />
+            <!-- red error string -->
+            <p id="error" style="color: red">{{.GamePinError}}</p>
+          </div>
+          <button
+            type="submit"
+            class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Join Game
+          </button>
+        </form>
+        {{ end }} {{ template "join-form" . }}
+
+        <a
+          href="/lobbies/create"
+          class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >Create KWIKQUIZ</a
+        >
+      </div>
     </div>
   </body>
 </html>
