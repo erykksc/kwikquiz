@@ -3,7 +3,6 @@ package lobby
 import (
 	"encoding/json"
 	"errors"
-	"html/template"
 	"log/slog"
 
 	"github.com/gorilla/websocket"
@@ -62,35 +61,48 @@ func (e LEUserConnected) String() string {
 }
 
 func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
-	slog.Debug("Handling User Connected", "event", event, "initiator", initiator)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	// Check if the player is already in the lobby
-	if player, ok := l.Players[initiator.ClientID]; ok {
-		// Player already in the lobby, assuming they want to reconnect
-		player.Conn = initiator.Conn
-		// TODO: Send the current state screen to the player instead of the lobby screen every time
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
-		w, err := initiator.Conn.NextWriter(websocket.TextMessage)
+	// Check if it is the first user, if so, he becomes the host
+	if l.Host.ClientID == "" {
+		slog.Info("New Host for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		l.Host.ClientID = initiator.ClientID
+		l.Host.Conn = initiator.Conn
+		err := l.WriteView(initiator.Conn, WaitingRoomViewName, l.Host)
 		if err != nil {
-			return err
-		}
-		defer w.Close()
-		if err := tmpl.ExecuteTemplate(w, "player-lobby-screen", l); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
-	w, err := initiator.Conn.NextWriter(websocket.TextMessage)
-	if err != nil {
-		return err
+	// Check if host is trying to reconnect
+	if l.Host.ClientID == initiator.ClientID {
+		// Host reconnecting
+		l.Host.Conn = initiator.Conn
+		err := l.WriteView(initiator.Conn, l.State.ViewName(), l.Host)
+		if err != nil {
+			return err
+		}
+		slog.Info("Host Reconnected", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		return nil
 	}
-	defer w.Close()
 
-	if err := tmpl.ExecuteTemplate(w, "username-form", nil); err != nil {
+	// Check if the ClientID is already in the lobby
+	if player, ok := l.Players[initiator.ClientID]; ok {
+		slog.Info("Player Reconnected", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		// Player already in the lobby, assuming they want to reconnect
+		player.Conn = initiator.Conn
+		err := l.WriteView(initiator.Conn, l.State.ViewName(), *player)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// New User connecting
+	slog.Info("New User for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+	if err := l.WriteView(initiator.Conn, ChooseUsernameViewName, User{}); err != nil {
 		return err
 	}
 
@@ -117,7 +129,7 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Check if game hasn't started yet
-	if l.State != WaitingForPlayers {
+	if l.State != LSWaitingForPlayers {
 		// TODO: Send error message to the initiator: "Game already started"
 		return errors.New("game already started")
 	}
@@ -135,7 +147,7 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Update the player's username
-	l.Players[initiator.ClientID] = &Player{
+	l.Players[initiator.ClientID] = &User{
 		Conn:     initiator.Conn,
 		Username: event.Username,
 	}
@@ -143,17 +155,13 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	// Send the lobby screen to all players
 	// TODO: Make it more robust, so that if one player fails to receive the message, the others still do
 	// maybe try with a retry mechanism
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
+	if err := l.WriteView(l.Host.Conn, LSWaitingForPlayers.ViewName(), l.Host); err != nil {
+		return err
+	}
 	for _, player := range l.Players {
-		w, err := player.Conn.NextWriter(websocket.TextMessage)
-		if err != nil {
+		if err := l.WriteView(player.Conn, LSWaitingForPlayers.ViewName(), *player); err != nil {
 			return err
 		}
-
-		if err := tmpl.ExecuteTemplate(w, "player-lobby-screen", l); err != nil {
-			return err
-		}
-		w.Close()
 	}
 	return nil
 }
@@ -166,7 +174,7 @@ func (e LEGameStarted) String() string {
 
 func (event LEGameStarted) Handle(l *Lobby, initiator *Initiator) error {
 	// Check if the initiator is the host
-	if l.Host != initiator.ClientID {
+	if l.Host.ClientID != initiator.ClientID {
 		// TODO: Send error message to the initiator "Only the host can start the game"
 		return errors.New("Non-host tried to start the game")
 	}
@@ -178,7 +186,7 @@ func (event LEGameStarted) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Check if the game has already started
-	if l.State != WaitingForPlayers {
+	if l.State != LSWaitingForPlayers {
 		// TODO: Send the current state to the initiator
 		return errors.New("Game already started")
 	}
