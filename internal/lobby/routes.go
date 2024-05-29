@@ -14,9 +14,9 @@ const (
 	NotFoundPage        = "static/notfound.html"
 	BaseTemplate        = "templates/base.html"
 	IndexTemplate       = "templates/index.html"
-	LobbiesTemplate     = "templates/lobbies.html"
-	LobbyTemplate       = "templates/lobby.html"
-	LobbyCreateTemplate = "templates/lobby-create.html"
+	LobbiesTemplate     = "templates/lobby/lobbies.html"
+	LobbyTemplate       = "templates/lobby/lobby.html"
+	LobbyCreateTemplate = "templates/lobby/lobby-create.html"
 )
 
 var lobbiesRepo LobbyRepository = NewInMemoryLobbyRepository()
