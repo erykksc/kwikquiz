@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"html/template"
 	"sync"
 	"time"
 
@@ -13,16 +14,18 @@ import (
 
 type Lobby struct {
 	mu                     sync.Mutex
-	Host                   ClientID
+	Host                   User
 	Pin                    string
 	TimePerQuestion        time.Duration // time per question
 	Game                   common.Game
 	CreatedAt              time.Time
 	CurrentQuestionTimeout time.Time // timestamp (when the server should not accept answers anymore for the current question, the host can send a request to shorten the answer time)
 	questionTimer          *CancellableTimer
-	Players                map[ClientID]*Player
+	Players                map[ClientID]*User
 	State                  LobbyState
 	CurrentQuestion        int
+	tmpl                   *template.Template // Store lobby template for quick access
+
 }
 
 type ClientID string
@@ -47,9 +50,11 @@ func NewClientID() (ClientID, error) {
 	return ClientID(encoded), nil
 }
 
-type Player struct {
-	Conn     *websocket.Conn
-	Username string
+type User struct {
+	Conn                   *websocket.Conn
+	ClientID               ClientID
+	Username               string
+	CurrentQuestionAnswers []int // Indices of the answers to the current question
 }
 
 type LobbyOptions struct {
@@ -57,25 +62,45 @@ type LobbyOptions struct {
 	Pin             string
 }
 
-type LobbyState int
-
-const (
-	WaitingForPlayers = iota
-	Question
-	Answer
-	FinalResults
-)
-
 func CreateLobby(options LobbyOptions) *Lobby {
 	return &Lobby{
 		TimePerQuestion: options.TimePerQuestion,
 		Pin:             options.Pin,
 		Game:            common.Game{},
 		CreatedAt:       time.Now(),
-		Players:         make(map[ClientID]*Player),
-		State:           WaitingForPlayers,
+		Players:         make(map[ClientID]*User),
+		State:           LSWaitingForPlayers,
 		CurrentQuestion: -1,
+		tmpl:            template.Must(template.ParseFiles(LobbyTemplate)),
 	}
+}
+
+// WriteView writes the view to the connection
+// It isn't safe to call this function concurrently on lobby
+func (l *Lobby) WriteView(conn *websocket.Conn, viewName ViewName, player User) error {
+	w, err := conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	type FrameData struct {
+		Lobby  *Lobby
+		Player User
+		IsHost bool
+	}
+
+	data := FrameData{
+		Lobby:  l,
+		Player: player,
+		IsHost: player.ClientID == l.Host.ClientID,
+	}
+
+	if err := l.tmpl.ExecuteTemplate(w, string(viewName), data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (l *Lobby) StartNextQuestion() error {
@@ -83,7 +108,7 @@ func (l *Lobby) StartNextQuestion() error {
 	defer l.mu.Unlock()
 
 	l.CurrentQuestion++
-	l.State = Question
+	l.State = LSQuestion
 
 	// TODO:Check if the game is over (no more questions)
 
@@ -114,7 +139,7 @@ func (l *Lobby) ShowAnswer() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.State = Answer
+	l.State = LSAnswer
 
 	// TODO: Send the answer screen to host
 

@@ -16,7 +16,7 @@
   </body>
 </html>
 
-{{define "username-form" }}
+{{define "choose-username-view" }}
 <form
   id="lobby-content"
   hx-headers='{"EventType": "LESubmittedUsername"}'
@@ -29,16 +29,18 @@
 {{end}}
 <!---->
 
-{{define "player-lobby-screen"}}
+{{define "waiting-room-view"}}
 <div id="lobby-content">
+  {{if .IsHost}} {{else}}
   <form hx-headers='{"EventType": "LESubmittedUsername"}' ws-send>
     <label for="username">username:</label>
     <input id="username" name="Username" />
     <button type="submit">Change</button>
   </form>
+  {{end}}
   <h2>Players</h2>
   <ul>
-    {{range $key, $value := .Players}}
+    {{range $key, $value := .Lobby.Players}}
     <li>{{$value.Username}}</li>
     {{end}}
   </ul>

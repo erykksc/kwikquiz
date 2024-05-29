@@ -10,15 +10,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	NotFoundPage        = "static/notfound.html"
-	BaseTemplate        = "templates/base.html"
-	IndexTemplate       = "templates/index.html"
-	LobbiesTemplate     = "templates/lobby/lobbies.html"
-	LobbyTemplate       = "templates/lobby/lobby.html"
-	LobbyCreateTemplate = "templates/lobby/lobby-create.html"
-)
-
 var lobbiesRepo LobbyRepository = NewInMemoryLobbyRepository()
 var DEBUG = common.DebugOn()
 
@@ -111,7 +102,6 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
 func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.PathValue("pin")
 
 	lobby, err := lobbiesRepo.GetLobby(pin)
@@ -119,7 +109,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	case nil:
 		break
 	case ErrLobbyNotFound:
-		slog.Error("Error trying to connet to not existing lobby", "err", err)
+		slog.Error("Error trying to connect to not existing lobby", "err", err)
 		common.ErrorHandler(w, r, http.StatusNotFound)
 		return
 	default:
@@ -133,7 +123,6 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 4 * 1024,
 	}
-	slog.Info("Upgrading connection")
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Error("Failed to upgrade to websocket", "err", err)
@@ -149,9 +138,13 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	clientID := ClientID(clientIDCookie.Value)
 
-	player := Initiator{ClientID: clientID, Conn: ws}
+	initiator := Initiator{ClientID: clientID, Conn: ws}
 
-	(LEUserConnected{}).Handle(lobby, &player)
+	slog.Debug("Handling new ws connection", "clientID", clientID, "Lobby-Pin", lobby.Pin)
+	if err := (LEUserConnected{}).Handle(lobby, &initiator); err != nil {
+		slog.Error("Error handling user connected event", "err", err)
+		return
+	}
 
 	// HANDLE REQUESTS
 	for {
@@ -172,7 +165,9 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if err := event.Handle(lobby, &player); err != nil {
+		slog.Debug("Handling lobby event", "event", event)
+
+		if err := event.Handle(lobby, &initiator); err != nil {
 			slog.Error("Error handling lobby event", "event", event, "err", err)
 		}
 	}
