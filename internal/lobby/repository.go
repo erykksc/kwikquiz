@@ -20,6 +20,7 @@ type LobbyRepository interface {
 	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error
 	GetAllLobbies() ([]*Lobby, error)
+	GetLeaderboard(pin string) ([]*Player, error)
 }
 
 // In-memory store for games
@@ -87,4 +88,16 @@ func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
 	}
 
 	return lobbies, nil
+}
+
+func (s *inMemoryLobbyRepository) GetLeaderboard(pin string) ([]*Player, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	lobby, ok := s.lobbies[pin]
+	if !ok {
+		return nil, ErrLobbyNotFound{}
+	}
+
+	return lobby.GetLeaderboard(), nil
 }

@@ -29,6 +29,7 @@ func NewLobbiesRouter() http.Handler {
 	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
+	mux.HandleFunc("/lobbies/leaderboard", getLeaderboardHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
 	mux.HandleFunc("GET /lobbies/create", getLobbyCreateHandler)
@@ -47,6 +48,34 @@ func NewLobbiesRouter() http.Handler {
 	}
 
 	return mux
+}
+
+//handles request to /lobbies/leaderboard
+func getLeaderboardHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
+	pin := r.URL.Query().Get("pin")
+	if pin == "" {
+		http.Error(w, "Missing pin", http.StatusBadRequest)
+		return
+	}
+
+	leaderboard, err := lobbiesRepo.GetLeaderboard(pin)
+	if err != nil {
+		if _, ok := err.(ErrLobbyNotFound); ok {
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+		}
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
+		return
+	}
+
+	tmpl := template.Must(template.New("leaderboard").Funcs(template.FuncMap{
+		"inc": func(i int) int { return i + 1 },
+	}).ParseFiles(LeaderboardTemplate, BaseTemplate))
+
+	if err := tmpl.ExecuteTemplate(w, "base", leaderboard); err != nil {
+		slog.Error("Error rendering template", "err", err)
+	}
 }
 
 // TODO: Make it only accessible by admin

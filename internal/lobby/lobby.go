@@ -48,6 +48,7 @@ func NewClientID() (ClientID, error) {
 type Player struct {
 	Conn     *websocket.Conn
 	Username string
+	Score 	 int
 }
 
 type LobbyOptions struct {
@@ -63,4 +64,24 @@ func CreateLobby(options LobbyOptions) *Lobby {
 		CreatedAt:       time.Now(),
 		Players:         make(map[ClientID]*Player),
 	}
+}
+
+//returns top 3 players in a lobby
+func (l *Lobby) GetLeaderboard() []*Player {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	players := make([]*Player, 0, len(l.Players))
+	for _, player := range l.Players {
+		players = append(players, player)
+	}
+
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].Score > players[j].Score
+	})
+
+	if len(players) > 3 {
+		return players[:3]
+	}
+	return players
 }
