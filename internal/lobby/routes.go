@@ -11,7 +11,6 @@ import (
 )
 
 var lobbiesRepo LobbyRepository = NewInMemoryLobbyRepository()
-var DEBUG = common.DebugOn()
 
 // Returns a handler for routes starting with /games
 func NewLobbiesRouter() http.Handler {
@@ -26,7 +25,7 @@ func NewLobbiesRouter() http.Handler {
 	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)
 
 	// Add test lobby
-	if DEBUG {
+	if common.DevMode() {
 		lOptions := LobbyOptions{
 			TimePerQuestion: 30 * time.Second,
 			Pin:             "1234",
@@ -138,19 +137,14 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	clientID := ClientID(clientIDCookie.Value)
 
-	initiator, ok := lobby.Players[clientID]
-	if !ok {
-		// Client ID not found in lobby, user connecting for the first time
-		slog.Info("New user connecting", "clientID", clientID, "Lobby-Pin", lobby.Pin)
-		initiator = &User{
-			Conn:     ws,
-			ClientID: clientID,
-		}
+	initiator := &User{
+		Conn:     ws,
+		ClientID: clientID,
 	}
 
 	slog.Debug("Handling new ws connection", "clientID", clientID, "Lobby-Pin", lobby.Pin)
 	if err := (LEUserConnected{}).Handle(lobby, initiator); err != nil {
-		slog.Error("Error handling user connected event", "err", err)
+		slog.Error("Error handling event", "event", LEUserConnected{}, "err", err)
 		return
 	}
 
@@ -165,7 +159,6 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			slog.Warn("Received non-text message", "messageType", messageType, "ws", ws)
 			continue
 		}
-		slog.Debug("Received ws message", "message", string(message))
 
 		event, err := ParseLobbyEvent(message)
 		if err != nil {
@@ -173,7 +166,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		slog.Debug("Handling lobby event", "event", event)
+		slog.Info("Handling lobby event", "event", event.String(), "initiator", initiator.ClientID)
 
 		if err := event.Handle(lobby, initiator); err != nil {
 			slog.Error("Error handling lobby event", "event", event, "err", err)
