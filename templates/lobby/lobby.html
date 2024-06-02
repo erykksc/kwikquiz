@@ -6,9 +6,12 @@
     <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
   </head>
   <body>
-    <h1>Pin: {{.Pin}}</h1>
-    <p>created at: {{.CreatedAt}}</p>
-    <p>time per question: {{.TimePerQuestion}}</p>
+    <script>
+      function closeAlert(element) {
+        element.closest(".relative").remove();
+      }
+    </script>
+    <div id="error-alerts"></div>
 
     <div hx-ext="ws" ws-connect="/lobbies/{{.Pin}}/ws">
       <div id="lobby-content"></div>
@@ -16,6 +19,33 @@
   </body>
 </html>
 
+{{ define "error-alert"}}
+<div id="error-alerts" hx-swap="afterbegin">
+  <div
+    class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2"
+    role="alert"
+  >
+    <strong class="font-bold">Holy smokes!</strong>
+    <span class="block sm:inline">{{ . }}</span>
+    <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+      <svg
+        class="fill-current h-6 w-6 text-red-500 cursor-pointer"
+        role="button"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        onclick="closeAlert(this)"
+      >
+        <title>Close</title>
+        <path
+          d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"
+        />
+      </svg>
+    </span>
+  </div>
+</div>
+{{ end }}
+
+<!---->
 {{define "choose-username-view" }}
 <form
   id="lobby-content"
@@ -24,14 +54,18 @@
 >
   <label for="username">username:</label>
   <input id="username" name="Username" />
-  <button type="submit">Join</button>
+  <button type="submit" class="rounded bg-blue-200 p-1">Join</button>
 </form>
 {{end}}
 <!---->
 
 {{define "waiting-room-view"}}
 <div id="lobby-content">
-  {{if .IsHost}} {{else}}
+  {{if .IsHost}}
+  <h1>Pin: {{.Lobby.Pin}}</h1>
+  <p>created at: {{.Lobby.CreatedAt}}</p>
+  <p>time per question: {{.Lobby.TimePerQuestion}}</p>
+  {{else}}
   <form hx-headers='{"EventType": "LESubmittedUsername"}' ws-send>
     <label for="username">username:</label>
     <input id="username" name="Username" />
@@ -44,5 +78,11 @@
     <li>{{$value.Username}}</li>
     {{end}}
   </ul>
+
+  {{if .IsHost}}
+  <form hx-headers='{"EventType": "LEGameStartRequest"}' ws-send>
+    <button type="submit" class="rounded bg-blue-200 p-1">Start Game</button>
+  </form>
+  {{end}}
 </div>
 {{end}}

@@ -14,17 +14,21 @@ const (
 	LobbyCreateTemplate = "templates/lobby/lobby-create.html"
 )
 
-// ViewName is the name of the view that is displayed to the user inside the lobby
-// Views are sent by websocket to the client
-type ViewName string
-
+// Views
 const (
-	ChooseUsernameViewName ViewName = "choose-username-view"
-	WaitingRoomViewName    ViewName = "waiting-room-view"
-	QuestionViewName       ViewName = "question-view"
-	AnswerViewName         ViewName = "answer-view"
-	FinalResultsViewName   ViewName = "final-results-view"
+	ChooseUsernameView = "choose-username-view"
+	WaitingRoomView    = "waiting-room-view"
+	QuestionView       = "question-view"
+	AnswerView         = "answer-view"
+	FinalResultsView   = "final-results-view"
+	ErrorAlert         = "error-alert"
 )
+
+type ViewData struct {
+	Lobby  *Lobby
+	Player User
+	IsHost bool
+}
 
 type LobbyState int
 
@@ -37,12 +41,12 @@ const (
 
 // ViewName returns the mapping of the LobbyState to the ViewName
 // that displays the state
-func (state LobbyState) ViewName() ViewName {
-	m := make(map[LobbyState]ViewName)
-	m[LSWaitingForPlayers] = WaitingRoomViewName
-	m[LSQuestion] = QuestionViewName
-	m[LSAnswer] = AnswerViewName
-	m[LSFinalResults] = FinalResultsViewName
+func (state LobbyState) ViewName() string {
+	m := make(map[LobbyState]string)
+	m[LSWaitingForPlayers] = WaitingRoomView
+	m[LSQuestion] = QuestionView
+	m[LSAnswer] = AnswerView
+	m[LSFinalResults] = FinalResultsView
 	fName, ok := m[state]
 	if !ok {
 		panic("Undefined ViewName for state:" + fmt.Sprint(state))

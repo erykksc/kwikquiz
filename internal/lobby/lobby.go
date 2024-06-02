@@ -24,8 +24,6 @@ type Lobby struct {
 	Players                map[ClientID]*User
 	State                  LobbyState
 	CurrentQuestion        int
-	tmpl                   *template.Template // Store lobby template for quick access
-
 }
 
 type ClientID string
@@ -51,15 +49,14 @@ func NewClientID() (ClientID, error) {
 }
 
 type User struct {
-	Conn                   *websocket.Conn
-	ClientID               ClientID
-	Username               string
-	CurrentQuestionAnswers []int // Indices of the answers to the current question
+	Conn     *websocket.Conn
+	ClientID ClientID
+	Username string
 }
 
-// ExecuteTemplate executes the template with the given name and data
+// WriteTemplate executes the template with the given name and data
 // On websocket connection to the user
-func (u *User) ExecuteTemplate(tmpl *template.Template, name string, data any) error {
+func (u *User) WriteTemplate(tmpl *template.Template, name string, data any) error {
 	w, err := u.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -86,36 +83,7 @@ func CreateLobby(options LobbyOptions) *Lobby {
 		Players:         make(map[ClientID]*User),
 		State:           LSWaitingForPlayers,
 		CurrentQuestion: -1,
-		tmpl:            template.Must(template.ParseFiles(LobbyTemplate)),
 	}
-}
-
-// WriteView writes the view to the connection
-// It isn't safe to call this function concurrently on lobby
-func (l *Lobby) WriteView(conn *websocket.Conn, viewName ViewName, player User) error {
-	w, err := conn.NextWriter(websocket.TextMessage)
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	type ViewData struct {
-		Lobby  *Lobby
-		Player User
-		IsHost bool
-	}
-
-	data := ViewData{
-		Lobby:  l,
-		Player: player,
-		IsHost: player.ClientID == l.Host.ClientID,
-	}
-
-	if err := l.tmpl.ExecuteTemplate(w, string(viewName), data); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (l *Lobby) StartNextQuestion() error {
