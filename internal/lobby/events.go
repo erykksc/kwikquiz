@@ -44,8 +44,8 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 			return nil, err
 		}
 		return event, nil
-	case "LEGameStarted":
-		var event LEGameStarted
+	case "LEGameStartRequest":
+		var event LEGameStartRequest
 		return event, nil
 	default:
 		return nil, errors.New("unknown event type")
@@ -160,19 +160,19 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 	for _, player := range l.Players {
 		if err := l.WriteView(player.Conn, LSWaitingForPlayers.ViewName(), *player); err != nil {
-			return err
+			slog.Error("Error writing view to player", "error", err)
 		}
 	}
 	return nil
 }
 
-type LEGameStarted struct{}
+type LEGameStartRequest struct{}
 
-func (e LEGameStarted) String() string {
+func (e LEGameStartRequest) String() string {
 	return "GEGameStarted"
 }
 
-func (event LEGameStarted) Handle(l *Lobby, initiator *Initiator) error {
+func (event LEGameStartRequest) Handle(l *Lobby, initiator *Initiator) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
 		// TODO: Send error message to the initiator "Only the host can start the game"
