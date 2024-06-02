@@ -66,11 +66,10 @@
   <p>created at: {{.Lobby.CreatedAt}}</p>
   <p>time per question: {{.Lobby.TimePerQuestion}}</p>
   {{else}}
-  <form hx-headers='{"EventType": "LESubmittedUsername"}' ws-send>
-    <label for="username">username:</label>
-    <input id="username" name="Username" />
-    <button type="submit">Change</button>
-  </form>
+  <button hx-headers='{"EventType": "LEChangeUsernameRequest"}' ws-send>
+    Change Username
+  </button>
+
   {{end}}
   <h2>Players</h2>
   <ul>
