@@ -26,7 +26,7 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 		AddSource: false,
 		Level:     level,
 	}
-	handler := slog.NewTextHandler(os.Stderr, opts)
+	handler := slog.NewJSONHandler(os.Stderr, opts)
 
 	return handler
 }
