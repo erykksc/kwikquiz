@@ -3,20 +3,13 @@ package lobby
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"log/slog"
-
-	"github.com/gorilla/websocket"
 )
-
-// Initiator is a user that initiates a lobby event
-type Initiator struct {
-	ClientID
-	Conn *websocket.Conn
-}
 
 type LobbyEvent interface {
 	String() string
-	Handle(lobby *Lobby, initiator *Initiator) error
+	Handle(lobby *Lobby, initiator *User) error
 }
 
 // ParseLobbyEvent parses a GameEvent from a JSON in a byte slice
@@ -60,7 +53,7 @@ func (e LEUserConnected) String() string {
 	return "GEUserConnected"
 }
 
-func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
+func (event LEUserConnected) Handle(l *Lobby, initiator *User) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -69,7 +62,13 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 		slog.Info("New Host for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
 		l.Host.ClientID = initiator.ClientID
 		l.Host.Conn = initiator.Conn
-		err := l.WriteView(initiator.Conn, WaitingRoomViewName, l.Host)
+		viewData := ViewData{
+			Lobby:  l,
+			Player: l.Host,
+			IsHost: true,
+		}
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		err := l.Host.WriteTemplate(tmpl, WaitingRoomView, viewData)
 		if err != nil {
 			return err
 		}
@@ -80,7 +79,13 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 	if l.Host.ClientID == initiator.ClientID {
 		// Host reconnecting
 		l.Host.Conn = initiator.Conn
-		err := l.WriteView(initiator.Conn, l.State.ViewName(), l.Host)
+		viewData := ViewData{
+			Lobby:  l,
+			Player: l.Host,
+			IsHost: true,
+		}
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		err := l.Host.WriteTemplate(tmpl, l.State.ViewName(), viewData)
 		if err != nil {
 			return err
 		}
@@ -93,7 +98,13 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 		slog.Info("Player Reconnected", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
 		// Player already in the lobby, assuming they want to reconnect
 		player.Conn = initiator.Conn
-		err := l.WriteView(initiator.Conn, l.State.ViewName(), *player)
+		viewData := ViewData{
+			Lobby:  l,
+			Player: *player,
+			IsHost: false,
+		}
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		err := player.WriteTemplate(tmpl, l.State.ViewName(), viewData)
 		if err != nil {
 			return err
 		}
@@ -102,7 +113,15 @@ func (event LEUserConnected) Handle(l *Lobby, initiator *Initiator) error {
 
 	// New User connecting
 	slog.Info("New User for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
-	if err := l.WriteView(initiator.Conn, ChooseUsernameViewName, User{}); err != nil {
+
+	viewData := ViewData{
+		Lobby:  l,
+		Player: *initiator,
+		IsHost: false,
+	}
+	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+	err := initiator.WriteTemplate(tmpl, ChooseUsernameView, viewData)
+	if err != nil {
 		return err
 	}
 
@@ -117,7 +136,7 @@ func (e LEUSubmittedUsername) String() string {
 	return "GEUserSubmittedUsername: " + e.Username
 }
 
-func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
+func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 	slog.Debug("Handling Submitted Username", "event", event, "initiator", initiator)
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -153,13 +172,20 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *Initiator) error {
 	}
 
 	// Send the lobby screen to all players
-	// TODO: Make it more robust, so that if one player fails to receive the message, the others still do
-	// maybe try with a retry mechanism
-	if err := l.WriteView(l.Host.Conn, LSWaitingForPlayers.ViewName(), l.Host); err != nil {
-		return err
+	viewData := ViewData{
+		Lobby:  l,
+		Player: *initiator,
+		IsHost: true,
 	}
+	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+	if err := l.Host.WriteTemplate(tmpl, WaitingRoomView, viewData); err != nil {
+		slog.Error("Error writing view to host", "error", err)
+	}
+
+	viewData.IsHost = false
 	for _, player := range l.Players {
-		if err := l.WriteView(player.Conn, LSWaitingForPlayers.ViewName(), *player); err != nil {
+		viewData.Player = *player
+		if err := player.WriteTemplate(tmpl, WaitingRoomView, viewData); err != nil {
 			slog.Error("Error writing view to player", "error", err)
 		}
 	}
@@ -172,7 +198,7 @@ func (e LEGameStartRequest) String() string {
 	return "GEGameStarted"
 }
 
-func (event LEGameStartRequest) Handle(l *Lobby, initiator *Initiator) error {
+func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
 		// TODO: Send error message to the initiator "Only the host can start the game"
@@ -182,6 +208,8 @@ func (event LEGameStartRequest) Handle(l *Lobby, initiator *Initiator) error {
 	// Check if there are enough players
 	if len(l.Players) == 0 {
 		// TODO: Send error message to the initiator "Not enough players"
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		initiator.WriteTemplate(tmpl, ErrorAlert, "Not enough players")
 		return errors.New("Not enough players")
 	}
 
