@@ -57,6 +57,21 @@ type User struct {
 	CurrentQuestionAnswers []int // Indices of the answers to the current question
 }
 
+// ExecuteTemplate executes the template with the given name and data
+// On websocket connection to the user
+func (u *User) ExecuteTemplate(tmpl *template.Template, name string, data any) error {
+	w, err := u.Conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	if err := tmpl.ExecuteTemplate(w, name, data); err != nil {
+		return err
+	}
+	return nil
+}
+
 type LobbyOptions struct {
 	TimePerQuestion time.Duration
 	Pin             string
@@ -84,13 +99,13 @@ func (l *Lobby) WriteView(conn *websocket.Conn, viewName ViewName, player User) 
 	}
 	defer w.Close()
 
-	type FrameData struct {
+	type ViewData struct {
 		Lobby  *Lobby
 		Player User
 		IsHost bool
 	}
 
-	data := FrameData{
+	data := ViewData{
 		Lobby:  l,
 		Player: player,
 		IsHost: player.ClientID == l.Host.ClientID,
