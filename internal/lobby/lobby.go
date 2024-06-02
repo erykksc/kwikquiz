@@ -14,7 +14,7 @@ import (
 
 type Lobby struct {
 	mu                     sync.Mutex
-	Host                   User
+	Host                   *User
 	Pin                    string
 	TimePerQuestion        time.Duration // time per question
 	Game                   common.Game
@@ -56,8 +56,8 @@ type User struct {
 
 // WriteTemplate executes the template with the given name and data
 // On websocket connection to the user
-func (u *User) WriteTemplate(tmpl *template.Template, name string, data any) error {
-	w, err := u.Conn.NextWriter(websocket.TextMessage)
+func (client *User) WriteTemplate(tmpl *template.Template, name string, data any) error {
+	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
 	}
@@ -76,6 +76,7 @@ type LobbyOptions struct {
 
 func CreateLobby(options LobbyOptions) *Lobby {
 	return &Lobby{
+		Host:            nil,
 		TimePerQuestion: options.TimePerQuestion,
 		Pin:             options.Pin,
 		Game:            common.Game{},

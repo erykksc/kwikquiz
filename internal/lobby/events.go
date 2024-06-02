@@ -40,6 +40,9 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 	case "LEGameStartRequest":
 		var event LEGameStartRequest
 		return event, nil
+	case "LEChangeUsernameRequest":
+		var event LEChangeUsernameRequest
+		return event, nil
 	default:
 		return nil, errors.New("unknown event type")
 	}
@@ -50,77 +53,47 @@ type LEUserConnected struct {
 }
 
 func (e LEUserConnected) String() string {
-	return "GEUserConnected"
+	return "LEUserConnected"
 }
 
 func (event LEUserConnected) Handle(l *Lobby, initiator *User) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	// Check if it is the first user, if so, he becomes the host
-	if l.Host.ClientID == "" {
-		slog.Info("New Host for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
-		l.Host.ClientID = initiator.ClientID
-		l.Host.Conn = initiator.Conn
-		viewData := ViewData{
-			Lobby:  l,
-			Player: l.Host,
-			IsHost: true,
-		}
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		err := l.Host.WriteTemplate(tmpl, WaitingRoomView, viewData)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Check if host is trying to reconnect
-	if l.Host.ClientID == initiator.ClientID {
-		// Host reconnecting
-		l.Host.Conn = initiator.Conn
-		viewData := ViewData{
-			Lobby:  l,
-			Player: l.Host,
-			IsHost: true,
-		}
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		err := l.Host.WriteTemplate(tmpl, l.State.ViewName(), viewData)
-		if err != nil {
-			return err
-		}
-		slog.Info("Host Reconnected", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
-		return nil
-	}
-
-	// Check if the ClientID is already in the lobby
-	if player, ok := l.Players[initiator.ClientID]; ok {
-		slog.Info("Player Reconnected", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
-		// Player already in the lobby, assuming they want to reconnect
-		player.Conn = initiator.Conn
-		viewData := ViewData{
-			Lobby:  l,
-			Player: *player,
-			IsHost: false,
-		}
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		err := player.WriteTemplate(tmpl, l.State.ViewName(), viewData)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// New User connecting
-	slog.Info("New User for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
-
 	viewData := ViewData{
 		Lobby:  l,
 		Player: *initiator,
 		IsHost: false,
 	}
+
+	player, initiatorIsPlayer := l.Players[initiator.ClientID]
+	switch {
+	// Check if it is the first user, if so, he becomes the host
+	case l.Host == nil:
+		slog.Info("New Host for the Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		l.Host = initiator
+		viewData.IsHost = true
+
+	// Check if host is trying to reconnect
+	case l.Host.ClientID == initiator.ClientID:
+		slog.Info("Host reconnecting", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		l.Host.Conn = initiator.Conn
+		viewData.IsHost = true
+
+	// Check if player is trying to reconnect
+	case initiatorIsPlayer:
+		slog.Info("Player reconnecting", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		player.Conn = initiator.Conn
+		initiator = player
+
+	// New User connecting
+	default:
+		slog.Info("New Player for Lobby", "Lobby-Pin", l.Pin, "Client-ID", initiator.ClientID)
+		l.Players[initiator.ClientID] = initiator
+	}
+
 	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-	err := initiator.WriteTemplate(tmpl, ChooseUsernameView, viewData)
+	err := initiator.WriteTemplate(tmpl, l.State.ViewName(), viewData)
 	if err != nil {
 		return err
 	}
@@ -143,14 +116,30 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 
 	// Check if the username is empty
 	if event.Username == "" {
-		// TODO: Send error message to the initiator: "Username cannot be empty"
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		initiator.WriteTemplate(tmpl, ErrorAlert, "Username cannot be empty")
 		return errors.New("new username is empty")
 	}
 
 	// Check if game hasn't started yet
 	if l.State != LSWaitingForPlayers {
-		// TODO: Send error message to the initiator: "Game already started"
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		initiator.WriteTemplate(tmpl, ErrorAlert, "Game already started")
 		return errors.New("game already started")
+	}
+
+	// Check if new username isn't the same as the old one
+	if l.Players[initiator.ClientID].Username == event.Username {
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		viewData := ViewData{
+			Lobby:  l,
+			Player: *initiator,
+			IsHost: l.Host.ClientID == initiator.ClientID,
+		}
+		if err := initiator.WriteTemplate(tmpl, WaitingRoomView, viewData); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	// Create a set of all usernames in the lobby
@@ -161,15 +150,18 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 
 	// Check if the username is already in the lobby
 	if _, ok := usernames[event.Username]; ok {
-		// TODO: Send error message to the initiator: "Username already in the lobby"
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		initiator.WriteTemplate(tmpl, ErrorAlert, "Username already in the lobby")
 		return errors.New("username already in the lobby")
 	}
 
 	// Update the player's username
-	l.Players[initiator.ClientID] = &User{
-		Conn:     initiator.Conn,
-		Username: event.Username,
-	}
+	initiator.Username = event.Username
+
+	// l.Players[initiator.ClientID] = &User{
+	// 	Conn:     initiator.Conn,
+	// 	Username: event.Username,
+	// }
 
 	// Send the lobby screen to all players
 	viewData := ViewData{
@@ -192,31 +184,67 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 	return nil
 }
 
+type LEChangeUsernameRequest struct{}
+
+func (e LEChangeUsernameRequest) String() string {
+	return "GEChangeUsernameRequest"
+}
+
+func (event LEChangeUsernameRequest) Handle(l *Lobby, initiator *User) error {
+	// Check if the game has already started
+	if l.State != LSWaitingForPlayers {
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		initiator.WriteTemplate(tmpl, ErrorAlert, "Game already started")
+		return errors.New("Game already started")
+	}
+
+	// Send the choose username screen to the player
+	viewData := ViewData{
+		Lobby:  l,
+		Player: *initiator,
+		IsHost: false, // host can't change username
+	}
+	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+	if err := initiator.WriteTemplate(tmpl, ChooseUsernameView, viewData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type LEGameStartRequest struct{}
 
 func (e LEGameStartRequest) String() string {
-	return "GEGameStarted"
+	return "LEGameStartRequest"
 }
 
 func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
-		// TODO: Send error message to the initiator "Only the host can start the game"
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		initiator.WriteTemplate(tmpl, ErrorAlert, "Only the host can start the game")
 		return errors.New("Non-host tried to start the game")
 	}
 
 	// Check if there are enough players
 	if len(l.Players) == 0 {
-		// TODO: Send error message to the initiator "Not enough players"
 		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
 		initiator.WriteTemplate(tmpl, ErrorAlert, "Not enough players")
-		return errors.New("Not enough players")
+		return errors.New("Can't start the game: not enough players")
 	}
 
 	// Check if the game has already started
 	if l.State != LSWaitingForPlayers {
-		// TODO: Send the current state to the initiator
-		return errors.New("Game already started")
+		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+		viewData := ViewData{
+			Lobby:  l,
+			Player: *initiator,
+			IsHost: l.Host.ClientID == initiator.ClientID,
+		}
+		if err := initiator.WriteTemplate(tmpl, l.State.ViewName(), viewData); err != nil {
+			return err
+		}
+		return errors.New("Game already started, sending current state to initiator")
 	}
 
 	// TODO: CHeck if the quiz is choosen

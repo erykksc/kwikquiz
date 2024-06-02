@@ -9,3 +9,13 @@ func DebugOn() bool {
 	DEBUG := os.Getenv("DEBUG")
 	return DEBUG == "true" || DEBUG == "1"
 }
+
+func ProdMode() bool {
+	PROD := os.Getenv("PROD")
+	return PROD == "true" || PROD == "1"
+}
+
+// DevMode returns true if not in production.
+func DevMode() bool {
+	return !ProdMode()
+}
