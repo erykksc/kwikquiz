@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"html/template"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -24,6 +25,25 @@ type Lobby struct {
 	Players                map[ClientID]*User
 	State                  LobbyState
 	CurrentQuestion        int
+}
+
+// WriteTemplateToAll writes the template with the given name  and data
+// to host and all players in the lobby
+func (l *Lobby) WriteTemplateToAll(tmpl *template.Template, name string, data any) {
+	viewData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	if err := l.Host.WriteTemplate(tmpl, name, viewData); err != nil {
+		slog.Error("Error sending view to host", "err", err, "name", name, "data", data)
+	}
+
+	for _, player := range l.Players {
+		viewData.User = player
+		if err := player.WriteTemplate(tmpl, name, viewData); err != nil {
+			slog.Error("Error sending view to player", "err", err, "name", name, "data", data)
+		}
+	}
 }
 
 type ClientID string
@@ -97,9 +117,13 @@ func (l *Lobby) StartNextQuestion() error {
 
 	// TODO:Check if the game is over (no more questions)
 
-	// TODO: Send the question screen to host
-
-	// TODO: Send the question screen to all players
+	// Send question view to all
+	viewData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+	l.WriteTemplateToAll(tmpl, QuestionView, viewData)
 
 	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
 
@@ -109,10 +133,12 @@ func (l *Lobby) StartNextQuestion() error {
 		select {
 		case <-l.questionTimer.timer.C:
 			// Time completed
+			slog.Debug("Question timeout reached")
 			l.ShowAnswer()
 			break
 		case <-l.questionTimer.cancelChan:
 			// Timer cancelled
+			slog.Debug("Question timer cancelled")
 			l.ShowAnswer()
 			break
 		}
@@ -126,8 +152,12 @@ func (l *Lobby) ShowAnswer() error {
 
 	l.State = LSAnswer
 
-	// TODO: Send the answer screen to host
-
-	// TODO: Send the answer screen to all players
+	// Send answer view to all
+	viewData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
+	l.WriteTemplateToAll(tmpl, AnswerView, viewData)
 	return nil
 }
