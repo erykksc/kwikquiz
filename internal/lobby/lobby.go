@@ -29,18 +29,14 @@ type Lobby struct {
 
 // WriteTemplateToAll writes the template with the given name  and data
 // to host and all players in the lobby
+// slog.Error on every error while writing to websocket.Conn
 func (l *Lobby) WriteTemplateToAll(tmpl *template.Template, name string, data any) {
-	viewData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.WriteTemplate(tmpl, name, viewData); err != nil {
+	if err := l.Host.WriteTemplate(tmpl, name, data); err != nil {
 		slog.Error("Error sending view to host", "err", err, "name", name, "data", data)
 	}
 
 	for _, player := range l.Players {
-		viewData.User = player
-		if err := player.WriteTemplate(tmpl, name, viewData); err != nil {
+		if err := player.WriteTemplate(tmpl, name, data); err != nil {
 			slog.Error("Error sending view to player", "err", err, "name", name, "data", data)
 		}
 	}
