@@ -52,6 +52,7 @@ type User struct {
 	Conn     *websocket.Conn
 	ClientID ClientID
 	Username string
+	IsHost   bool
 }
 
 // WriteTemplate executes the template with the given name and data

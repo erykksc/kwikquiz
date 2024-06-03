@@ -137,14 +137,10 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	clientID := ClientID(clientIDCookie.Value)
 
-	initiator := &User{
-		Conn:     ws,
-		ClientID: clientID,
-	}
-
 	slog.Debug("Handling new ws connection", "clientID", clientID, "Lobby-Pin", lobby.Pin)
-	if err := (LEUserConnected{}).Handle(lobby, initiator); err != nil {
-		slog.Error("Error handling event", "event", LEUserConnected{}, "err", err)
+	user, err := HandleNewWebsocketConn(lobby, ws, clientID)
+	if err != nil {
+		slog.Error("Error handling user connection", "err", err)
 		return
 	}
 
@@ -166,9 +162,9 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		slog.Info("Handling lobby event", "event", event.String(), "initiator", initiator.ClientID)
+		slog.Info("Handling lobby event", "event", event.String(), "initiator", user)
 
-		if err := event.Handle(lobby, initiator); err != nil {
+		if err := event.Handle(lobby, user); err != nil {
 			slog.Error("Error handling lobby event", "event", event, "err", err)
 		}
 	}

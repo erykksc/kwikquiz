@@ -61,7 +61,7 @@
 
 {{define "waiting-room-view"}}
 <div id="lobby-content">
-  {{if .IsHost}}
+  {{if .User.IsHost}}
   <h1>Pin: {{.Lobby.Pin}}</h1>
   <p>created at: {{.Lobby.CreatedAt}}</p>
   <p>time per question: {{.Lobby.TimePerQuestion}}</p>
@@ -78,7 +78,7 @@
     {{end}}
   </ul>
 
-  {{if .IsHost}}
+  {{if .User.IsHost}}
   <form hx-headers='{"EventType": "LEGameStartRequest"}' ws-send>
     <button type="submit" class="rounded bg-blue-200 p-1">Start Game</button>
   </form>
