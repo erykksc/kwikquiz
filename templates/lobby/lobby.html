@@ -14,7 +14,7 @@
     <div id="error-alerts"></div>
 
     <div hx-ext="ws" ws-connect="/lobbies/{{.Pin}}/ws">
-      <div id="lobby-content"></div>
+      <div id="view"></div>
     </div>
   </body>
 </html>
@@ -47,11 +47,7 @@
 
 <!---->
 {{define "choose-username-view" }}
-<form
-  id="lobby-content"
-  hx-headers='{"EventType": "LESubmittedUsername"}'
-  ws-send
->
+<form id="view" hx-headers='{"EventType": "LESubmittedUsername"}' ws-send>
   <label for="username">username:</label>
   <input id="username" name="Username" />
   <button type="submit" class="rounded bg-blue-200 p-1">Join</button>
@@ -60,7 +56,7 @@
 <!---->
 
 {{define "waiting-room-view"}}
-<div id="lobby-content">
+<div id="view">
   {{if .User.IsHost}}
   <h1>Pin: {{.Lobby.Pin}}</h1>
   <p>created at: {{.Lobby.CreatedAt}}</p>
@@ -91,7 +87,7 @@
 {{end}}
 <!---->
 {{define "question-view"}}
-<div id="lobby-content">
+<div id="view">
   <div
     id=""
     class="bg-gray-100 min-h-screen flex flex-col items-center justify-center"
@@ -175,7 +171,7 @@
 <!---->
 
 {{define "answer-view"}}
-<div id="lobby-content">
+<div id="view">
   <h1>Answer view</h1>
   {{ if .User.IsHost }}
   <button
