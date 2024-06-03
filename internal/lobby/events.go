@@ -42,6 +42,12 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 	case "LEChangeUsernameRequest":
 		var event LEChangeUsernameRequest
 		return event, nil
+	case "LESkipToAnswerRequest":
+		var event LESkipToAnswerRequest
+		return event, nil
+	case "LENextQuestionRequest":
+		var event LENextQuestionRequest
+		return event, nil
 	default:
 		return nil, errors.New("unknown event type")
 	}
@@ -259,5 +265,31 @@ func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 		return err
 	}
 
+	return nil
+}
+
+type LESkipToAnswerRequest struct{}
+
+func (e LESkipToAnswerRequest) String() string {
+	return "LESkipToAnswerRequest"
+}
+
+func (event LESkipToAnswerRequest) Handle(l *Lobby, initiator *User) error {
+	// TODO: Implement
+	l.questionTimer.Cancel()
+	return nil
+}
+
+type LENextQuestionRequest struct{}
+
+func (e LENextQuestionRequest) String() string {
+	return "LENextQuestionRequest"
+}
+
+func (event LENextQuestionRequest) Handle(l *Lobby, initiator *User) error {
+	// TODO: Implement
+	if err := l.StartNextQuestion(); err != nil {
+		return err
+	}
 	return nil
 }
