@@ -25,9 +25,8 @@ const (
 )
 
 type ViewData struct {
-	Lobby  *Lobby
-	Player User
-	IsHost bool
+	Lobby *Lobby
+	User  *User
 }
 
 type LobbyState int
