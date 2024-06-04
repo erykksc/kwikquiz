@@ -108,26 +108,9 @@ func (l *Lobby) StartNextQuestion() error {
 
 	l.CurrentQuestion++
 	l.State = LSQuestion
+	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
 
 	// TODO:Check if the game is over (no more questions)
-
-	// Send question view to all
-	viewData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.WriteTemplate(QuestionView, viewData); err != nil {
-		slog.Error("Error sending QuestionView to host", "error", err)
-	}
-	for _, player := range l.Players {
-		viewData.User = player
-		err := player.WriteTemplate(QuestionView, viewData)
-		if err != nil {
-			slog.Error("Error sending QuestionView to user", "error", err)
-		}
-	}
-
-	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
 
 	// Start the question timer
 	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)
@@ -145,6 +128,22 @@ func (l *Lobby) StartNextQuestion() error {
 			break
 		}
 	}()
+
+	// Send question view to all
+	viewData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	if err := l.Host.WriteTemplate(QuestionView, viewData); err != nil {
+		slog.Error("Error sending QuestionView to host", "error", err)
+	}
+	for _, player := range l.Players {
+		viewData.User = player
+		err := player.WriteTemplate(QuestionView, viewData)
+		if err != nil {
+			slog.Error("Error sending QuestionView to user", "error", err)
+		}
+	}
 	return nil
 }
 
