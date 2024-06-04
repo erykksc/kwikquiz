@@ -2,27 +2,42 @@ package lobby
 
 import (
 	"fmt"
+	"html/template"
 )
 
-// Templates
-const (
-	NotFoundPage        = "static/notfound.html"
-	BaseTemplate        = "templates/base.html"
-	IndexTemplate       = "templates/index.html"
-	LobbiesTemplate     = "templates/lobby/lobbies.html"
-	LobbyTemplate       = "templates/lobby/lobby.html"
-	LobbyCreateTemplate = "templates/lobby/lobby-create.html"
-)
+const BaseTemplatePath = "templates/base.html"
 
-// Views
-const (
-	ChooseUsernameView = "choose-username-view"
-	WaitingRoomView    = "waiting-room-view"
-	QuestionView       = "question-view"
-	AnswerView         = "answer-view"
-	FinalResultsView   = "final-results-view"
-	ErrorAlert         = "error-alert"
-)
+// Templates are used to render the different pages of the app
+var NotFoundTmpl *template.Template
+var IndexTmpl *template.Template
+var LobbyCreateTmpl *template.Template
+var LobbyErrorAlertTmpl *template.Template
+var LobbiesTmpl *template.Template
+var LobbyTmpl *template.Template
+
+func init() {
+	NotFoundTmpl = template.Must(template.ParseFiles("static/notfound.html", BaseTemplatePath))
+	IndexTmpl = template.Must(template.ParseFiles("templates/index.html", BaseTemplatePath))
+	LobbyCreateTmpl = template.Must(template.ParseFiles("templates/lobby/lobby-create.html", BaseTemplatePath))
+	LobbiesTmpl = template.Must(template.ParseFiles("templates/lobby/lobbies.html", BaseTemplatePath))
+	LobbyTmpl = template.Must(template.ParseFiles("templates/lobby/lobby.html", BaseTemplatePath))
+	LobbyErrorAlertTmpl = LobbyTmpl.Lookup("error-alert")
+}
+
+// Views are the templates that are rendered for the different states of the lobby
+var ChooseUsernameView *template.Template
+var WaitingRoomView *template.Template
+var QuestionView *template.Template
+var AnswerView *template.Template
+var FinalResultsView *template.Template
+
+func init() {
+	ChooseUsernameView = template.Must(template.ParseFiles("templates/lobby/choose-username-view.html", BaseTemplatePath))
+	WaitingRoomView = template.Must(template.ParseFiles("templates/lobby/waiting-room-view.html", BaseTemplatePath))
+	QuestionView = template.Must(template.ParseFiles("templates/lobby/question-view.html", BaseTemplatePath))
+	AnswerView = template.Must(template.ParseFiles("templates/lobby/answer-view.html", BaseTemplatePath))
+	FinalResultsView = template.Must(template.ParseFiles("templates/lobby/final-results-view.html", BaseTemplatePath))
+}
 
 type ViewData struct {
 	Lobby *Lobby
@@ -40,15 +55,17 @@ const (
 
 // ViewName returns the mapping of the LobbyState to the ViewName
 // that displays the state
-func (state LobbyState) ViewName() string {
-	m := make(map[LobbyState]string)
-	m[LSWaitingForPlayers] = WaitingRoomView
-	m[LSQuestion] = QuestionView
-	m[LSAnswer] = AnswerView
-	m[LSFinalResults] = FinalResultsView
-	fName, ok := m[state]
-	if !ok {
+func (state LobbyState) ViewName() *template.Template {
+	switch state {
+	case LSWaitingForPlayers:
+		return WaitingRoomView
+	case LSQuestion:
+		return QuestionView
+	case LSAnswer:
+		return AnswerView
+	case LSFinalResults:
+		return FinalResultsView
+	default:
 		panic("Undefined ViewName for state:" + fmt.Sprint(state))
 	}
-	return fName
 }
