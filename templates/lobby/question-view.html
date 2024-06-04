@@ -1,0 +1,80 @@
+<div id="view">
+  <div
+    id=""
+    class="bg-gray-100 min-h-screen flex flex-col items-center justify-center"
+  >
+    <div class="h-full w-full flex flex-col items-center justify-center">
+      <!-- Quiz Name -->
+      <h1 class="text-lg font-semibold text-gray-800 absolute top-4 left-4">
+        Quiz: <span class="text-2xl font-bold text-blue-600">Geography</span>
+      </h1>
+
+      <!-- KWIKQUIZ Title -->
+      <h1 class="text-3xl font-bold text-blue-600 absolute top-4">KWIKQUIZ</h1>
+
+      <!-- Question and Answer Options Container -->
+      <div class="flex flex-col items-center justify-center mt-16">
+        <!-- Question -->
+        <h2 class="text-3xl font-bold text-gray-800 mb-4">
+          What is the capital of France?
+        </h2>
+
+        <!-- Answer Options -->
+        <div class="flex flex-col gap-4">
+          <button
+            class="py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Option 1
+          </button>
+          <button
+            class="py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Option 2
+          </button>
+          <button
+            class="py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Option 3
+          </button>
+          <button
+            class="py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Option 4
+          </button>
+        </div>
+      </div>
+
+      <p
+        class="text-lg font-semibold text-gray-800 absolute top-4 right-4"
+        id="timer"
+      >
+        Time Remaining:
+        <span class="text-2xl font-bold text-blue-600">00:00</span>
+      </p>
+
+      <!-- Player Count -->
+      <p class="text-lg font-semibold text-gray-800 absolute bottom-4 left-4">
+        Players Answered:
+        <span class="text-2xl font-bold text-blue-600" id="player-count"
+          >0</span
+        >
+      </p>
+
+      <!-- Score Counter -->
+      <p class="text-lg font-semibold text-gray-800 absolute bottom-4 right-4">
+        Your Score:
+        <span class="text-2xl font-bold text-blue-600" id="score">0</span>
+      </p>
+    </div>
+    <!-- Temporary test button -->
+    {{ if .User.IsHost }}
+    <button
+      hx-headers='{"EventType": "LESkipToAnswerRequest"}'
+      ws-send
+      class="rounded bg-blue-200 p-1"
+    >
+      Skip to Answer
+    </button>
+    {{ end }}
+  </div>
+</div>

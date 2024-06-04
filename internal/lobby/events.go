@@ -3,7 +3,6 @@ package lobby
 import (
 	"encoding/json"
 	"errors"
-	"html/template"
 	"log/slog"
 
 	"github.com/gorilla/websocket"
@@ -64,7 +63,7 @@ func HandleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID ClientID) (
 		ClientID: clientID,
 	}
 
-	viewName := l.State.ViewName()
+	view := l.State.ViewName()
 
 	player, connectedUserIsPlayer := l.Players[clientID]
 	switch {
@@ -91,15 +90,14 @@ func HandleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID ClientID) (
 	// New User connecting
 	default:
 		slog.Info("New Player for Lobby", "Lobby-Pin", l.Pin, "Client-ID", connectedUser.ClientID)
-		viewName = ChooseUsernameView
+		view = ChooseUsernameView
 	}
 
 	viewData := ViewData{
 		Lobby: l,
 		User:  connectedUser,
 	}
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-	if err := connectedUser.WriteTemplate(tmpl, viewName, viewData); err != nil {
+	if err := connectedUser.WriteTemplate(view, viewData); err != nil {
 		return nil, err
 	}
 
@@ -120,27 +118,24 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 
 	// Check if the username is empty
 	if event.Username == "" {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		initiator.WriteTemplate(tmpl, ErrorAlert, "Username cannot be empty")
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Username cannot be empty")
 		return errors.New("new username is empty")
 	}
 
 	// Check if game hasn't started yet
 	if l.State != LSWaitingForPlayers {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		initiator.WriteTemplate(tmpl, ErrorAlert, "Game already started")
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Game already started")
 		return errors.New("game already started")
 	}
 
 	// Check if new username isn't the same as the old one
 	if initiator.Username == event.Username {
 		slog.Info("Username is the same as the old one", "Username", event.Username)
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
 		viewData := ViewData{
 			Lobby: l,
 			User:  initiator,
 		}
-		if err := initiator.WriteTemplate(tmpl, WaitingRoomView, viewData); err != nil {
+		if err := initiator.WriteTemplate(WaitingRoomView, viewData); err != nil {
 			return err
 		}
 		return nil
@@ -154,8 +149,7 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 
 	// Check if the username is already in the lobby
 	if _, ok := usernames[event.Username]; ok {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		initiator.WriteTemplate(tmpl, ErrorAlert, "Username already in the lobby")
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Username already in the lobby")
 		return errors.New("username already in the lobby")
 	}
 
@@ -181,14 +175,13 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 		Lobby: l,
 		User:  l.Host,
 	}
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-	if err := l.Host.WriteTemplate(tmpl, WaitingRoomView, viewData); err != nil {
+	if err := l.Host.WriteTemplate(WaitingRoomView, viewData); err != nil {
 		slog.Error("Error writing view to host", "error", err, "host", l.Host)
 	}
 
 	for _, player := range l.Players {
 		viewData.User = player
-		if err := player.WriteTemplate(tmpl, WaitingRoomView, viewData); err != nil {
+		if err := player.WriteTemplate(WaitingRoomView, viewData); err != nil {
 			slog.Error("Error writing view to user", "error", err, "user", player)
 		}
 	}
@@ -204,8 +197,7 @@ func (e LEChangeUsernameRequest) String() string {
 func (event LEChangeUsernameRequest) Handle(l *Lobby, initiator *User) error {
 	// Check if the game has already started
 	if l.State != LSWaitingForPlayers {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		initiator.WriteTemplate(tmpl, ErrorAlert, "Game already started")
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Game already started")
 		return errors.New("Game already started")
 	}
 
@@ -214,8 +206,7 @@ func (event LEChangeUsernameRequest) Handle(l *Lobby, initiator *User) error {
 		Lobby: l,
 		User:  initiator,
 	}
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-	if err := initiator.WriteTemplate(tmpl, ChooseUsernameView, viewData); err != nil {
+	if err := initiator.WriteTemplate(ChooseUsernameView, viewData); err != nil {
 		return err
 	}
 
@@ -231,26 +222,23 @@ func (e LEGameStartRequest) String() string {
 func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		initiator.WriteTemplate(tmpl, ErrorAlert, "Only the host can start the game")
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
 		return errors.New("Non-host tried to start the game")
 	}
 
 	// Check if there are enough players
 	if len(l.Players) == 0 {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-		initiator.WriteTemplate(tmpl, ErrorAlert, "Not enough players")
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Not enough players")
 		return errors.New("Can't start the game: not enough players")
 	}
 
 	// Check if the game has already started
 	if l.State != LSWaitingForPlayers {
-		tmpl := template.Must(template.ParseFiles(LobbyTemplate))
 		viewData := ViewData{
 			Lobby: l,
 			User:  initiator,
 		}
-		if err := initiator.WriteTemplate(tmpl, l.State.ViewName(), viewData); err != nil {
+		if err := initiator.WriteTemplate(l.State.ViewName(), viewData); err != nil {
 			return err
 		}
 		return errors.New("Game already started, sending current state to initiator")

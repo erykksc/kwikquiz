@@ -27,16 +27,31 @@ type Lobby struct {
 	CurrentQuestion        int
 }
 
+// WriteTemplateToAll does tmpl.Execute(w, data) on websocket connections
+// to the host and all players in the lobby
+// slog.Error on every error while writing to websocket.Conn
+func (l *Lobby) WriteTemplateToAll(tmpl *template.Template, data any) {
+	if err := l.Host.WriteTemplate(tmpl, data); err != nil {
+		slog.Error("Error sending view to host", "err", err, "data", data)
+	}
+
+	for _, player := range l.Players {
+		if err := player.WriteTemplate(tmpl, data); err != nil {
+			slog.Error("Error sending view to player", "err", err, "data", data)
+		}
+	}
+}
+
 // WriteTemplateToAll writes the template with the given name  and data
 // to host and all players in the lobby
 // slog.Error on every error while writing to websocket.Conn
-func (l *Lobby) WriteTemplateToAll(tmpl *template.Template, name string, data any) {
-	if err := l.Host.WriteTemplate(tmpl, name, data); err != nil {
+func (l *Lobby) WriteNamedTemplateToAll(tmpl *template.Template, name string, data any) {
+	if err := l.Host.WriteNamedTemplate(tmpl, name, data); err != nil {
 		slog.Error("Error sending view to host", "err", err, "name", name, "data", data)
 	}
 
 	for _, player := range l.Players {
-		if err := player.WriteTemplate(tmpl, name, data); err != nil {
+		if err := player.WriteNamedTemplate(tmpl, name, data); err != nil {
 			slog.Error("Error sending view to player", "err", err, "name", name, "data", data)
 		}
 	}
@@ -71,9 +86,22 @@ type User struct {
 	IsHost   bool
 }
 
-// WriteTemplate executes the template with the given name and data
-// On websocket connection to the user
-func (client *User) WriteTemplate(tmpl *template.Template, name string, data any) error {
+// WriteTemplate does tmpl.Execute(w, data) on websocket connection to the user
+func (client *User) WriteTemplate(tmpl *template.Template, data any) error {
+	w, err := client.Conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	if err := tmpl.Execute(w, data); err != nil {
+		return err
+	}
+	return nil
+}
+
+// WriteNamedTemplate does tmpl.ExecuteTemplate(w, name, data) on websocket connection to the user
+func (client *User) WriteNamedTemplate(tmpl *template.Template, name string, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -118,8 +146,7 @@ func (l *Lobby) StartNextQuestion() error {
 		Lobby: l,
 		User:  l.Host,
 	}
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-	l.WriteTemplateToAll(tmpl, QuestionView, viewData)
+	l.WriteTemplateToAll(QuestionView, viewData)
 
 	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
 
@@ -153,7 +180,6 @@ func (l *Lobby) ShowAnswer() error {
 		Lobby: l,
 		User:  l.Host,
 	}
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate))
-	l.WriteTemplateToAll(tmpl, AnswerView, viewData)
+	l.WriteTemplateToAll(AnswerView, viewData)
 	return nil
 }

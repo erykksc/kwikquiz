@@ -1,0 +1,28 @@
+<div id="view">
+  {{if .User.IsHost}}
+  <h1>Pin: {{.Lobby.Pin}}</h1>
+  <p>created at: {{.Lobby.CreatedAt}}</p>
+  <p>time per question: {{.Lobby.TimePerQuestion}}</p>
+  {{else}}
+  <button hx-headers='{"EventType": "LEChangeUsernameRequest"}' ws-send>
+    Change Username
+  </button>
+
+  {{end}}
+  <h2>Players</h2>
+  <ul>
+    {{range $key, $value := .Lobby.Players}}
+    <li>{{$value.Username}}</li>
+    {{end}}
+  </ul>
+
+  {{if .User.IsHost}}
+  <button
+    hx-headers='{"EventType": "LEGameStartRequest"}'
+    class="rounded bg-blue-200 p-1"
+    ws-send
+  >
+    Start Game
+  </button>
+  {{end}}
+</div>

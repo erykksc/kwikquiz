@@ -1,7 +1,6 @@
 package lobby
 
 import (
-	"html/template"
 	"log/slog"
 	"net/http"
 	"time"
@@ -47,9 +46,8 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
 	}
-	tmpl := template.Must(template.ParseFiles(LobbiesTemplate, BaseTemplate))
 
-	if err := tmpl.Execute(w, lobbies); err != nil {
+	if err := LobbiesTmpl.Execute(w, lobbies); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -93,8 +91,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(6 * time.Hour),
 	})
 
-	tmpl := template.Must(template.ParseFiles(LobbyTemplate, BaseTemplate))
-	if err := tmpl.Execute(w, &lobby); err != nil {
+	if err := LobbyTmpl.Execute(w, &lobby); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -191,8 +188,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		// Do nothing
 	case ErrLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
-		tmpl := template.Must(template.ParseFiles(IndexTemplate, BaseTemplate))
-		tmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
+		IndexTmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
 		return
 	default:
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
@@ -210,8 +206,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 // getLobbyCreateHandler handles requests to /lobbies/create
 func getLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	tmpl := template.Must(template.ParseFiles(LobbyCreateTemplate, BaseTemplate))
-	if err := tmpl.Execute(w, nil); err != nil {
+	if err := LobbyCreateTmpl.Execute(w, nil); err != nil {
 		slog.Error("Error rendering template", "error", err)
 	}
 }
@@ -244,8 +239,7 @@ func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := lobbiesRepo.AddLobby(lobby); err != nil {
 		slog.Error("Error adding game", "error", err)
-		tmpl := template.Must(template.ParseFiles(LobbyCreateTemplate, BaseTemplate))
-		err = tmpl.ExecuteTemplate(w, "create-form", createGameForm{
+		err = LobbyCreateTmpl.ExecuteTemplate(w, "create-form", createGameForm{
 			Pin:       pin,
 			Username:  username,
 			FormError: err.Error(),
