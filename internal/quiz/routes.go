@@ -1,21 +1,24 @@
 package quiz
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"html/template"
+	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
 )
 
 const (
-	NotFoundPage       = "static/notfound.html"
-	BaseTemplate       = "templates/base.html"
-	IndexTemplate      = "templates/index.html"
-	QuizzesTemplate    = "templates/quizzes/quizzes.html"
-	QuizTemplate       = "templates/quizzes/quiz-qid.html"
-	QuizCreateTemplate = "templates/quizzes/quiz-create.html"
+	NotFoundPage        = "static/notfound.html"
+	BaseTemplate        = "templates/base.html"
+	IndexTemplate       = "templates/index.html"
+	QuizzesTemplate     = "templates/quizzes/quizzes.html"
+	QuizPreviewTemplate = "templates/quizzes/quiz-preview.html"
+	QuizCreateTemplate  = "templates/quizzes/quiz-create.html"
+	QuizUpdateTemplate  = "templates/quizzes/quiz-update.html"
 )
 
 var quizzesRepo QuizRepository = NewInMemoryQuizRepository()
@@ -27,8 +30,10 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("GET /quizzes/{$}", getAllQuizzesHandler)
 	mux.HandleFunc("GET /quizzes/{qid}", getQuizHandler)
 	mux.HandleFunc("POST /quizzes/create/{$}", postQuizHandler)
-	mux.HandleFunc("GET /quizzes/create/", getQuizCreateHandler)
-	mux.HandleFunc("GET /quizzes/create", getQuizCreateHandler)
+	mux.HandleFunc("GET /quizzes/create/{$}", getQuizCreateHandler)
+	mux.HandleFunc("GET /quizzes/update/{qid}", getQuizUpdateHandler)
+	mux.HandleFunc("PUT /quizzes/update/{qid}", updateQuizHandler)
+
 	return mux
 
 }
@@ -70,7 +75,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	tmpl := template.Must(template.ParseFiles(QuizTemplate, BaseTemplate))
+	tmpl := template.Must(template.ParseFiles(QuizPreviewTemplate, BaseTemplate))
 	tmpl.Execute(w, quiz)
 	fmt.Println(quiz)
 }
@@ -147,6 +152,7 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 		}
 
 		questions = append(questions, Question{
+			Number:        questionIndex,
 			Text:          questionText,
 			Answers:       answers,
 			CorrectAnswer: correctAnswer,
@@ -176,4 +182,75 @@ func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
 	tmpl.Execute(w, nil)
+}
+
+func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
+
+	qidStr := r.PathValue("qid")
+
+	// Convert the string to an integer
+	qid, err := strconv.Atoi(qidStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		http.Error(w, "Invalid qid value", http.StatusBadRequest)
+		return
+	}
+
+	quiz, err := quizzesRepo.GetQuiz(qid)
+	if err != nil {
+		switch err.(type) {
+		case ErrQuizNotFound:
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+
+		default:
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+	fmt.Println(quiz)
+
+	// Serialize quiz data to JSON
+	quizJSON, err := json.Marshal(quiz)
+	if err != nil {
+		log.Println("Error marshaling quiz data to JSON:", err)
+		http.Error(w, "Error processing quiz data", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.ParseFiles(QuizUpdateTemplate, BaseTemplate)
+	if err != nil {
+		log.Println("Error parsing templates:", err)
+		http.Error(w, "Error parsing templates", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, map[string]interface{}{
+		"QuizJSON": string(quizJSON),
+	})
+	if err != nil {
+		log.Println("Error executing templates:", err)
+		http.Error(w, "Error executing templates", http.StatusInternalServerError)
+		return
+	}
+}
+
+func updateQuizHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
+
+	quiz, err := parseQuizForm(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	quizID, err := quizzesRepo.UpdateQuiz(quiz)
+	if err != nil {
+		slog.Error("Error adding quiz", "error", err)
+		renderQuizCreateForm(w, quiz, err)
+		return
+	}
+
+	redirectToQuiz(w, quizID)
 }

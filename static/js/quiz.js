@@ -1,7 +1,7 @@
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const addQuestinBtn = document.getElementById('add-question-btn');
     const questionList = document.getElementById('questions-list');
-    addQuestinBtn.addEventListener('click', function() {
+    addQuestinBtn.addEventListener('click', function () {
 
         const questionNumber = document.querySelectorAll('.question-item').length + 1;
         const questionHTML = `

@@ -1,6 +1,8 @@
 package quiz
 
-import "sync"
+import (
+	"sync"
+)
 
 type Quiz struct {
 	ID            int
@@ -9,12 +11,15 @@ type Quiz struct {
 	Description   string
 	QuestionOrder string
 	Questions     []Question
+	mutex         sync.RWMutex
 }
 
 type Question struct {
+	Number        int
 	Text          string
 	Answers       []string
 	CorrectAnswer int
+	mutex         sync.RWMutex
 }
 
 type ErrQuizNotFound struct{}
@@ -27,7 +32,7 @@ func (ErrQuizAlreadyExists) Error() string { return "Quiz already exists" }
 
 type QuizRepository interface {
 	AddQuiz(quiz Quiz) (int, error)
-	UpdateQuiz(quiz Quiz) error
+	UpdateQuiz(quiz Quiz) (int, error)
 	GetQuiz(id int) (Quiz, error)
 	DeleteQuiz(id int) error
 	GetAllQuizzes() ([]Quiz, error)
@@ -62,16 +67,16 @@ func (s *InMemoryQuizRepository) AddQuiz(quiz Quiz) (int, error) {
 	return quiz.ID, nil
 }
 
-func (s *InMemoryQuizRepository) UpdateQuiz(quiz Quiz) error {
+func (s *InMemoryQuizRepository) UpdateQuiz(quiz Quiz) (int, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	if _, ok := s.quizzes[quiz.ID]; !ok {
-		return ErrQuizNotFound{}
+		return 0, ErrQuizNotFound{}
 	}
 
 	s.quizzes[quiz.ID] = quiz
-	return nil
+	return quiz.ID, nil
 }
 
 func (s *InMemoryQuizRepository) GetQuiz(id int) (Quiz, error) {
@@ -110,5 +115,20 @@ func (s *InMemoryQuizRepository) GetAllQuizzes() ([]Quiz, error) {
 }
 
 func (q *Quiz) AddQuestion(question Question) {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+
 	q.Questions = append(q.Questions, question)
+}
+
+func (q *Quiz) GetAllQuestions() ([]Question, error) {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+
+	var questions []Question
+
+	for _, question := range q.Questions {
+		questions = append(questions, question)
+	}
+	return questions, nil
 }
