@@ -32,11 +32,11 @@ var AnswerView *template.Template
 var FinalResultsView *template.Template
 
 func init() {
-	ChooseUsernameView = template.Must(template.ParseFiles("templates/lobby/choose-username-view.html", BaseTemplatePath))
-	WaitingRoomView = template.Must(template.ParseFiles("templates/lobby/waiting-room-view.html", BaseTemplatePath))
-	QuestionView = template.Must(template.ParseFiles("templates/lobby/question-view.html", BaseTemplatePath))
-	AnswerView = template.Must(template.ParseFiles("templates/lobby/answer-view.html", BaseTemplatePath))
-	FinalResultsView = template.Must(template.ParseFiles("templates/lobby/final-results-view.html", BaseTemplatePath))
+	ChooseUsernameView = template.Must(template.ParseFiles("templates/views/choose-username-view.html", BaseTemplatePath))
+	WaitingRoomView = template.Must(template.ParseFiles("templates/views/waiting-room-view.html", BaseTemplatePath))
+	QuestionView = template.Must(template.ParseFiles("templates/views/question-view.html", BaseTemplatePath))
+	AnswerView = template.Must(template.ParseFiles("templates/views/answer-view.html", BaseTemplatePath))
+	FinalResultsView = template.Must(template.ParseFiles("templates/views/final-results-view.html", BaseTemplatePath))
 }
 
 type ViewData struct {
