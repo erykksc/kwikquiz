@@ -27,36 +27,6 @@ type Lobby struct {
 	CurrentQuestion        int
 }
 
-// WriteTemplateToAll does tmpl.Execute(w, data) on websocket connections
-// to the host and all players in the lobby
-// slog.Error on every error while writing to websocket.Conn
-func (l *Lobby) WriteTemplateToAll(tmpl *template.Template, data any) {
-	if err := l.Host.WriteTemplate(tmpl, data); err != nil {
-		slog.Error("Error sending view to host", "err", err, "data", data)
-	}
-
-	for _, player := range l.Players {
-		if err := player.WriteTemplate(tmpl, data); err != nil {
-			slog.Error("Error sending view to player", "err", err, "data", data)
-		}
-	}
-}
-
-// WriteTemplateToAll writes the template with the given name  and data
-// to host and all players in the lobby
-// slog.Error on every error while writing to websocket.Conn
-func (l *Lobby) WriteNamedTemplateToAll(tmpl *template.Template, name string, data any) {
-	if err := l.Host.WriteNamedTemplate(tmpl, name, data); err != nil {
-		slog.Error("Error sending view to host", "err", err, "name", name, "data", data)
-	}
-
-	for _, player := range l.Players {
-		if err := player.WriteNamedTemplate(tmpl, name, data); err != nil {
-			slog.Error("Error sending view to player", "err", err, "name", name, "data", data)
-		}
-	}
-}
-
 type ClientID string
 
 func NewClientID() (ClientID, error) {
@@ -146,7 +116,16 @@ func (l *Lobby) StartNextQuestion() error {
 		Lobby: l,
 		User:  l.Host,
 	}
-	l.WriteTemplateToAll(QuestionView, viewData)
+	if err := l.Host.WriteTemplate(QuestionView, viewData); err != nil {
+		slog.Error("Error sending QuestionView to host", "error", err)
+	}
+	for _, player := range l.Players {
+		viewData.User = player
+		err := player.WriteTemplate(QuestionView, viewData)
+		if err != nil {
+			slog.Error("Error sending QuestionView to user", "error", err)
+		}
+	}
 
 	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
 
@@ -174,12 +153,20 @@ func (l *Lobby) ShowAnswer() error {
 	defer l.mu.Unlock()
 
 	l.State = LSAnswer
-
 	// Send answer view to all
 	viewData := ViewData{
 		Lobby: l,
 		User:  l.Host,
 	}
-	l.WriteTemplateToAll(AnswerView, viewData)
+	if err := l.Host.WriteTemplate(AnswerView, viewData); err != nil {
+		slog.Error("Error sending AnswerView to host", "error", err)
+	}
+
+	for _, player := range l.Players {
+		viewData.User = player
+		if err := player.WriteTemplate(AnswerView, viewData); err != nil {
+			slog.Error("Error sending AnswerView to user", "error", err)
+		}
+	}
 	return nil
 }
