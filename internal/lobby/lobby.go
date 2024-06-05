@@ -13,18 +13,20 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Lobby is a actively running game session
 type Lobby struct {
+	common.Game
 	mu                     sync.Mutex
 	Host                   *User
 	Pin                    string
 	TimePerQuestion        time.Duration // time per question
-	Game                   common.Game
 	CreatedAt              time.Time
-	CurrentQuestionTimeout string // ISO 8601 String
-	questionTimer          *CancellableTimer
 	Players                map[ClientID]*User
 	State                  LobbyState
-	CurrentQuestion        int
+	questionTimer          *CancellableTimer
+	CurrentQuestionTimeout string // ISO 8601 String
+	CurrentQuestionIdx     int
+	CurrentQuestion        common.Question
 }
 
 type ClientID string
@@ -91,14 +93,14 @@ type LobbyOptions struct {
 
 func CreateLobby(options LobbyOptions) *Lobby {
 	return &Lobby{
-		Host:            nil,
-		TimePerQuestion: options.TimePerQuestion,
-		Pin:             options.Pin,
-		Game:            common.Game{},
-		CreatedAt:       time.Now(),
-		Players:         make(map[ClientID]*User),
-		State:           LSWaitingForPlayers,
-		CurrentQuestion: -1,
+		Host:               nil,
+		TimePerQuestion:    options.TimePerQuestion,
+		Pin:                options.Pin,
+		Game:               common.Game{},
+		CreatedAt:          time.Now(),
+		Players:            make(map[ClientID]*User),
+		State:              LSWaitingForPlayers,
+		CurrentQuestionIdx: -1,
 	}
 }
 
@@ -106,11 +108,34 @@ func (l *Lobby) StartNextQuestion() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.CurrentQuestion++
+	l.CurrentQuestionIdx++
 	l.State = LSQuestion
 	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion).Format(time.RFC3339)
 
-	// TODO:Check if the game is over (no more questions)
+	slog.Info("Question count", "count", len(l.Quiz.Questions))
+
+	// Check if the game has finished
+	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
+		// Send final results view to all
+		viewData := ViewData{
+			Lobby: l,
+			User:  l.Host,
+		}
+		if err := l.Host.WriteTemplate(FinalResultsView, viewData); err != nil {
+			slog.Error("Error sending FinalResultsView to host", "error", err)
+		}
+		for _, player := range l.Players {
+			viewData.User = player
+			err := player.WriteTemplate(FinalResultsView, viewData)
+			if err != nil {
+				slog.Error("Error sending FinalResultsView to user", "error", err)
+			}
+		}
+		return nil
+	}
+
+	slog.Info("Serving next question", "question-idx", l.CurrentQuestionIdx, "lobby-pin", l.Pin)
+	l.CurrentQuestion = l.Quiz.Questions[l.CurrentQuestionIdx]
 
 	// Start the question timer
 	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)

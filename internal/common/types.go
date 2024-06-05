@@ -7,6 +7,7 @@ import (
 type Game struct {
 	StartedAt time.Time
 	EndedAt   time.Time
+	Quiz      Quiz
 	// Username -> Points
 	Points map[string]int
 	Rounds []Round
