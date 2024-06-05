@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/erykksc/kwikquiz/internal/results"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/lobby"
 )
@@ -45,9 +46,13 @@ func main() {
 
 	fs := http.FileServer(http.Dir("static"))
 
+	lobbiesRepo := lobby.NewInMemoryLobbyRepository()
+	results.LobbiesRepo = lobbiesRepo
+
 	router := http.NewServeMux()
 
 	router.Handle("/lobbies/", lobby.NewLobbiesRouter())
+	router.Handle("/results/", http.StripPrefix("/results", results.NewResultsRouter()))
 	router.HandleFunc("/{$}", common.IndexHandler)
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 

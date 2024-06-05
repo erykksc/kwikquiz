@@ -1,16 +1,19 @@
 package lobby
 
-import "sync"
+import (
+	"sync"
+	"github.com/erykksc/kwikquiz/internal/common"
+)
 
 type ErrLobbyNotFound struct{}
 
-func (ErrLobbyNotFound) Error() string {
+func (e *ErrLobbyNotFound) Error() string {
 	return "lobby not found"
 }
 
 type ErrLobbyAlreadyExists struct{}
 
-func (ErrLobbyAlreadyExists) Error() string {
+func (e *ErrLobbyAlreadyExists) Error() string {
 	return "game already exists"
 }
 
@@ -20,7 +23,7 @@ type LobbyRepository interface {
 	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error
 	GetAllLobbies() ([]*Lobby, error)
-	GetLeaderboard(pin string) ([]*Player, error)
+	GetLeaderboard(pin string) ([]*common.Player, error)
 }
 
 // In-memory store for games
@@ -39,7 +42,7 @@ func (s *inMemoryLobbyRepository) AddLobby(lobby *Lobby) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.lobbies[lobby.Pin]; ok {
-		return ErrLobbyAlreadyExists{}
+		return &ErrLobbyAlreadyExists{}
 	}
 
 	s.lobbies[lobby.Pin] = lobby
@@ -50,7 +53,7 @@ func (s *inMemoryLobbyRepository) UpdateLobby(lobby *Lobby) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.lobbies[lobby.Pin]; !ok {
-		return ErrLobbyNotFound{}
+		return &ErrLobbyNotFound{}
 	}
 
 	s.lobbies[lobby.Pin] = lobby
@@ -62,7 +65,7 @@ func (s *inMemoryLobbyRepository) GetLobby(pin string) (*Lobby, error) {
 	defer s.mu.Unlock()
 	lobby, ok := s.lobbies[pin]
 	if !ok {
-		return &Lobby{}, ErrLobbyNotFound{}
+		return &Lobby{}, &ErrLobbyNotFound{}
 	}
 
 	return lobby, nil
@@ -72,7 +75,7 @@ func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.lobbies[pin]; !ok {
-		return ErrLobbyNotFound{}
+		return &ErrLobbyNotFound{}
 	}
 
 	delete(s.lobbies, pin)
@@ -90,14 +93,14 @@ func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
 	return lobbies, nil
 }
 
-func (s *inMemoryLobbyRepository) GetLeaderboard(pin string) ([]*Player, error) {
+func (s *inMemoryLobbyRepository) GetLeaderboard(pin string) ([]*common.Player, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	lobby, ok := s.lobbies[pin]
 	if !ok {
-		return nil, ErrLobbyNotFound{}
+		return nil, &ErrLobbyNotFound{}
 	}
 
-	return lobby.GetLeaderboard(), nil
+	return lobby.Game.GetLeaderboard(), nil
 }

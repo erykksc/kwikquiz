@@ -26,13 +26,20 @@ var DEBUG = common.DebugOn()
 func NewLobbiesRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
+	/*mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
-	mux.HandleFunc("/lobbies/leaderboard", getLeaderboardHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
 	mux.HandleFunc("GET /lobbies/create", getLobbyCreateHandler)
+	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)*/
+
+	mux.HandleFunc("/lobbies", getLobbiesHandler)
+	mux.HandleFunc("/lobbies/", getLobbyByPinHandler)
+	mux.HandleFunc("/lobbies/ws", getLobbyByPinWsHandler)
+
+	mux.HandleFunc("/lobbies/join", getLobbyJoinHandler)
+	mux.HandleFunc("/lobbies/create", getLobbyCreateHandler)
 	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)
 
 	// Add test lobby
@@ -48,34 +55,6 @@ func NewLobbiesRouter() http.Handler {
 	}
 
 	return mux
-}
-
-//handles request to /lobbies/leaderboard
-func getLeaderboardHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	pin := r.URL.Query().Get("pin")
-	if pin == "" {
-		http.Error(w, "Missing pin", http.StatusBadRequest)
-		return
-	}
-
-	leaderboard, err := lobbiesRepo.GetLeaderboard(pin)
-	if err != nil {
-		if _, ok := err.(ErrLobbyNotFound); ok {
-			common.ErrorHandler(w, r, http.StatusNotFound)
-			return
-		}
-		common.ErrorHandler(w, r, http.StatusInternalServerError)
-		return
-	}
-
-	tmpl := template.Must(template.New("leaderboard").Funcs(template.FuncMap{
-		"inc": func(i int) int { return i + 1 },
-	}).ParseFiles(LeaderboardTemplate, BaseTemplate))
-
-	if err := tmpl.ExecuteTemplate(w, "base", leaderboard); err != nil {
-		slog.Error("Error rendering template", "err", err)
-	}
 }
 
 // TODO: Make it only accessible by admin
@@ -101,7 +80,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	lobby, err := lobbiesRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
-		case ErrLobbyNotFound:
+		case *ErrLobbyNotFound:
 			common.ErrorHandler(w, r, http.StatusNotFound)
 			return
 		default:
@@ -141,13 +120,14 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
 func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("handling request", "method", r.Method, "path", r.URL.Path)
-	pin := r.PathValue("pin")
+	//pin := r.PathValue("pin")
+	pin := r.URL.Path[len("/lobbies/"):]
 
 	lobby, err := lobbiesRepo.GetLobby(pin)
 	switch err.(type) {
 	case nil:
 		break
-	case ErrLobbyNotFound:
+	case *ErrLobbyNotFound:
 		slog.Error("Error trying to connet to not existing lobby", "err", err)
 		common.ErrorHandler(w, r, http.StatusNotFound)
 		return
@@ -226,7 +206,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	switch err.(type) {
 	case nil:
 		// Do nothing
-	case ErrLobbyNotFound:
+	case *ErrLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
 		tmpl := template.Must(template.ParseFiles(IndexTemplate, BaseTemplate))
 		tmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
