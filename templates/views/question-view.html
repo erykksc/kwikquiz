@@ -44,15 +44,41 @@
         </div>
       </div>
 
-      <p
-        class="text-lg font-semibold text-gray-800 absolute top-4 right-4"
-        id="timer"
-      >
+      <p class="text-lg font-semibold text-gray-800 absolute top-4 right-4">
         Time Remaining:
-        <span class="text-2xl font-bold text-blue-600"
-          >{{.Lobby.CurrentQuestionTimeout}}</span
+        <span
+          class="text-2xl font-bold text-blue-600"
+          id="timer"
+          data-finish-time="{{.Lobby.CurrentQuestionTimeout}}"
         >
+          <!-- Countdown of current question will be displayed here using JS -->
+        </span>
       </p>
+      <!-- Script to update the timer -->
+      <script>
+        (function () {
+          // document.addEventListener("htmx:afterSwap", function (event) {
+          const timerElement = document.getElementById("timer");
+          const finishTime = new Date(timerElement.dataset.finishTime);
+
+          function updateCountdown() {
+            const now = new Date();
+            const diff = finishTime - now;
+
+            if (diff <= 0) {
+              document.getElementById("timer").innerHTML = "Time's up!";
+              clearInterval(intervalId); // Stop the interval when the countdown is complete
+              return;
+            }
+
+            const minutes = Math.floor(diff / 1000 / 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+            document.getElementById("timer").innerHTML = `${seconds}`;
+          }
+
+          const intervalId = setInterval(updateCountdown, 250);
+        })();
+      </script>
 
       <!-- Player Count -->
       <p class="text-lg font-semibold text-gray-800 absolute bottom-4 left-4">

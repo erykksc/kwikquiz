@@ -20,7 +20,7 @@ type Lobby struct {
 	TimePerQuestion        time.Duration // time per question
 	Game                   common.Game
 	CreatedAt              time.Time
-	CurrentQuestionTimeout time.Time // timestamp (when the server should not accept answers anymore for the current question, the host can send a request to shorten the answer time)
+	CurrentQuestionTimeout string // ISO 8601 String
 	questionTimer          *CancellableTimer
 	Players                map[ClientID]*User
 	State                  LobbyState
@@ -108,7 +108,7 @@ func (l *Lobby) StartNextQuestion() error {
 
 	l.CurrentQuestion++
 	l.State = LSQuestion
-	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion)
+	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion).Format(time.RFC3339)
 
 	// TODO:Check if the game is over (no more questions)
 
