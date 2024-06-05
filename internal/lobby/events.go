@@ -3,7 +3,9 @@ package lobby
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -13,9 +15,18 @@ type LobbyEvent interface {
 	Handle(lobby *Lobby, initiator *User) error
 }
 
+type HXData struct {
+	HxCurrentURL  string `json:"HX-Current-URL"`
+	HxRequest     string `json:"HX-Request"`
+	HxTarget      string `json:"HX-Target"`
+	HxTrigger     string `json:"HX-Trigger"`
+	HxTriggerName string `json:"HX-Trigger-Name"`
+}
+
 // ParseLobbyEvent parses a GameEvent from a JSON in a byte slice
 func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 	type Headers struct {
+		HXData
 		EventType string
 	}
 
@@ -26,6 +37,16 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 	var wsRequest WsRequest
 	if err := json.Unmarshal(data, &wsRequest); err != nil {
 		return nil, err
+	}
+
+	if *wsRequest.HEADERS.HxTriggerName == "answer" {
+		var event LEAnswerSubmitted
+		// Parse id from "HxTrigger" in format "answer-<id>"
+		_, err := fmt.Sscanf(wsRequest.HEADERS.HxTrigger, "answer-%d", &event.AnswerIdx)
+		if err != nil {
+			return nil, err
+		}
+		return event, nil
 	}
 
 	switch wsRequest.HEADERS.EventType {
@@ -263,7 +284,6 @@ func (e LESkipToAnswerRequest) String() string {
 }
 
 func (event LESkipToAnswerRequest) Handle(l *Lobby, initiator *User) error {
-	// TODO: Implement
 	l.questionTimer.Cancel()
 	return nil
 }
@@ -275,9 +295,25 @@ func (e LENextQuestionRequest) String() string {
 }
 
 func (event LENextQuestionRequest) Handle(l *Lobby, initiator *User) error {
-	// TODO: Implement
 	if err := l.StartNextQuestion(); err != nil {
 		return err
 	}
+	return nil
+}
+
+type LEAnswerSubmitted struct {
+	AnswerIdx int // Index of the answer in CurrentQuestion.Answers
+}
+
+func (e LEAnswerSubmitted) String() string {
+	return "LEAnswerSubmitted: " + fmt.Sprint(e.AnswerIdx)
+}
+
+func (e LEAnswerSubmitted) Handle(l *Lobby, initiator *User) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	initiator.SubmittedAnswer = e.AnswerIdx
+	initiator.AnswerSubmissionTime = time.Now()
+	// TODO: Send updated view to the player (show that the answer was submitted)
 	return nil
 }
