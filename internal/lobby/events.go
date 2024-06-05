@@ -265,9 +265,14 @@ func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 		return errors.New("Game already started, sending current state to initiator")
 	}
 
-	// TODO: CHeck if the quiz is choosen
-
-	// TODO: Check if the quiz has at least one question
+	// Check if the quiz has at least one question
+	if len(l.Quiz.Questions) == 0 {
+		err := initiator.WriteTemplate(LobbyErrorAlertTmpl, "Quiz has no questions")
+		if err != nil {
+			return err
+		}
+		return errors.New("Can't start the game: quiz has no questions")
+	}
 
 	// Start game: go to the first question
 	if err := l.StartNextQuestion(); err != nil {
