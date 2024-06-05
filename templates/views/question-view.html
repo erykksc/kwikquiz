@@ -24,11 +24,14 @@
 
         <!-- Answer Options -->
         <div class="flex flex-col gap-4">
-          {{ range .Lobby.CurrentQuestion.Answers }}
+          {{ range $index, $answer:= .Lobby.CurrentQuestion.Answers }}
           <button
             class="py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            id="answer-{{$index}}"
+            name="answer"
+            ws-send
           >
-            {{ .Text }}
+            {{ $answer.Text }}
           </button>
           {{end}}
         </div>

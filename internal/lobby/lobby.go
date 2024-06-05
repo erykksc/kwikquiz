@@ -52,10 +52,12 @@ func NewClientID() (ClientID, error) {
 }
 
 type User struct {
-	Conn     *websocket.Conn
-	ClientID ClientID
-	Username string
-	IsHost   bool
+	Conn                 *websocket.Conn
+	ClientID             ClientID
+	Username             string
+	IsHost               bool
+	SubmittedAnswer      int
+	AnswerSubbmisionTime time.Time
 }
 
 // WriteTemplate does tmpl.Execute(w, data) on websocket connection to the user
@@ -108,11 +110,15 @@ func (l *Lobby) StartNextQuestion() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	// Reset Player answers
+	for _, player := range l.Players {
+		player.SubmittedAnswer = -1
+		player.AnswerSubbmisionTime = time.Time{}
+	}
+
 	l.CurrentQuestionIdx++
 	l.State = LSQuestion
 	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion).Format(time.RFC3339)
-
-	slog.Info("Question count", "count", len(l.Quiz.Questions))
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
@@ -134,7 +140,6 @@ func (l *Lobby) StartNextQuestion() error {
 		return nil
 	}
 
-	slog.Info("Serving next question", "question-idx", l.CurrentQuestionIdx, "lobby-pin", l.Pin)
 	l.CurrentQuestion = l.Quiz.Questions[l.CurrentQuestionIdx]
 
 	// Start the question timer
