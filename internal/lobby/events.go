@@ -39,7 +39,8 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 		return nil, err
 	}
 
-	if wsRequest.HEADERS.HxTriggerName == "answer" {
+	switch wsRequest.HEADERS.HxTriggerName {
+	case "answer":
 		var event LEAnswerSubmitted
 		// Parse id from "HxTrigger" in format "answer-<question-id>-<answer-id>"
 		_, err := fmt.Sscanf(wsRequest.HEADERS.HxTrigger, "answer-q%d-a%d", &event.QuestionIdx, &event.AnswerIdx)
@@ -47,30 +48,28 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 			return nil, err
 		}
 		return event, nil
-	}
-
-	switch wsRequest.HEADERS.EventType {
-	case "LESubmittedUsername":
+	case "skip-to-answer-btn":
+		var event LESkipToAnswerRequest
+		return event, nil
+	case "next-question-btn":
+		var event LENextQuestionRequest
+		return event, nil
+	case "change-username-btn":
+		var event LEChangeUsernameRequest
+		return event, nil
+	case "start-game-btn":
+		var event LEGameStartRequest
+		return event, nil
+	case "new-username-form":
 		var event LEUSubmittedUsername
 		if err := json.Unmarshal(data, &event); err != nil {
 			return nil, err
 		}
 		return event, nil
-	case "LEGameStartRequest":
-		var event LEGameStartRequest
-		return event, nil
-	case "LEChangeUsernameRequest":
-		var event LEChangeUsernameRequest
-		return event, nil
-	case "LESkipToAnswerRequest":
-		var event LESkipToAnswerRequest
-		return event, nil
-	case "LENextQuestionRequest":
-		var event LENextQuestionRequest
-		return event, nil
 	default:
-		return nil, errors.New("unknown event type")
+		return nil, errors.New("unrecognized trigger name, cannot parse event: " + wsRequest.HEADERS.HxTriggerName)
 	}
+
 }
 
 func HandleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID ClientID) (*User, error) {

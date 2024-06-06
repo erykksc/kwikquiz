@@ -3,11 +3,7 @@
   <p>Your new points: {{.User.NewPoints}}</p>
   <p>Your score: {{.User.Score}}</p>
   {{ if .User.IsHost }}
-  <button
-    hx-headers='{"EventType": "LENextQuestionRequest"}'
-    ws-send
-    class="rounded bg-blue-200 p-1"
-  >
+  <button name="next-question-btn" ws-send class="rounded bg-blue-200 p-1">
     Next Question
   </button>
   {{ end }}

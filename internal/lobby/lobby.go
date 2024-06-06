@@ -194,6 +194,11 @@ func (l *Lobby) ShowAnswer() error {
 
 	// Add points to players
 	for _, player := range l.Players {
+		if player.SubmittedAnswerIdx == -1 {
+			// Player didn't submit an answer
+			player.NewPoints = 0
+			continue
+		}
 		submittedAnswer := &l.CurrentQuestion.Answers[player.SubmittedAnswerIdx]
 		// Give points based on time to answer
 		if submittedAnswer.IsCorrect {
