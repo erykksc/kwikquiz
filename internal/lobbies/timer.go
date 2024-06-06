@@ -1,20 +1,20 @@
-package lobby
+package lobbies
 
 import "time"
 
-type CancellableTimer struct {
+type cancellableTimer struct {
 	timer      *time.Timer
 	cancelChan chan struct{}
 }
 
-func NewCancellableTimer(d time.Duration) *CancellableTimer {
-	return &CancellableTimer{
+func NewCancellableTimer(d time.Duration) *cancellableTimer {
+	return &cancellableTimer{
 		timer:      time.NewTimer(d),
 		cancelChan: make(chan struct{}),
 	}
 }
 
-func (ct *CancellableTimer) Cancel() {
+func (ct *cancellableTimer) Cancel() {
 	// Close the cancelChan to signal cancellation
 	close(ct.cancelChan)
 

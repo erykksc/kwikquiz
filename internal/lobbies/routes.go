@@ -1,4 +1,4 @@
-package lobby
+package lobbies
 
 import (
 	"log/slog"
@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var lobbiesRepo LobbyRepository = NewInMemoryLobbyRepository()
+var lobbiesRepo lobbyRepository = newInMemoryLobbyRepository()
 
 // Returns a handler for routes starting with /games
 func NewLobbiesRouter() http.Handler {
@@ -25,11 +25,11 @@ func NewLobbiesRouter() http.Handler {
 
 	// Add test lobby
 	if common.DevMode() {
-		lOptions := LobbyOptions{
+		lOptions := lobbyOptions{
 			TimePerQuestion: 30 * time.Second,
 			Pin:             "1234",
 		}
-		testLobby := CreateLobby(lOptions)
+		testLobby := createLobby(lOptions)
 		testLobby.Quiz = common.Quiz{
 			Title:       "Geography",
 			Description: "This is a quiz about capitals around the world",
@@ -72,7 +72,7 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := LobbiesTmpl.Execute(w, lobbies); err != nil {
+	if err := lobbiesTmpl.Execute(w, lobbies); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -85,7 +85,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	lobby, err := lobbiesRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
-		case ErrLobbyNotFound:
+		case errLobbyNotFound:
 			common.ErrorHandler(w, r, http.StatusNotFound)
 			return
 		default:
@@ -95,28 +95,28 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GET CLIENT ID from COOKIE
-	var clientID ClientID
+	var cID clientID
 	clientIDCookie, err := r.Cookie("client-id")
 	if err == http.ErrNoCookie {
 		// Generate new client id
-		clientID, err = NewClientID()
+		cID, err = newClientID()
 		if err != nil {
 			slog.Error("Error generating new client id", "err", err)
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
 			return
 		}
 	} else {
-		clientID = ClientID(clientIDCookie.Value)
+		cID = clientID(clientIDCookie.Value)
 	}
 
 	// SET CLIENT ID COOKIE or UPDATE EXPIRATION
 	http.SetCookie(w, &http.Cookie{
 		Name:    "client-id",
-		Value:   string(clientID),
+		Value:   string(cID),
 		Expires: time.Now().Add(6 * time.Hour),
 	})
 
-	if err := LobbyTmpl.Execute(w, &lobby); err != nil {
+	if err := lobbyTmpl.Execute(w, &lobby); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -129,7 +129,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	switch err.(type) {
 	case nil:
 		break
-	case ErrLobbyNotFound:
+	case errLobbyNotFound:
 		slog.Error("Error trying to connect to not existing lobby", "err", err)
 		common.ErrorHandler(w, r, http.StatusNotFound)
 		return
@@ -157,10 +157,10 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 		common.ErrorHandler(w, r, http.StatusForbidden)
 		return
 	}
-	clientID := ClientID(clientIDCookie.Value)
+	clientID := clientID(clientIDCookie.Value)
 
 	slog.Debug("Handling new ws connection", "clientID", clientID, "Lobby-Pin", lobby.Pin)
-	user, err := HandleNewWebsocketConn(lobby, ws, clientID)
+	user, err := handleNewWebsocketConn(lobby, ws, clientID)
 	if err != nil {
 		slog.Error("Error handling user connection", "err", err)
 		return
@@ -178,7 +178,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		event, err := ParseLobbyEvent(message)
+		event, err := parseLobbyEvent(message)
 		if err != nil {
 			slog.Error("Error parsing lobby event", "err", err)
 			continue
@@ -211,7 +211,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	switch err.(type) {
 	case nil:
 		// Do nothing
-	case ErrLobbyNotFound:
+	case errLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
 		common.IndexTmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
 		return
@@ -231,7 +231,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 // getLobbyCreateHandler handles requests to /lobbies/create
 func getLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	if err := LobbyCreateTmpl.Execute(w, nil); err != nil {
+	if err := lobbyCreateTmpl.Execute(w, nil); err != nil {
 		slog.Error("Error rendering template", "error", err)
 	}
 }
@@ -260,11 +260,11 @@ func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lobby := CreateLobby(LobbyOptions{})
+	newLobby := createLobby(lobbyOptions{})
 
-	if err := lobbiesRepo.AddLobby(lobby); err != nil {
+	if err := lobbiesRepo.AddLobby(newLobby); err != nil {
 		slog.Error("Error adding game", "error", err)
-		err = LobbyCreateTmpl.ExecuteTemplate(w, "create-form", createGameForm{
+		err = lobbyCreateTmpl.ExecuteTemplate(w, "create-form", createGameForm{
 			Pin:       pin,
 			Username:  username,
 			FormError: err.Error(),
