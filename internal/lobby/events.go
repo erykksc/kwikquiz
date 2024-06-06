@@ -39,10 +39,10 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 		return nil, err
 	}
 
-	if *wsRequest.HEADERS.HxTriggerName == "answer" {
+	if wsRequest.HEADERS.HxTriggerName == "answer" {
 		var event LEAnswerSubmitted
-		// Parse id from "HxTrigger" in format "answer-<id>"
-		_, err := fmt.Sscanf(wsRequest.HEADERS.HxTrigger, "answer-%d", &event.AnswerIdx)
+		// Parse id from "HxTrigger" in format "answer-<question-id>-<answer-id>"
+		_, err := fmt.Sscanf(wsRequest.HEADERS.HxTrigger, "answer-q%d-a%d", &event.QuestionIdx, &event.AnswerIdx)
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +307,8 @@ func (event LENextQuestionRequest) Handle(l *Lobby, initiator *User) error {
 }
 
 type LEAnswerSubmitted struct {
-	AnswerIdx int // Index of the answer in CurrentQuestion.Answers
+	QuestionIdx int // Index of the question in Quiz.Questions
+	AnswerIdx   int // Index of the answer in CurrentQuestion.Answers
 }
 
 func (e LEAnswerSubmitted) String() string {
@@ -317,8 +318,59 @@ func (e LEAnswerSubmitted) String() string {
 func (e LEAnswerSubmitted) Handle(l *Lobby, initiator *User) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	// Check if the answer index is valid
+	if e.AnswerIdx < 0 || e.AnswerIdx >= len(l.CurrentQuestion.Answers) {
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Invalid answer index")
+		return errors.New("Invalid answer index")
+	}
+
+	// Check if the question index is the current one
+	if e.QuestionIdx != l.CurrentQuestionIdx {
+		slog.Warn("Answer submitted for wrong question", "Client-ID", initiator.ClientID)
+		return nil
+	}
+
+	// Check if the initiator isn't the host
+	if initiator.ClientID == l.Host.ClientID {
+		slog.Warn("Host tried to submit an answer")
+		return nil
+	}
+
+	// Check if the game is in the question state
+	if l.State != LSQuestion {
+		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Submitted after question timeout")
+		return errors.New("Submitted after question timeout")
+	}
+
+	// Check if the user has already submitted an answer
+	if initiator.SubmittedAnswer != -1 {
+		slog.Warn("User tried to submit an answer twice", "Client-ID", initiator.ClientID)
+		return nil
+	}
+
+	// Update the user's answer
 	initiator.SubmittedAnswer = e.AnswerIdx
 	initiator.AnswerSubmissionTime = time.Now()
-	// TODO: Send updated view to the player (show that the answer was submitted)
+
+	// Write updated view to the initiator
+	viewData := ViewData{
+		Lobby: l,
+		User:  initiator,
+	}
+	if err := initiator.WriteNamedTemplate(QuestionView, "answer-options", viewData); err != nil {
+		return err
+	}
+
+	l.PlayersAnswering--
+
+	// Send template for how many people are left to answer
+	for _, player := range l.Players {
+		viewData.User = player
+		if err := player.WriteNamedTemplate(QuestionView, "player-count", viewData); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
