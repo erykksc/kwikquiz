@@ -16,18 +16,19 @@ import (
 // Lobby is a actively running game session
 type Lobby struct {
 	common.Game
-	mu                     sync.Mutex
-	Host                   *User
-	Pin                    string
-	TimePerQuestion        time.Duration
-	CreatedAt              time.Time
-	Players                map[ClientID]*User
-	State                  LobbyState
-	questionTimer          *CancellableTimer
-	CurrentQuestionTimeout string // ISO 8601 String
-	CurrentQuestionIdx     int
-	CurrentQuestion        *common.Question
-	PlayersAnswering       int // Number of players who haven't submitted an answer
+	mu                       sync.Mutex
+	Host                     *User
+	Pin                      string
+	TimePerQuestion          time.Duration
+	CreatedAt                time.Time
+	Players                  map[ClientID]*User
+	State                    LobbyState
+	questionTimer            *CancellableTimer
+	CurrentQuestionStartTime time.Time
+	CurrentQuestionTimeout   string // ISO 8601 String
+	CurrentQuestionIdx       int
+	CurrentQuestion          *common.Question
+	PlayersAnswering         int // Number of players who haven't submitted an answer
 }
 
 type ClientID string
@@ -59,7 +60,8 @@ type User struct {
 	IsHost               bool
 	SubmittedAnswerIdx   int
 	AnswerSubmissionTime time.Time
-	Score                int
+	Score                int64
+	NewPoints            int64
 }
 
 // WriteTemplate does tmpl.Execute(w, data) on websocket connection to the user
@@ -122,11 +124,13 @@ func (l *Lobby) StartNextQuestion() error {
 
 	l.CurrentQuestionIdx++
 	l.State = LSQuestion
-	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion).Format(time.RFC3339)
+	l.CurrentQuestionStartTime = time.Now()
+	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
 	l.PlayersAnswering = len(l.Players)
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
+		l.State = LSFinalResults
 		// Send final results view to all
 		viewData := ViewData{
 			Lobby: l,
@@ -188,10 +192,19 @@ func (l *Lobby) ShowAnswer() error {
 
 	l.State = LSAnswer
 
+	// Add points to players
 	for _, player := range l.Players {
 		submittedAnswer := &l.CurrentQuestion.Answers[player.SubmittedAnswerIdx]
+		// Give points based on time to answer
 		if submittedAnswer.IsCorrect {
-			player.Score++
+			timeToAnswer := player.AnswerSubmissionTime.Sub(l.CurrentQuestionStartTime)
+			if timeToAnswer < time.Millisecond*500 {
+				// Maximum points for answering in less than 500ms
+				player.NewPoints = 1000
+			} else {
+				player.NewPoints = int64((1 - (float64(timeToAnswer) / float64(l.TimePerQuestion) / 2.0)) * 1000)
+			}
+			player.Score += player.NewPoints
 		}
 	}
 

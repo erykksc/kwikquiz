@@ -1,5 +1,7 @@
 <div id="view">
   <h1>Answer view</h1>
+  <p>Your new points: {{.User.NewPoints}}</p>
+  <p>Your score: {{.User.Score}}</p>
   {{ if .User.IsHost }}
   <button
     hx-headers='{"EventType": "LENextQuestionRequest"}'
