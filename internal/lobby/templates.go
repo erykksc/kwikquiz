@@ -3,25 +3,21 @@ package lobby
 import (
 	"fmt"
 	"html/template"
+
+	"github.com/erykksc/kwikquiz/internal/common"
 )
 
-const BaseTemplatePath = "templates/base.html"
-
 func tmplParseWithBase(path string) *template.Template {
-	return template.Must(template.ParseFiles(path, BaseTemplatePath))
+	return template.Must(template.ParseFiles(path, common.BaseTmplPath))
 }
 
 // Templates are used to render the different pages of the app
-var NotFoundTmpl *template.Template
-var IndexTmpl *template.Template
 var LobbyCreateTmpl *template.Template
 var LobbyErrorAlertTmpl *template.Template
 var LobbiesTmpl *template.Template
 var LobbyTmpl *template.Template
 
 func init() {
-	NotFoundTmpl = tmplParseWithBase("static/notfound.html")
-	IndexTmpl = tmplParseWithBase("templates/index.html")
 	LobbyCreateTmpl = tmplParseWithBase("templates/lobby/lobby-create.html")
 	LobbiesTmpl = tmplParseWithBase("templates/lobby/lobbies.html")
 	LobbyTmpl = tmplParseWithBase("templates/lobby/lobby.html")

@@ -213,7 +213,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		// Do nothing
 	case ErrLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
-		IndexTmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
+		common.IndexTmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
 		return
 	default:
 		common.ErrorHandler(w, r, http.StatusInternalServerError)

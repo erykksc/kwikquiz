@@ -48,7 +48,11 @@ func main() {
 	router := http.NewServeMux()
 
 	router.Handle("/lobbies/", lobby.NewLobbiesRouter())
-	router.HandleFunc("/{$}", common.IndexHandler)
+	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+		if err := common.IndexTmpl.Execute(w, nil); err != nil {
+			slog.Error("Error rendering template", "error", err)
+		}
+	})
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	port := 3000
