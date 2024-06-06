@@ -344,13 +344,13 @@ func (e LEAnswerSubmitted) Handle(l *Lobby, initiator *User) error {
 	}
 
 	// Check if the user has already submitted an answer
-	if initiator.SubmittedAnswer != -1 {
+	if initiator.SubmittedAnswerIdx != -1 {
 		slog.Warn("User tried to submit an answer twice", "Client-ID", initiator.ClientID)
 		return nil
 	}
 
 	// Update the user's answer
-	initiator.SubmittedAnswer = e.AnswerIdx
+	initiator.SubmittedAnswerIdx = e.AnswerIdx
 	initiator.AnswerSubmissionTime = time.Now()
 
 	// Write updated view to the initiator
@@ -363,6 +363,12 @@ func (e LEAnswerSubmitted) Handle(l *Lobby, initiator *User) error {
 	}
 
 	l.PlayersAnswering--
+
+	// Check if all players have answered
+	if l.PlayersAnswering == 0 {
+		// End the question
+		l.questionTimer.Cancel()
+	}
 
 	// Send template for how many people are left to answer
 	for _, player := range l.Players {

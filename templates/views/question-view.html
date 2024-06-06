@@ -29,7 +29,7 @@
           <!---->
           <button
             class="
-              {{ if eq $.User.SubmittedAnswer $index}}
+              {{ if eq $.User.SubmittedAnswerIdx $index}}
               py-4 px-8 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500
               {{ else }}
               py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -101,11 +101,17 @@
         {{ end }}
       </p>
 
+      {{ if .User.IsHost }}
+      <!-- The host doesn't have a score -->
+      {{ else }}
       <!-- Score Counter -->
       <p class="text-lg font-semibold text-gray-800 absolute bottom-4 right-4">
         Your Score:
-        <span class="text-2xl font-bold text-blue-600" id="score">0</span>
+        <span class="text-2xl font-bold text-blue-600" id="score">
+          {{ .User.Score }}
+        </span>
       </p>
+      {{ end }}
     </div>
     <!-- Temporary test button -->
     {{ if .User.IsHost }}
