@@ -1,8 +1,6 @@
 package lobby
 
-import (
-	"time"
-)
+import "time"
 
 type CancellableTimer struct {
 	timer      *time.Timer

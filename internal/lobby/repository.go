@@ -25,7 +25,7 @@ type LobbyRepository interface {
 // In-memory store for games
 type inMemoryLobbyRepository struct {
 	lobbies map[string]*Lobby
-	mu      sync.Mutex
+	mu      sync.RWMutex
 }
 
 func NewInMemoryLobbyRepository() *inMemoryLobbyRepository {
@@ -57,8 +57,8 @@ func (s *inMemoryLobbyRepository) UpdateLobby(lobby *Lobby) error {
 }
 
 func (s *inMemoryLobbyRepository) GetLobby(pin string) (*Lobby, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	lobby, ok := s.lobbies[pin]
 	if !ok {
 		return &Lobby{}, ErrLobbyNotFound{}
@@ -79,8 +79,8 @@ func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
 }
 
 func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	var lobbies []*Lobby
 	for _, lobby := range s.lobbies {
 		lobbies = append(lobbies, lobby)
