@@ -4,9 +4,7 @@
   <p>created at: {{.Lobby.CreatedAt}}</p>
   <p>time per question: {{.Lobby.TimePerQuestion}}</p>
   {{else}}
-  <button hx-headers='{"EventType": "LEChangeUsernameRequest"}' ws-send>
-    Change Username
-  </button>
+  <button name="change-username-btn" ws-send>Change Username</button>
 
   {{end}}
   <h2>Players</h2>
@@ -17,11 +15,7 @@
   </ul>
 
   {{if .User.IsHost}}
-  <button
-    hx-headers='{"EventType": "LEGameStartRequest"}'
-    class="rounded bg-blue-200 p-1"
-    ws-send
-  >
+  <button name="start-game-btn" ws-send class="rounded bg-blue-200 p-1">
     Start Game
   </button>
   {{end}}

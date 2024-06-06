@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/lobby"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
 )
 
 var DEBUG = common.DebugOn()
@@ -47,7 +47,7 @@ func main() {
 
 	router := http.NewServeMux()
 
-	router.Handle("/lobbies/", lobby.NewLobbiesRouter())
+	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
 			slog.Error("Error rendering template", "error", err)

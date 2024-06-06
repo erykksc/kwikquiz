@@ -113,13 +113,9 @@
       </p>
       {{ end }}
     </div>
-    <!-- Temporary test button -->
+    <!-- Skip to answer button -->
     {{ if .User.IsHost }}
-    <button
-      hx-headers='{"EventType": "LESkipToAnswerRequest"}'
-      ws-send
-      class="rounded bg-blue-200 p-1"
-    >
+    <button name="skip-to-answer-btn" ws-send class="rounded bg-blue-200 p-1">
       Skip to Answer
     </button>
     {{ end }}

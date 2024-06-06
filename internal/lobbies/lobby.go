@@ -1,4 +1,4 @@
-package lobby
+package lobbies
 
 import (
 	"crypto/rand"
@@ -13,17 +13,17 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Lobby is a actively running game session
-type Lobby struct {
+// lobby is a actively running game session
+type lobby struct {
 	common.Game
 	mu                       sync.Mutex
-	Host                     *User
+	Host                     *user
 	Pin                      string
 	TimePerQuestion          time.Duration
 	CreatedAt                time.Time
-	Players                  map[ClientID]*User
-	State                    LobbyState
-	questionTimer            *CancellableTimer
+	Players                  map[clientID]*user
+	State                    lobbyState
+	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time
 	CurrentQuestionTimeout   string // ISO 8601 String
 	CurrentQuestionIdx       int
@@ -31,9 +31,27 @@ type Lobby struct {
 	PlayersAnswering         int // Number of players who haven't submitted an answer
 }
 
-type ClientID string
+type lobbyOptions struct {
+	TimePerQuestion time.Duration
+	Pin             string
+}
 
-func NewClientID() (ClientID, error) {
+func createLobby(options lobbyOptions) *lobby {
+	return &lobby{
+		Host:               nil,
+		TimePerQuestion:    options.TimePerQuestion,
+		Pin:                options.Pin,
+		Game:               common.Game{},
+		CreatedAt:          time.Now(),
+		Players:            make(map[clientID]*user),
+		State:              lsWaitingForPlayers,
+		CurrentQuestionIdx: -1,
+	}
+}
+
+type clientID string
+
+func newClientID() (clientID, error) {
 	// Generate 8 bytes from the timestamp (64 bits)
 	timestamp := time.Now().Unix()
 	timestampBytes := make([]byte, 8)
@@ -50,12 +68,12 @@ func NewClientID() (ClientID, error) {
 
 	// Encode the 128 bits into a base64 string
 	encoded := base64.StdEncoding.EncodeToString(combinedBytes)
-	return ClientID(encoded), nil
+	return clientID(encoded), nil
 }
 
-type User struct {
+type user struct {
 	Conn                 *websocket.Conn
-	ClientID             ClientID
+	ClientID             clientID
 	Username             string
 	IsHost               bool
 	SubmittedAnswerIdx   int
@@ -64,8 +82,8 @@ type User struct {
 	NewPoints            int64
 }
 
-// WriteTemplate does tmpl.Execute(w, data) on websocket connection to the user
-func (client *User) WriteTemplate(tmpl *template.Template, data any) error {
+// writeTemplate does tmpl.Execute(w, data) on websocket connection to the user
+func (client *user) writeTemplate(tmpl *template.Template, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -78,8 +96,8 @@ func (client *User) WriteTemplate(tmpl *template.Template, data any) error {
 	return nil
 }
 
-// WriteNamedTemplate does tmpl.ExecuteTemplate(w, name, data) on websocket connection to the user
-func (client *User) WriteNamedTemplate(tmpl *template.Template, name string, data any) error {
+// writeNamedTemplate does tmpl.ExecuteTemplate(w, name, data) on websocket connection to the user
+func (client *user) writeNamedTemplate(tmpl *template.Template, name string, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -92,25 +110,7 @@ func (client *User) WriteNamedTemplate(tmpl *template.Template, name string, dat
 	return nil
 }
 
-type LobbyOptions struct {
-	TimePerQuestion time.Duration
-	Pin             string
-}
-
-func CreateLobby(options LobbyOptions) *Lobby {
-	return &Lobby{
-		Host:               nil,
-		TimePerQuestion:    options.TimePerQuestion,
-		Pin:                options.Pin,
-		Game:               common.Game{},
-		CreatedAt:          time.Now(),
-		Players:            make(map[ClientID]*User),
-		State:              LSWaitingForPlayers,
-		CurrentQuestionIdx: -1,
-	}
-}
-
-func (l *Lobby) StartNextQuestion() error {
+func (l *lobby) startNextQuestion() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -123,25 +123,25 @@ func (l *Lobby) StartNextQuestion() error {
 	}
 
 	l.CurrentQuestionIdx++
-	l.State = LSQuestion
+	l.State = lsQuestion
 	l.CurrentQuestionStartTime = time.Now()
 	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
 	l.PlayersAnswering = len(l.Players)
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
-		l.State = LSFinalResults
+		l.State = lsFinalResults
 		// Send final results view to all
-		viewData := ViewData{
+		vData := viewData{
 			Lobby: l,
 			User:  l.Host,
 		}
-		if err := l.Host.WriteTemplate(FinalResultsView, viewData); err != nil {
+		if err := l.Host.writeTemplate(finalResultsView, vData); err != nil {
 			slog.Error("Error sending FinalResultsView to host", "error", err)
 		}
 		for _, player := range l.Players {
-			viewData.User = player
-			err := player.WriteTemplate(FinalResultsView, viewData)
+			vData.User = player
+			err := player.writeTemplate(finalResultsView, vData)
 			if err != nil {
 				slog.Error("Error sending FinalResultsView to user", "error", err)
 			}
@@ -158,27 +158,27 @@ func (l *Lobby) StartNextQuestion() error {
 		case <-l.questionTimer.timer.C:
 			// Time completed
 			slog.Debug("Question timeout reached")
-			l.ShowAnswer()
+			l.showAnswer()
 			break
 		case <-l.questionTimer.cancelChan:
 			// Timer cancelled
 			slog.Debug("Question timer cancelled")
-			l.ShowAnswer()
+			l.showAnswer()
 			break
 		}
 	}()
 
 	// Send question view to all
-	viewData := ViewData{
+	vData := viewData{
 		Lobby: l,
 		User:  l.Host,
 	}
-	if err := l.Host.WriteTemplate(QuestionView, viewData); err != nil {
+	if err := l.Host.writeTemplate(questionView, vData); err != nil {
 		slog.Error("Error sending QuestionView to host", "error", err)
 	}
 	for _, player := range l.Players {
-		viewData.User = player
-		err := player.WriteTemplate(QuestionView, viewData)
+		vData.User = player
+		err := player.writeTemplate(questionView, vData)
 		if err != nil {
 			slog.Error("Error sending QuestionView to user", "error", err)
 		}
@@ -186,14 +186,19 @@ func (l *Lobby) StartNextQuestion() error {
 	return nil
 }
 
-func (l *Lobby) ShowAnswer() error {
+func (l *lobby) showAnswer() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.State = LSAnswer
+	l.State = lsAnswer
 
 	// Add points to players
 	for _, player := range l.Players {
+		if player.SubmittedAnswerIdx == -1 {
+			// Player didn't submit an answer
+			player.NewPoints = 0
+			continue
+		}
 		submittedAnswer := &l.CurrentQuestion.Answers[player.SubmittedAnswerIdx]
 		// Give points based on time to answer
 		if submittedAnswer.IsCorrect {
@@ -209,17 +214,17 @@ func (l *Lobby) ShowAnswer() error {
 	}
 
 	// Send answer view to all
-	viewData := ViewData{
+	vData := viewData{
 		Lobby: l,
 		User:  l.Host,
 	}
-	if err := l.Host.WriteTemplate(AnswerView, viewData); err != nil {
+	if err := l.Host.writeTemplate(answerView, vData); err != nil {
 		slog.Error("Error sending AnswerView to host", "error", err)
 	}
 
 	for _, player := range l.Players {
-		viewData.User = player
-		if err := player.WriteTemplate(AnswerView, viewData); err != nil {
+		vData.User = player
+		if err := player.writeTemplate(answerView, vData); err != nil {
 			slog.Error("Error sending AnswerView to user", "error", err)
 		}
 	}
