@@ -27,6 +27,7 @@ type Lobby struct {
 	CurrentQuestionTimeout string // ISO 8601 String
 	CurrentQuestionIdx     int
 	CurrentQuestion        common.Question
+	PlayersAnswering       int // Number of players who haven't submitted an answer
 }
 
 type ClientID string
@@ -57,7 +58,7 @@ type User struct {
 	Username             string
 	IsHost               bool
 	SubmittedAnswer      int
-	AnswerSubbmisionTime time.Time
+	AnswerSubmissionTime time.Time
 }
 
 // WriteTemplate does tmpl.Execute(w, data) on websocket connection to the user
@@ -111,14 +112,17 @@ func (l *Lobby) StartNextQuestion() error {
 	defer l.mu.Unlock()
 
 	// Reset Player answers
+	l.Host.SubmittedAnswer = -1
+	l.Host.AnswerSubmissionTime = time.Time{}
 	for _, player := range l.Players {
 		player.SubmittedAnswer = -1
-		player.AnswerSubbmisionTime = time.Time{}
+		player.AnswerSubmissionTime = time.Time{}
 	}
 
 	l.CurrentQuestionIdx++
 	l.State = LSQuestion
 	l.CurrentQuestionTimeout = time.Now().Add(l.TimePerQuestion).Format(time.RFC3339)
+	l.PlayersAnswering = len(l.Players)
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {

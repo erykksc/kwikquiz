@@ -22,19 +22,27 @@
           {{ .Lobby.CurrentQuestion.Text }}
         </h2>
 
+        {{ block "answer-options" . }}
         <!-- Answer Options -->
-        <div class="flex flex-col gap-4">
+        <div id="answer-options" class="flex flex-col gap-4">
           {{ range $index, $answer:= .Lobby.CurrentQuestion.Answers }}
+          <!---->
           <button
-            class="py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            id="answer-{{$index}}"
+            class="
+              {{ if eq $.User.SubmittedAnswer $index}}
+              py-4 px-8 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500
+              {{ else }}
+              py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500
+              {{ end }}"
+            id="answer-q{{$.Lobby.CurrentQuestionIdx}}-a{{$index}}"
             name="answer"
             ws-send
           >
             {{ $answer.Text }}
           </button>
-          {{end}}
+          {{ end }}
         </div>
+        {{ end }}
       </div>
 
       <p class="text-lg font-semibold text-gray-800 absolute top-4 right-4">
@@ -75,10 +83,13 @@
 
       <!-- Player Count -->
       <p class="text-lg font-semibold text-gray-800 absolute bottom-4 left-4">
-        Players Answered:
-        <span class="text-2xl font-bold text-blue-600" id="player-count"
-          >0</span
-        >
+        Players Answering:
+        <!---->
+        {{ block "player-count" . }}
+        <span class="text-2xl font-bold text-blue-600" id="player-count">
+          {{ .Lobby.PlayersAnswering }}
+        </span>
+        {{ end }}
       </p>
 
       <!-- Score Counter -->
