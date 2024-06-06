@@ -12,12 +12,6 @@ type Game struct {
 	Points map[string]int
 }
 
-type PlayerAnswer struct {
-	Username    string
-	SubbmitedAt time.Time
-	Answer      Answer
-}
-
 type Quiz struct {
 	ID          string
 	Title       string
