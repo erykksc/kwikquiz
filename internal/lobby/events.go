@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,23 +16,10 @@ type LobbyEvent interface {
 	Handle(lobby *Lobby, initiator *User) error
 }
 
-type HXData struct {
-	HxCurrentURL  string `json:"HX-Current-URL"`
-	HxRequest     string `json:"HX-Request"`
-	HxTarget      string `json:"HX-Target"`
-	HxTrigger     string `json:"HX-Trigger"`
-	HxTriggerName string `json:"HX-Trigger-Name"`
-}
-
 // ParseLobbyEvent parses a GameEvent from a JSON in a byte slice
 func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
-	type Headers struct {
-		HXData
-		EventType string
-	}
-
 	type WsRequest struct {
-		HEADERS Headers
+		HEADERS common.HX_Headers
 	}
 
 	var wsRequest WsRequest
@@ -49,19 +37,19 @@ func ParseLobbyEvent(data []byte) (LobbyEvent, error) {
 		}
 		return event, nil
 	case "skip-to-answer-btn":
-		var event LESkipToAnswerRequest
+		var event leSkipToAnswerRequested
 		return event, nil
 	case "next-question-btn":
-		var event LENextQuestionRequest
+		var event leNextQuestionRequested
 		return event, nil
 	case "change-username-btn":
-		var event LEChangeUsernameRequest
+		var event leUsernameChangeRequested
 		return event, nil
 	case "start-game-btn":
-		var event LEGameStartRequest
+		var event leGameStartRequested
 		return event, nil
 	case "new-username-form":
-		var event LEUSubmittedUsername
+		var event leUsernameSubmitted
 		if err := json.Unmarshal(data, &event); err != nil {
 			return nil, err
 		}
@@ -124,15 +112,15 @@ func HandleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID ClientID) (
 	return connectedUser, nil
 }
 
-type LEUSubmittedUsername struct {
+type leUsernameSubmitted struct {
 	Username string
 }
 
-func (e LEUSubmittedUsername) String() string {
+func (e leUsernameSubmitted) String() string {
 	return "GEUserSubmittedUsername: " + e.Username
 }
 
-func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
+func (event leUsernameSubmitted) Handle(l *Lobby, initiator *User) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -208,13 +196,13 @@ func (event LEUSubmittedUsername) Handle(l *Lobby, initiator *User) error {
 	return nil
 }
 
-type LEChangeUsernameRequest struct{}
+type leUsernameChangeRequested struct{}
 
-func (e LEChangeUsernameRequest) String() string {
+func (e leUsernameChangeRequested) String() string {
 	return "GEChangeUsernameRequest"
 }
 
-func (event LEChangeUsernameRequest) Handle(l *Lobby, initiator *User) error {
+func (event leUsernameChangeRequested) Handle(l *Lobby, initiator *User) error {
 	// Check if the game has already started
 	if l.State != LSWaitingForPlayers {
 		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Game already started")
@@ -233,13 +221,13 @@ func (event LEChangeUsernameRequest) Handle(l *Lobby, initiator *User) error {
 	return nil
 }
 
-type LEGameStartRequest struct{}
+type leGameStartRequested struct{}
 
-func (e LEGameStartRequest) String() string {
+func (e leGameStartRequested) String() string {
 	return "LEGameStartRequest"
 }
 
-func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
+func (event leGameStartRequested) Handle(l *Lobby, initiator *User) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
 		initiator.WriteTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
@@ -281,24 +269,24 @@ func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 	return nil
 }
 
-type LESkipToAnswerRequest struct{}
+type leSkipToAnswerRequested struct{}
 
-func (e LESkipToAnswerRequest) String() string {
+func (e leSkipToAnswerRequested) String() string {
 	return "LESkipToAnswerRequest"
 }
 
-func (event LESkipToAnswerRequest) Handle(l *Lobby, initiator *User) error {
+func (event leSkipToAnswerRequested) Handle(l *Lobby, initiator *User) error {
 	l.questionTimer.Cancel()
 	return nil
 }
 
-type LENextQuestionRequest struct{}
+type leNextQuestionRequested struct{}
 
-func (e LENextQuestionRequest) String() string {
+func (e leNextQuestionRequested) String() string {
 	return "LENextQuestionRequest"
 }
 
-func (event LENextQuestionRequest) Handle(l *Lobby, initiator *User) error {
+func (event leNextQuestionRequested) Handle(l *Lobby, initiator *User) error {
 	if err := l.StartNextQuestion(); err != nil {
 		return err
 	}
