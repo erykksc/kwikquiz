@@ -10,13 +10,6 @@ type Game struct {
 	Quiz      Quiz
 	// Username -> Points
 	Points map[string]int
-	Rounds []Round
-}
-
-type Round struct {
-	Question        Question
-	PossibleAnswers []Answer
-	PlayersAnswers  []PlayerAnswer
 }
 
 type PlayerAnswer struct {
