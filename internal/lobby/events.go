@@ -84,7 +84,7 @@ func HandleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID ClientID) (
 		ClientID: clientID,
 	}
 
-	view := l.State.ViewName()
+	view := l.State.View()
 
 	player, connectedUserIsPlayer := l.Players[clientID]
 	switch {
@@ -259,7 +259,7 @@ func (event LEGameStartRequest) Handle(l *Lobby, initiator *User) error {
 			Lobby: l,
 			User:  initiator,
 		}
-		if err := initiator.WriteTemplate(l.State.ViewName(), viewData); err != nil {
+		if err := initiator.WriteTemplate(l.State.View(), viewData); err != nil {
 			return err
 		}
 		return errors.New("Game already started, sending current state to initiator")

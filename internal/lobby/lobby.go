@@ -19,7 +19,7 @@ type Lobby struct {
 	mu                     sync.Mutex
 	Host                   *User
 	Pin                    string
-	TimePerQuestion        time.Duration // time per question
+	TimePerQuestion        time.Duration
 	CreatedAt              time.Time
 	Players                map[ClientID]*User
 	State                  LobbyState
