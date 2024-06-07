@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"html/template"
 	"log/slog"
+	"sort"
 	"sync"
 	"time"
 
@@ -28,7 +29,8 @@ type lobby struct {
 	CurrentQuestionTimeout   string // ISO 8601 String
 	CurrentQuestionIdx       int
 	CurrentQuestion          *common.Question
-	PlayersAnswering         int // Number of players who haven't submitted an answer
+	PlayersAnswering         int     // Number of players who haven't submitted an answer
+	Leaderboard              []*user // Players sorted by score
 }
 
 type lobbyOptions struct {
@@ -186,6 +188,14 @@ func (l *lobby) startNextQuestion() error {
 	return nil
 }
 
+// ByScore implements sort.Interface for []*user based on the Score field
+// User for calculating leaderboard
+type ByScore []*user
+
+func (a ByScore) Len() int           { return len(a) }
+func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
+func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 func (l *lobby) showAnswer() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -212,6 +222,13 @@ func (l *lobby) showAnswer() error {
 			player.Score += player.NewPoints
 		}
 	}
+
+	// Calculate leaderboard
+	l.Leaderboard = make([]*user, 0, len(l.Players))
+	for _, player := range l.Players {
+		l.Leaderboard = append(l.Leaderboard, player)
+	}
+	sort.Sort(sort.Reverse(ByScore(l.Leaderboard)))
 
 	// Send answer view to all
 	vData := viewData{
