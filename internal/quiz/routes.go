@@ -33,7 +33,7 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("GET /quizzes/create/{$}", getQuizCreateHandler)
 	mux.HandleFunc("GET /quizzes/update/{qid}", getQuizUpdateHandler)
 	mux.HandleFunc("PUT /quizzes/update/{qid}", updateQuizHandler)
-
+	mux.HandleFunc("DELETE /quizzes/delete/{qid}", deleteQuizHandler)
 	return mux
 
 }
@@ -137,20 +137,27 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 		if questionText == "" {
 			break
 		}
-
-		answers := []string{
-			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-1"),
-			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-2"),
-			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-3"),
-			r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-4"),
-		}
-
+		// Get the correct answer string
 		correctAnswerStr := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex))
 		correctAnswer, err := strconv.Atoi(correctAnswerStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid answer option value")
 		}
+		// Append answers to a slice
+		var answers []Answer
+		for answerIndex := 1; answerIndex <= 4; answerIndex++ {
+			answerText := r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
+			if answerText == "" {
+				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
+			}
+			answers = append(answers, Answer{
+				Number:    answerIndex,
+				IsCorrect: answerIndex == correctAnswer,
+				Text:      answerText,
+			})
 
+		}
+		// Append questions to a slice
 		questions = append(questions, Question{
 			Number:        questionIndex,
 			Text:          questionText,
@@ -253,4 +260,34 @@ func updateQuizHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirectToQuiz(w, quizID)
+}
+
+func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
+
+	qidStr := r.PathValue("qid")
+
+	// Convert the string to an integer
+	qid, err := strconv.Atoi(qidStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		http.Error(w, "Invalid qid value", http.StatusBadRequest)
+		return
+	}
+
+	err = quizzesRepo.DeleteQuiz(qid)
+	if err != nil {
+		switch err.(type) {
+		case ErrQuizNotFound:
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+
+		default:
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+	fmt.Printf("Quiz %d deleted\n", qid)
+	w.Header().Add("HX-Redirect", fmt.Sprintf("/"))
+	w.WriteHeader(http.StatusNoContent)
 }

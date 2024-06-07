@@ -17,9 +17,16 @@ type Quiz struct {
 type Question struct {
 	Number        int
 	Text          string
-	Answers       []string
+	Answers       []Answer
 	CorrectAnswer int
 	mutex         sync.RWMutex
+}
+
+type Answer struct {
+	Number    int
+	IsCorrect bool
+	Text      string
+	// later we can add img, video etc. to allow multimodal questions
 }
 
 type ErrQuizNotFound struct{}
