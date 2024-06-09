@@ -3,8 +3,30 @@
   <head>
     {{template "header-content" .}}
     <title>KWIKQUIZ</title>
-  </head>
-  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <style>
+      .bg-baby-pink {
+        background-color: #fec6e2;
+      }
+      .bg-dark-green {
+        background-color: #123f16;
+      }
+      .text-baby-pink {
+        color: #fec6e2;
+      }
+      .text-dark-green {
+        color: #123f16;
+      }
+      .background-pattern {
+        background-color: #fec6e2;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .input-border-green {
+        border-color: #123f16;
+      }
+    </style>
     <script>
       document.addEventListener("DOMContentLoaded", (event) => {
         document.body.addEventListener("htmx:beforeSwap", function (evt) {
@@ -18,45 +40,54 @@
         });
       });
     </script>
-
+  </head>
+  <body class="background-pattern">
     <div class="text-center">
-      <h1 class="text-4xl md:text-6xl font-bold text-gray-800 mb-4">
+      <h1 class="text-4xl md:text-6xl font-bold text-dark-green mb-4">
         KWIKQUIZ
       </h1>
-      <h2 class="text-lg md:text-xl text-gray-600 mb-8">Learning is Fun!</h2>
-      <div class="flex justify-center space-x-4">
-        {{ define "join-form" }}
+      <h2 class="text-lg md:text-xl text-dark-green mb-8">Learning is Fun!</h2>
+      <div class="flex flex-col items-center space-y-4">
+        <!-- Game Code Input -->
+        {{ block "join-form" . }}
         <form
           method="GET"
           hx-get="/lobbies/join"
           hx-include="#pin"
           hx-swap="outerHTML"
+          class="mt-8 w-full max-w-xs"
         >
-          <div>
-            <input
-              type="text"
-              id="pin"
-              name="pin"
-              placeholder="Game PIN"
-              required
-            />
-            <!-- red error string -->
-            <p id="error" style="color: red">{{.GamePinError}}</p>
-          </div>
+          <input
+            type="text"
+            id="pin"
+            name="pin"
+            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            placeholder="Enter game code here..."
+            required
+          />
+          <!-- red error string -->
+          <p id="error" style="color: red">{{.GamePinError}}</p>
           <button
             type="submit"
-            class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            id="join-button"
+            class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Join Game
+            JOIN
           </button>
         </form>
-        {{ end }} {{ template "join-form" . }}
+        {{ end }}
 
-        <a
-          href="/lobbies/create"
-          class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >Create KWIKQUIZ</a
+        <label for="game-code" class="block text-dark-green font-semibold mb-2"
+          >OR</label
         >
+
+        <div class="flex space-x-4">
+          <a
+            href="/lobbies/create"
+            class="px-6 py-3 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green"
+            >Create new KWIKQUIZ</a
+          >
+        </div>
       </div>
     </div>
   </body>
