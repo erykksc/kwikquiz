@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/lobbies"
 )
 
 var DEBUG = common.DebugOn()
@@ -47,6 +47,7 @@ func main() {
 
 	router := http.NewServeMux()
 
+	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
