@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input type="text" name="question-${questionNumber}" class="w-full px-4 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter question text" value="${question ? question.Text : ''}" required>
                 <label class="block text-gray-700 font-semibold mb-2">Answer Options</label>
                 ${[1, 2, 3, 4].map(i => `
-                    <input type="text" name="answer-${questionNumber}-${i}" class="w-full px-4 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Option ${i}" value="${question ? question.Answers[i - 1] : ''}" required>
+                    <input type="text" name="answer-${questionNumber}-${i}" class="w-full px-4 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Option ${i}" value="${question ? question.Answers[i - 1].Text : ''}" required>
                 `).join('')}
                 <div class="mb-4">
                     <label for="correct-answer-${questionNumber}" class="block text-gray-700 font-semibold mb-2">Correct Answer</label>

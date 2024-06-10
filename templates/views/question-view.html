@@ -1,66 +1,85 @@
 <div id="view">
-  <div
-    id=""
-    class="bg-gray-100 min-h-screen flex flex-col items-center justify-center"
-  >
-    <div class="h-full w-full flex flex-col items-center justify-center">
-      <!-- Quiz Name -->
-      <h1 class="text-lg font-semibold text-gray-800 absolute top-4 left-4">
-        Quiz:
-        <span class="text-2xl font-bold text-blue-600">
+  <style>
+    .bg-baby-pink {
+      background-color: #f3c4db;
+    }
+    .text-baby-pink {
+      color: #f6cee2;
+    }
+    .bg-dark-green {
+      background-color: #123f16;
+    }
+    .text-dark-green {
+      color: #123f16;
+    }
+    .border-dark-green {
+      border-color: #123f16;
+    }
+    .border-baby-pink {
+      border-color: #f3c4db;
+    }
+    .bg-medium-pink {
+      background-color: #d180a8;
+    }
+    .hover-bg-dark-green {
+      background-color: #123f16;
+    }
+    .hover-text-baby-pink {
+      color: #f6cee2;
+    }
+
+    @media (max-width: 640px) {
+      .quiz-header {
+        flex-direction: column;
+        align-items: center;
+      }
+      .quiz-header h1 {
+        margin-bottom: 0.5rem;
+      }
+      .quiz-header p {
+        margin-top: 0.5rem;
+      }
+    }
+
+    @media (min-width: 641px) {
+      .quiz-header {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+    }
+  </style>
+  <!-- body -->
+  <div class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
+    <div
+      class="h-full w-full flex flex-col items-center justify-center p-4 max-w-2xl"
+    >
+      <!-- Quiz Header -->
+      <div
+        class="quiz-header flex items-center justify-between w-full px-4 mb-4"
+      >
+        <!-- Quiz Name -->
+        <h1 class="text-lg md:text-xl font-semibold text-dark-green">
           {{.Lobby.Quiz.Title}}
-        </span>
-      </h1>
-
-      <!-- KWIKQUIZ Title -->
-      <h1 class="text-3xl font-bold text-blue-600 absolute top-4">KWIKQUIZ</h1>
-
-      <!-- Question and Answer Options Container -->
-      <div class="flex flex-col items-center justify-center mt-16">
-        <!-- Question -->
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">
-          {{ .Lobby.CurrentQuestion.Text }}
-        </h2>
-
-        {{ block "answer-options" . }}
-        <!-- Answer Options -->
-        <div id="answer-options" class="flex flex-col gap-4">
-          {{ range $index, $answer:= .Lobby.CurrentQuestion.Answers }}
-          <!---->
-          <button
-            class="
-              {{ if eq $.User.SubmittedAnswerIdx $index}}
-              py-4 px-8 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500
-              {{ else }}
-              py-4 px-8 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500
-              {{ end }}"
-            id="answer-q{{$.Lobby.CurrentQuestionIdx}}-a{{$index}}"
-            name="answer"
-            ws-send
+        </h1>
+        <!-- Timer -->
+        <p class="text-lg md:text-xl font-semibold text-dark-green">
+          Time Remaining:
+          <span
+            class="text-2xl font-bold font-mono text-dark-green"
+            id="timer"
+            data-finish-time="{{.Lobby.CurrentQuestionTimeout}}"
           >
-            {{ $answer.Text }}
-          </button>
-          {{ end }}
-        </div>
-        {{ end }}
+            <!-- Countdown of current question will be displayed here using JS -->
+          </span>
+        </p>
       </div>
-
-      <p class="text-lg font-semibold text-gray-800 absolute top-4 right-4">
-        Time Remaining:
-        <span
-          class="text-2xl font-bold text-blue-600 font-mono"
-          id="timer"
-          data-finish-time="{{.Lobby.CurrentQuestionTimeout}}"
-        >
-          <!-- Countdown of current question will be displayed here using JS -->
-        </span>
-      </p>
       <!-- Script to update the timer -->
       <script>
         (function () {
-          // document.addEventListener("htmx:afterSwap", function (event) {
           const timerElement = document.getElementById("timer");
+          console.log(timerElement.dataset.finishTime);
           const finishTime = new Date(timerElement.dataset.finishTime);
+          console.log(finishTime);
 
           function updateCountdown() {
             const now = new Date();
@@ -90,34 +109,86 @@
         })();
       </script>
 
-      <!-- Player Count -->
-      <p class="text-lg font-semibold text-gray-800 absolute bottom-4 left-4">
-        Players Answering:
-        <!---->
-        {{ block "player-count" . }}
-        <span class="text-2xl font-bold text-blue-600" id="player-count">
-          {{ .Lobby.PlayersAnswering }}
-        </span>
-        {{ end }}
-      </p>
+      <!-- KWIKQUIZ Title -->
+      <h1
+        class="text-2xl md:text-4xl font-bold text-dark-green my-4 text-center"
+      >
+        KWIKQUIZ
+      </h1>
 
-      {{ if .User.IsHost }}
-      <!-- The host doesn't have a score -->
-      {{ else }}
-      <!-- Score Counter -->
-      <p class="text-lg font-semibold text-gray-800 absolute bottom-4 right-4">
-        Your Score:
-        <span class="text-2xl font-bold text-blue-600" id="score">
-          {{ .User.Score }}
-        </span>
-      </p>
-      {{ end }}
+      <!-- Question and Answer Options Container -->
+      <div
+        class="flex flex-col items-center justify-center w-full mt-4 md:mt-8 px-4"
+      >
+        <!-- Question -->
+        <h2
+          class="text-xl md:text-3xl font-bold text-dark-green mb-4 text-center"
+        >
+          {{ .Lobby.CurrentQuestion.Text }}
+        </h2>
+
+        <!-- Answer Options -->
+        {{ block "answer-options" . }}
+        <div id="answer-options" class="flex flex-col gap-4">
+          {{ range $index, $answer:= .Lobby.CurrentQuestion.Answers }}
+          <!---->
+          <button
+            class="py-3 md:py-4 px-4 md:px-8 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green transition duration-200 ease-in-out"
+            class="
+              {{ if eq $.User.SubmittedAnswerIdx $index}}
+              py-3 md:py-4 px-4 md:px-8 bg-dark-blue text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-dark-blue transition duration-200 ease-in-out
+              {{ else }}
+              py-3 md:py-4 px-4 md:px-8 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green transition duration-200 ease-in-out
+              {{ end }}"
+            id="answer-q{{$.Lobby.CurrentQuestionIdx}}-a{{$index}}"
+            name="answer"
+            ws-send
+          >
+            {{ $answer.Text }}
+          </button>
+          {{ end }}
+        </div>
+        {{ end }}
+        <!-- Skip to answer button -->
+        {{ if .User.IsHost }}
+        <button
+          name="skip-to-answer-btn"
+          ws-send
+          class="rounded bg-blue-200 p-1"
+        >
+          Skip to Answer
+        </button>
+        {{ end }}
+      </div>
+
+      <!-- Player Count and Score -->
+      <div
+        class="flex flex-col md:flex-row justify-between w-full max-w-md mt-8 px-4"
+      >
+        <!-- Player Count -->
+        <p
+          class="text-lg md:text-xl font-semibold text-dark-green mb-2 md:mb-0"
+        >
+          Players Answering:
+          <!---->
+          {{ block "player-count" . }}
+          <span class="text-2xl font-bold text-dark-green" id="player-count">
+            {{ .Lobby.PlayersAnswering }}
+          </span>
+          {{ end}}
+        </p>
+        <!-- Score Counter -->
+        {{ if .User.IsHost }}
+        <!-- The host doesn't have a score -->
+        {{ else }}
+        <p class="text-lg md:text-xl font-semibold text-dark-green">
+          Your Score:
+          <span class="text-2xl font-bold text-dark-green" id="score">
+            {{ .User.Score }}
+          </span>
+        </p>
+        {{ end }}
+      </div>
     </div>
-    <!-- Skip to answer button -->
-    {{ if .User.IsHost }}
-    <button name="skip-to-answer-btn" ws-send class="rounded bg-blue-200 p-1">
-      Skip to Answer
-    </button>
-    {{ end }}
   </div>
 </div>

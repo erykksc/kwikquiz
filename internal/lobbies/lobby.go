@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"html/template"
 	"log/slog"
 	"sort"
@@ -28,7 +29,7 @@ type lobby struct {
 	CurrentQuestionStartTime time.Time
 	CurrentQuestionTimeout   string // ISO 8601 String
 	CurrentQuestionIdx       int
-	CurrentQuestion          *common.Question
+	CurrentQuestion          *quiz.Question
 	PlayersAnswering         int     // Number of players who haven't submitted an answer
 	Leaderboard              []*user // Players sorted by score
 }
@@ -151,7 +152,7 @@ func (l *lobby) startNextQuestion() error {
 		return nil
 	}
 
-	l.CurrentQuestion = &l.Quiz.Questions[l.CurrentQuestionIdx]
+	l.CurrentQuestion = l.Quiz.Questions[l.CurrentQuestionIdx]
 
 	// Start the question timer
 	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)
@@ -209,7 +210,7 @@ func (l *lobby) showAnswer() error {
 			player.NewPoints = 0
 			continue
 		}
-		submittedAnswer := &l.CurrentQuestion.Answers[player.SubmittedAnswerIdx]
+		submittedAnswer := l.CurrentQuestion.Answers[player.SubmittedAnswerIdx]
 		// Give points based on time to answer
 		if submittedAnswer.IsCorrect {
 			timeToAnswer := player.AnswerSubmissionTime.Sub(l.CurrentQuestionStartTime)
