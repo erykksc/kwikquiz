@@ -1,6 +1,7 @@
 package lobbies
 
 import (
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"log/slog"
 	"net/http"
 	"time"
@@ -30,14 +31,13 @@ func NewLobbiesRouter() http.Handler {
 			Pin:             "1234",
 		}
 		testLobby := createLobby(lOptions)
-		testLobby.Quiz = common.Quiz{
+		testLobby.Quiz = &quiz.Quiz{
 			Title:       "Geography",
 			Description: "This is a quiz about capitals around the world",
-			Owner:       "Pola",
-			Questions: []common.Question{
+			Questions: []*quiz.Question{
 				{
 					Text: "What is the capital of France?",
-					Answers: []common.Answer{
+					Answers: []*quiz.Answer{
 						{Text: "Paris", IsCorrect: true},
 						{Text: "Berlin", IsCorrect: false},
 						{Text: "Warsaw", IsCorrect: false},
@@ -46,7 +46,7 @@ func NewLobbiesRouter() http.Handler {
 				},
 				{
 					Text: "On which continent is Russia?",
-					Answers: []common.Answer{
+					Answers: []*quiz.Answer{
 						{Text: "Europe", IsCorrect: true},
 						{Text: "Asia", IsCorrect: true},
 						{Text: "North America", IsCorrect: false},

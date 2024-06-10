@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+
+{{template "header-content" .}}
+    <style>
+      .centered-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      a {
+        display: inline-block;
+        width: 200px;
+        height: 50px;
+        background-color: blue;
+        color: white;
+        text-align: center;
+        line-height: 50px;
+        margin: 10px;
+      }
+    </style>
+    <body>
+    <title>Kwikquiz</title>
+    <div>
+    <h1>Id: {{.ID}}</h1>
+    <p>Title: {{.Title}}</p>
+    <p>Password: {{.Password}}</p>
+    <p>Description: {{.Description}}</p>
+    <p>QuestionOrder: {{.QuestionOrder}}</p>
+    <div>
+        <a href="/quizzes/update/{{.ID}}"
+           class="px-4 py-2 bg-red-500 text-white rounded-lg mr-2 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+            Edit
+        </a>
+        <button type="button"
+        class="px-4 py-2 bg-red-500 text-white rounded-lg mr-2 hover:bg-violet-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+        hx-delete="/quizzes/delete/{{.ID}}"
+        hx-trigger="click">Delete
+        </button>
+    </div>
+
+    </div>
+        <div class="centered-container">
+            {{range .Questions}}
+            <p>Question {{.Number}}</p>
+            <p>{{.Text}}</p>
+            {{end}}
+        </div>
+    </body>
+</html>
