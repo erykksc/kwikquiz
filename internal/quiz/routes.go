@@ -2,23 +2,13 @@ package quiz
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
-	"html/template"
 	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
-)
-
-const (
-	NotFoundPage        = "static/notfound.html"
-	BaseTemplate        = "templates/base.html"
-	IndexTemplate       = "templates/index.html"
-	QuizzesTemplate     = "templates/quizzes/quizzes.html"
-	QuizPreviewTemplate = "templates/quizzes/quiz-preview.html"
-	QuizCreateTemplate  = "templates/quizzes/quiz-create.html"
-	QuizUpdateTemplate  = "templates/quizzes/quiz-update.html"
 )
 
 var quizzesRepo QuizRepository = NewInMemoryQuizRepository()
@@ -38,6 +28,7 @@ func NewQuizzesRouter() http.Handler {
 
 }
 
+// TODO: Make it only accessible by admin
 func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	quizzes, err := quizzesRepo.GetAllQuizzes()
@@ -45,9 +36,10 @@ func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
 	}
-	tmpl := template.Must(template.ParseFiles(QuizzesTemplate, BaseTemplate))
-
-	tmpl.Execute(w, quizzes)
+	err = QuizzesTemplate.Execute(w, quizzes)
+	if err != nil {
+		slog.Error("Error rendering template", "err", err)
+	}
 }
 
 func getQuizHandler(w http.ResponseWriter, r *http.Request) {
@@ -65,18 +57,20 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 
 	quiz, err := quizzesRepo.GetQuiz(qid)
 	if err != nil {
-		switch err.(type) {
-		case ErrQuizNotFound:
+		var errQuizNotFound ErrQuizNotFound
+		switch {
+		case errors.As(err, &errQuizNotFound):
 			common.ErrorHandler(w, r, http.StatusNotFound)
 			return
-
 		default:
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
 			return
 		}
 	}
-	tmpl := template.Must(template.ParseFiles(QuizPreviewTemplate, BaseTemplate))
-	tmpl.Execute(w, quiz)
+	err = QuizPreviewTemplate.Execute(w, quiz)
+	if err != nil {
+		slog.Error("Error getting quiz..", "err", err)
+	}
 	fmt.Println(quiz)
 }
 
@@ -85,7 +79,7 @@ type createQuizForm struct {
 	Title         string
 	Description   string
 	QuestionOrder string
-	Questions     []Question
+	Questions     []*Question
 	FormError     string
 }
 
@@ -108,7 +102,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	redirectToQuiz(w, quizID)
 }
 
-func parseQuizForm(r *http.Request) (Quiz, error) {
+func parseQuizForm(r *http.Request) (*Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
@@ -116,10 +110,10 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 
 	questions, err := parseQuestions(r)
 	if err != nil {
-		return Quiz{}, err
+		return &Quiz{}, err
 	}
 
-	return Quiz{
+	return &Quiz{
 		Title:         title,
 		Password:      password,
 		Description:   description,
@@ -128,8 +122,8 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	}, nil
 }
 
-func parseQuestions(r *http.Request) ([]Question, error) {
-	var questions []Question
+func parseQuestions(r *http.Request) ([]*Question, error) {
+	var questions []*Question
 	questionIndex := 1
 
 	for {
@@ -144,13 +138,13 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 			return nil, fmt.Errorf("invalid answer option value")
 		}
 		// Append answers to a slice
-		var answers []Answer
+		var answers []*Answer
 		for answerIndex := 1; answerIndex <= 4; answerIndex++ {
 			answerText := r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
 			if answerText == "" {
 				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
 			}
-			answers = append(answers, Answer{
+			answers = append(answers, &Answer{
 				Number:    answerIndex,
 				IsCorrect: answerIndex == correctAnswer,
 				Text:      answerText,
@@ -158,7 +152,7 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 
 		}
 		// Append questions to a slice
-		questions = append(questions, Question{
+		questions = append(questions, &Question{
 			Number:        questionIndex,
 			Text:          questionText,
 			Answers:       answers,
@@ -169,15 +163,18 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 	return questions, nil
 }
 
-func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
-	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
-	tmpl.ExecuteTemplate(w, "create-form", createQuizForm{
+func renderQuizCreateForm(w http.ResponseWriter, quiz *Quiz, err error) {
+	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
 		Title:         quiz.Title,
 		Description:   quiz.Description,
 		QuestionOrder: quiz.QuestionOrder,
 		Questions:     quiz.Questions,
 		FormError:     err.Error(),
 	})
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func redirectToQuiz(w http.ResponseWriter, quizID int) {
@@ -187,8 +184,11 @@ func redirectToQuiz(w http.ResponseWriter, quizID int) {
 
 func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	tmpl := template.Must(template.ParseFiles(QuizCreateTemplate, BaseTemplate))
-	tmpl.Execute(w, nil)
+	err := QuizCreateTemplate.Execute(w, nil)
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
@@ -226,14 +226,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles(QuizUpdateTemplate, BaseTemplate)
-	if err != nil {
-		log.Println("Error parsing templates:", err)
-		http.Error(w, "Error parsing templates", http.StatusInternalServerError)
-		return
-	}
-
-	err = tmpl.Execute(w, map[string]interface{}{
+	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
 		"QuizJSON": string(quizJSON),
 	})
 	if err != nil {

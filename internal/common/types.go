@@ -1,35 +1,16 @@
 package common
 
 import (
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"time"
 )
 
 type Game struct {
 	StartedAt time.Time
 	EndedAt   time.Time
-	Quiz      Quiz
+	Quiz      *quiz.Quiz
 	// Username -> Points
 	Points map[string]int
-}
-
-type Quiz struct {
-	ID          string
-	Title       string
-	Description string
-	Owner       string
-	Questions   []Question
-}
-
-type Question struct {
-	Text    string
-	Answers []Answer
-	// later we can add img, video etc. to allow multimodal questions
-}
-
-type Answer struct {
-	IsCorrect bool // multiple answers to a question may be right, can be used in tricky questions
-	Text      string
-	// later we can add img, video etc. to allow multimodal questions
 }
 
 type HX_Headers struct {
