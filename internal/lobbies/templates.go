@@ -18,9 +18,9 @@ var lobbyCreateTmpl *template.Template
 var createLobbyFormTmpl *template.Template
 
 type createLobbyFormData struct {
-	Pin       string
-	Username  string
-	FormError string
+	TimePerQuestion string
+	TimeForReading  string
+	FormError       string
 }
 
 var lobbyErrorAlertTmpl *template.Template

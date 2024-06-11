@@ -1,10 +1,11 @@
 package lobbies
 
 import (
-	"github.com/erykksc/kwikquiz/internal/quiz"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/erykksc/kwikquiz/internal/quiz"
 
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/gorilla/websocket"
@@ -17,16 +18,11 @@ func NewLobbiesRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
+	mux.HandleFunc("POST /lobbies/{$}", postLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
-	mux.HandleFunc("GET /lobbies/create", func(w http.ResponseWriter, r *http.Request) {
-		if err := lobbyCreateTmpl.Execute(w, nil); err != nil {
-			slog.Error("Error rendering template", "error", err)
-		}
-	})
-	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)
 
 	// Add test lobby
 	if common.DevMode() {
@@ -79,6 +75,17 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	if err := lobbiesTmpl.Execute(w, lobbies); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
+}
+
+func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Check if the client isn't a host of another lobby
+	// TODO: Parse possible arguments
+	options := lobbyOptions{}
+	newLobby := createLobby(options)
+	lobbiesRepo.AddLobby(newLobby)
+	// Redirect to the new lobby
+	w.Header().Add("HX-Redirect", "/lobbies/"+newLobby.Pin)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // getLobbyByPinHandler handles requests to /lobbies/{pin}
@@ -230,43 +237,4 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") != "true" {
 		http.Redirect(w, r, "/lobbies/"+pin, http.StatusFound)
 	}
-}
-
-// postLobbyCreateHandler handles requests to POST /lobbies/create
-func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	pin := r.FormValue("pin") // Game Pin
-	username := r.FormValue("username")
-
-	if pin == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("pin in form is required"))
-		return
-	}
-
-	if username == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("username in form is required"))
-		return
-	}
-
-	newLobby := createLobby(lobbyOptions{})
-
-	if err := lobbiesRepo.AddLobby(newLobby); err != nil {
-		slog.Error("Error adding game", "error", err)
-
-		err = createLobbyFormTmpl.Execute(w, createLobbyFormData{
-			Pin:       pin,
-			Username:  username,
-			FormError: err.Error(),
-		})
-		if err != nil {
-			slog.Error("Error rendering template", "error", err)
-		}
-		return
-	}
-
-	// Redirect to the game
-	w.Header().Add("HX-Redirect", "/lobbies/"+pin)
-	w.WriteHeader(http.StatusCreated)
 }
