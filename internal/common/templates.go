@@ -10,6 +10,11 @@ var IndexTmpl *template.Template
 
 // Template for joining a session/lobby
 var JoinFormTmpl *template.Template
+
+type JoinFormData struct {
+	GamePinError string
+}
+
 var NotFoundTmpl *template.Template
 
 func init() {

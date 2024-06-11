@@ -203,10 +203,6 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type joinFormData struct {
-	GamePinError string
-}
-
 // getLobbyJoinHandler handles requests to /lobbies/join
 func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
@@ -224,7 +220,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		// Do nothing
 	case errLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
-		common.JoinFormTmpl.Execute(w, joinFormData{GamePinError: "Game not found"})
+		common.JoinFormTmpl.Execute(w, common.JoinFormData{GamePinError: "Game not found"})
 		return
 	default:
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
