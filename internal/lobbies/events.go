@@ -60,6 +60,8 @@ func parseLobbyEvent(data []byte) (lobbyEvent, error) {
 
 }
 
+// handleNewWebsocketConn handles a new websocket connection to the lobby
+// This function bridges routes and events
 func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (*user, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

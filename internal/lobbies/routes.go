@@ -12,7 +12,7 @@ import (
 
 var lobbiesRepo lobbyRepository = newInMemoryLobbyRepository()
 
-// Returns a handler for routes starting with /games
+// Returns a handler for routes starting with /lobbies
 func NewLobbiesRouter() http.Handler {
 	mux := http.NewServeMux()
 
@@ -21,7 +21,11 @@ func NewLobbiesRouter() http.Handler {
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
-	mux.HandleFunc("GET /lobbies/create", getLobbyCreateHandler)
+	mux.HandleFunc("GET /lobbies/create", func(w http.ResponseWriter, r *http.Request) {
+		if err := lobbyCreateTmpl.Execute(w, nil); err != nil {
+			slog.Error("Error rendering template", "error", err)
+		}
+	})
 	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)
 
 	// Add test lobby
@@ -225,14 +229,6 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirect to the game if it's not an HX request
 	if r.Header.Get("HX-Request") != "true" {
 		http.Redirect(w, r, "/lobbies/"+pin, http.StatusFound)
-	}
-}
-
-// getLobbyCreateHandler handles requests to /lobbies/create
-func getLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	if err := lobbyCreateTmpl.Execute(w, nil); err != nil {
-		slog.Error("Error rendering template", "error", err)
 	}
 }
 
