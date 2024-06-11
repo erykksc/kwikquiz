@@ -61,7 +61,7 @@ func NewLobbiesRouter() http.Handler {
 		}
 
 		lobbiesRepo.AddLobby(testLobby)
-		slog.Info("Adding test lobby", "lobby", testLobby)
+		slog.Info("Added test lobby", "lobby", testLobby)
 	}
 
 	return mux
