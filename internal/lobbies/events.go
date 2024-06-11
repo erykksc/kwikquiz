@@ -60,6 +60,8 @@ func parseLobbyEvent(data []byte) (lobbyEvent, error) {
 
 }
 
+// handleNewWebsocketConn handles a new websocket connection to the lobby
+// This function bridges routes and events
 func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (*user, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -173,11 +175,6 @@ func (event leUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 		initiator.Username = event.Username
 	}
 
-	// l.Players[initiator.ClientID] = &User{
-	// 	Conn:     initiator.Conn,
-	// 	Username: event.Username,
-	// }
-
 	// Send the lobby screen to all players
 	vData := viewData{
 		Lobby: l,
@@ -262,6 +259,7 @@ func (event leGameStartRequested) Handle(l *lobby, initiator *user) error {
 	}
 
 	// Start game: go to the first question
+	l.StartedAt = time.Now()
 	if err := l.startNextQuestion(); err != nil {
 		return err
 	}
