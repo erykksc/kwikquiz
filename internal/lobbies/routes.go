@@ -78,11 +78,25 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Check if the client isn't a host of another lobby
+	// Check if the client isn't a host of another lobby
+	clientIDCookie, err := r.Cookie("client-id")
+	if err == nil {
+		cID := clientID(clientIDCookie.Value)
+		lobby, err := lobbiesRepo.GetLobbyByHost(cID)
+		if err == nil {
+			// Redirect to the lobby
+			w.Header().Add("HX-Redirect", "/lobbies/"+lobby.Pin)
+			w.WriteHeader(http.StatusFound)
+		}
+		return
+	}
+	// Otherwise, create a new lobby
+
 	// TODO: Parse possible arguments
 	options := lobbyOptions{}
 	newLobby := createLobby(options)
 	lobbiesRepo.AddLobby(newLobby)
+	slog.Info("Created new lobby", "lobby", newLobby)
 	// Redirect to the new lobby
 	w.Header().Add("HX-Redirect", "/lobbies/"+newLobby.Pin)
 	w.WriteHeader(http.StatusCreated)
