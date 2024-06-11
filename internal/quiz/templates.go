@@ -18,7 +18,7 @@ var QuizUpdateTemplate *template.Template
 
 func init() {
 	QuizzesTemplate = tmplParseWithBase("templates/quizzes/quizzes.html")
-	QuizPreviewTemplate = tmplParseWithBase("templates/quiz/quiz-preview.html")
-	QuizCreateTemplate = tmplParseWithBase("templates/quiz/quiz-create.html")
-	QuizUpdateTemplate = tmplParseWithBase("templates/quiz/quiz-update.html")
+	QuizPreviewTemplate = tmplParseWithBase("templates/quizzes/quiz-preview.html")
+	QuizCreateTemplate = tmplParseWithBase("templates/quizzes/quiz-create.html")
+	QuizUpdateTemplate = tmplParseWithBase("templates/quizzes/quiz-update.html")
 }
