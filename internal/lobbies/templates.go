@@ -13,12 +13,23 @@ func tmplParseWithBase(path string) *template.Template {
 
 // Templates are used to render the different pages of the app
 var lobbyCreateTmpl *template.Template
+
+// The form used for creating the lobby/session
+var createLobbyFormTmpl *template.Template
+
+type createLobbyFormData struct {
+	Pin       string
+	Username  string
+	FormError string
+}
+
 var lobbyErrorAlertTmpl *template.Template
 var lobbiesTmpl *template.Template
 var lobbyTmpl *template.Template
 
 func init() {
 	lobbyCreateTmpl = tmplParseWithBase("templates/lobbies/lobby-create.html")
+	createLobbyFormTmpl = lobbyCreateTmpl.Lookup("create-lobby-form")
 	lobbiesTmpl = tmplParseWithBase("templates/lobbies/lobbies.html")
 	lobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
 	lobbyErrorAlertTmpl = lobbyTmpl.Lookup("error-alert")

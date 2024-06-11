@@ -232,12 +232,6 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type createGameForm struct {
-	Pin       string
-	Username  string
-	FormError string
-}
-
 // postLobbyCreateHandler handles requests to POST /lobbies/create
 func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
@@ -260,7 +254,8 @@ func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := lobbiesRepo.AddLobby(newLobby); err != nil {
 		slog.Error("Error adding game", "error", err)
-		err = lobbyCreateTmpl.ExecuteTemplate(w, "create-form", createGameForm{
+
+		err = createLobbyFormTmpl.Execute(w, createLobbyFormData{
 			Pin:       pin,
 			Username:  username,
 			FormError: err.Error(),

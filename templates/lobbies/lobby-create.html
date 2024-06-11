@@ -25,7 +25,7 @@
   <div class="centered-container">
     <h1>kwikquiz</h1>
     <form method="post" hx-post="/lobbies/create">
-      {{define "create-form"}}
+      {{ block "create-lobby-form" . }}
       <div>
         <label for="pin">new game pin:</label>
         <input type="text" id="pin" name="pin" value="{{.pin}}" required />
@@ -43,7 +43,7 @@
       <!-- red error string -->
       <p id="error" style="color: red">{{.formerror}}</p>
       <button type="submit">submit</button>
-      {{ end }} {{template "create-form" .}}
+      {{ end }}
     </form>
     <div id="responsearea"></div>
   </div>
