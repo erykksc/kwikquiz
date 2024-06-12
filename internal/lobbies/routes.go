@@ -178,7 +178,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// GET CLIENT ID from COOKIE
 	clientIDCookie, err := r.Cookie("client-id")
 	if err == http.ErrNoCookie {
-		slog.Error("Client ID cookie not found")
+		slog.Error("Client ID cookie not found while in ws handler")
 		common.ErrorHandler(w, r, http.StatusForbidden)
 		return
 	}
@@ -194,8 +194,12 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// HANDLE REQUESTS
 	for {
 		messageType, message, err := ws.ReadMessage()
+		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+			slog.Info("Client disconnected from websocket", "clientID", user)
+			break
+		}
 		if err != nil {
-			slog.Error("Error reading ws message", "err", err)
+			slog.Error("Unexpected error reading ws message", "err", err)
 			break
 		}
 		if messageType != websocket.TextMessage {
@@ -205,7 +209,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 
 		event, err := parseLobbyEvent(message)
 		if err != nil {
-			slog.Error("Error parsing lobby event", "err", err)
+			slog.Warn("Error parsing lobby event, skipping", "err", err, "message", message)
 			continue
 		}
 
