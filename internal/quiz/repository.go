@@ -65,6 +65,8 @@ func (s *InMemoryQuizRepository) AddQuiz(q Quiz) (int, error) {
 		// Assign a unique ID
 		s.highestID++
 		q.ID = s.highestID
+	} else if q.ID > s.highestID {
+		s.highestID = q.ID
 	}
 
 	if _, ok := s.quizzes[q.ID]; ok {
