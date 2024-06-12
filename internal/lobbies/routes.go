@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -197,12 +198,15 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// HANDLE REQUESTS
 	for {
 		messageType, message, err := ws.ReadMessage()
-		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-			slog.Info("Client disconnected from websocket", "clientID", user)
-			break
-		}
+		// Handle disconnection
 		if err != nil {
-			slog.Error("Unexpected error reading ws message", "err", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				slog.Info("Client disconnected from websocket", "clientID", user)
+			} else if strings.Contains(err.Error(), "use of closed network connection") {
+				slog.Info("Server closed the connection", "clientID", user)
+			} else {
+				slog.Error("Unexpected error while reading ws message, disconnecting", "err", err)
+			}
 			break
 		}
 		if messageType != websocket.TextMessage {
@@ -272,14 +276,24 @@ func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// TODO: Get only quizzes metadata
 	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
 	if err != nil {
 		slog.Error("Error getting quizzes", "err", err)
 		common.ErrorHandler(w, nil, http.StatusInternalServerError)
 		return
 	}
+	// NOTE: This is only neccesary as for now we don't have a way to get only metadata
+	quizzesMeta := make([]QuizMetadata, len(quizzes))
+	for i, q := range quizzes {
+		quizzesMeta[i] = QuizMetadata{
+			ID:    q.ID,
+			Title: q.Title,
+		}
+	}
+
 	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
-		Quizzes: quizzes,
+		Quizzes: quizzesMeta,
 		Lobby:   lobby,
 	})
 	if err != nil {
@@ -349,14 +363,24 @@ func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
 	}
 
+	// TODO: Get only quizzes metadata
 	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
 	if err != nil {
 		slog.Error("Error getting quizzes", "err", err)
 		common.ErrorHandler(w, nil, http.StatusInternalServerError)
 		return
 	}
+	// NOTE: This is only neccesary as for now we don't have a way to get only metadata
+	quizzesMeta := make([]QuizMetadata, len(quizzes))
+	for i, q := range quizzes {
+		quizzesMeta[i] = QuizMetadata{
+			ID:    q.ID,
+			Title: q.Title,
+		}
+	}
+
 	lobbySettingsTmpl.Execute(w, lobbySettingsData{
-		Quizzes: quizzes,
+		Quizzes: quizzesMeta,
 		Lobby:   lobby,
 	})
 }

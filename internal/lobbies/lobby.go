@@ -14,7 +14,7 @@ type lobby struct {
 	CreatedAt       time.Time
 	StartedAt       time.Time
 	FinishedAt      time.Time
-	Quiz            *quiz.Quiz
+	Quiz            *quiz.Quiz // TODO: This shouldn't be a pointer
 	mu              sync.Mutex
 	Host            *user
 	Pin             string
@@ -34,14 +34,32 @@ type lobby struct {
 
 type lobbyOptions struct {
 	TimePerQuestion time.Duration
+	TimeForReading  time.Duration
 	Pin             string
 }
 
 func createLobby(options lobbyOptions) *lobby {
+	// Default time per question is 30 seconds
+	var timePerQuestion time.Duration
+	if options.TimePerQuestion != 0 {
+		timePerQuestion = options.TimePerQuestion
+	} else {
+		timePerQuestion = 30 * time.Second
+	}
+
+	// Default time for reading is 5 seconds
+	var timeForReading time.Duration
+	if options.TimeForReading != 0 {
+		timeForReading = options.TimeForReading
+	} else {
+		timeForReading = 5 * time.Second
+	}
+
 	return &lobby{
 		Host:               nil,
 		Pin:                options.Pin,
-		TimePerQuestion:    options.TimePerQuestion,
+		TimePerQuestion:    timePerQuestion,
+		TimeForReading:     timeForReading,
 		CreatedAt:          time.Now(),
 		Players:            make(map[clientID]*user),
 		State:              lsWaitingForPlayers,
@@ -69,24 +87,7 @@ func (l *lobby) startNextQuestion() error {
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
-		l.State = lsFinalResults
-		l.FinishedAt = time.Now()
-		// Send final results view to all
-		vData := viewData{
-			Lobby: l,
-			User:  l.Host,
-		}
-		if err := l.Host.writeTemplate(finalResultsView, vData); err != nil {
-			slog.Error("Error sending FinalResultsView to host", "error", err)
-		}
-		for _, player := range l.Players {
-			vData.User = player
-			err := player.writeTemplate(finalResultsView, vData)
-			if err != nil {
-				slog.Error("Error sending FinalResultsView to user", "error", err)
-			}
-		}
-		return nil
+		return l.endGame()
 	}
 
 	l.CurrentQuestion = l.Quiz.Questions[l.CurrentQuestionIdx]
@@ -183,5 +184,27 @@ func (l *lobby) showAnswer() error {
 			slog.Error("Error sending AnswerView to user", "error", err)
 		}
 	}
+	return nil
+}
+
+func (l *lobby) endGame() error {
+
+	// Close the lobby
+	l.FinishedAt = time.Now()
+	if err := lobbiesRepo.DeleteLobby(l.Pin); err != nil {
+		return err
+	}
+
+	// TODO: Save the game results (Eren's package)
+
+	// Close websocket connections
+	// The redirection to lobby results is handled by the client
+	l.Host.writeTemplate(onFinishView, nil)
+	l.Host.Conn.Close()
+	for _, player := range l.Players {
+		player.writeTemplate(onFinishView, nil)
+		player.Conn.Close()
+	}
+
 	return nil
 }

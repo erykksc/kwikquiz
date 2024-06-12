@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    {{template "header-content" .}}
+    <title>KwikQuiz Results</title>
+  </head>
+  <body>
+    <h1>Lobby Results View</h1>
+    {{ range .Lobby.Leaderboard }}
+    <p>{{ .Username }}: {{ .Score }} points</p>
+    {{ end }} {{ if .User.IsHost }}
+    <button name="close-lobby-btn" ws-send>Continue</button>
+    {{ end}}
+  </body>
+</html>
