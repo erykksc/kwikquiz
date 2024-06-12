@@ -91,8 +91,8 @@ func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 			// Redirect to the lobby
 			w.Header().Add("HX-Redirect", "/lobbies/"+lobby.Pin)
 			w.WriteHeader(http.StatusFound)
+			return
 		}
-		return
 	}
 	// Otherwise, create a new lobby
 
