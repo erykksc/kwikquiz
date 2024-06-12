@@ -1,6 +1,10 @@
 package lobbies
 
-import "sync"
+import (
+	"fmt"
+	"math/rand"
+	"sync"
+)
 
 type errLobbyNotFound struct{}
 
@@ -20,6 +24,7 @@ type lobbyRepository interface {
 	GetLobby(pin string) (*lobby, error)
 	DeleteLobby(pin string) error
 	GetAllLobbies() ([]*lobby, error)
+	GetLobbyByHost(clientID) (*lobby, error)
 }
 
 // In-memory store for games
@@ -34,9 +39,22 @@ func newInMemoryLobbyRepository() *inMemoryLobbyRepository {
 	}
 }
 
+// AddLobby adds a new lobby to the in-memory store
+// If the lobby has a pin it tries to add it to the store
+// If the lobby doesn't have a pin, it updates the Pin field with a new pin
 func (s *inMemoryLobbyRepository) AddLobby(l *lobby) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// If the lobby doesn't have a pin, create one
+	if l.Pin == "" {
+		for l.Pin == "" || s.lobbies[l.Pin] != nil {
+			// Generate a new pin, a random 4 digit number
+			newPin := rand.Intn(10000)
+			l.Pin = fmt.Sprintf("%04d", newPin)
+		}
+	}
+
 	if _, ok := s.lobbies[l.Pin]; ok {
 		return errLobbyAlreadyExists{}
 	}
@@ -87,4 +105,16 @@ func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*lobby, error) {
 	}
 
 	return lobbies, nil
+}
+
+func (s *inMemoryLobbyRepository) GetLobbyByHost(host clientID) (*lobby, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, l := range s.lobbies {
+		if l.Host.ClientID == host {
+			return l, nil
+		}
+	}
+
+	return nil, errLobbyNotFound{}
 }

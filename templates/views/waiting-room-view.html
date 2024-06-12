@@ -1,22 +1,66 @@
 <div id="view">
-  {{if .User.IsHost}}
-  <h1>Pin: {{.Lobby.Pin}}</h1>
-  <p>created at: {{.Lobby.CreatedAt}}</p>
-  <p>time per question: {{.Lobby.TimePerQuestion}}</p>
-  {{else}}
-  <button name="change-username-btn" ws-send>Change Username</button>
-
-  {{end}}
+  <!-- View for Host -->
+  {{ if .User.IsHost }}
+  <h1>Pin: {{ .Lobby.Pin }}</h1>
+  <div
+    hx-get="/lobbies/{{ .Lobby.Pin }}/settings"
+    hx-swap="outerHTML"
+    hx-trigger="load"
+  >
+    <!-- Template lobby-settings should be returned here -->
+    Loading lobby settings...
+  </div>
   <h2>Players</h2>
   <ul>
-    {{range $key, $value := .Lobby.Players}}
-    <li>{{$value.Username}}</li>
-    {{end}}
+    {{ range $key, $value := .Lobby.Players }}
+    <li>{{ $value.Username }}</li>
+    {{ end }}
   </ul>
-
-  {{if .User.IsHost}}
   <button name="start-game-btn" ws-send class="rounded bg-blue-200 p-1">
     Start Game
   </button>
-  {{end}}
+  <!-- View for players -->
+  {{ else }}
+  <p>Your username is: {{ .User.Username }}</p>
+  <button name="change-username-btn" class="rounded bg-blue-200 p-1" ws-send>
+    Change Username
+  </button>
+  <p>Wait for the host to start the game</p>
+  {{ end }}
 </div>
+
+{{ define "lobby-settings" }}
+<form
+  hx-put="/lobbies/{{ .Lobby.Pin }}/settings"
+  hx-trigger="change delay:500ms"
+  hx-swap="outerHTML"
+>
+  <span for="time-per-question">Time per question in seconds:</span>
+  <input
+    name="time-per-question"
+    type="number"
+    min="0"
+    value="{{ .Lobby.TimePerQuestion.Seconds }}"
+    placeholder="seconds"
+  />
+  <br />
+  <span for="time-for-reading">Time for reading in seconds:</span>
+  <input
+    name="time-for-reading"
+    type="number"
+    min="0"
+    value="{{ .Lobby.TimeForReading.Seconds }}"
+    placeholder="seconds"
+  />
+  <br />
+  <span for="quiz">Quiz:</span>
+  <!-- Dropdown for quiz selection -->
+  <select name="quiz">
+    {{ range .Quizzes }}
+    <option value="{{ .ID }}" {{if eq $.Lobby.Quiz.ID .ID}}selected{{end}}>
+      {{ .Title }}
+    </option>
+    {{ end }}
+  </select>
+</form>
+{{ end }}
