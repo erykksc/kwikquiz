@@ -5,6 +5,7 @@ import (
 	"html/template"
 
 	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func tmplParseWithBase(path string) *template.Template {
@@ -34,12 +35,21 @@ var questionView *template.Template
 var answerView *template.Template
 var finalResultsView *template.Template
 
+// This template is used to render the lobby settings inside waitingRoomView
+var lobbySettingsTmpl *template.Template
+
+type lobbySettingsData struct {
+	Quizzes []*quiz.Quiz
+	Lobby   *lobby
+}
+
 func init() {
 	chooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
 	waitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
 	questionView = tmplParseWithBase("templates/views/question-view.html")
 	answerView = tmplParseWithBase("templates/views/answer-view.html")
 	finalResultsView = tmplParseWithBase("templates/views/final-results-view.html")
+	lobbySettingsTmpl = waitingRoomView.Lookup("lobby-settings")
 }
 
 type lobbyState int

@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-var quizzesRepo QuizRepository = NewInMemoryQuizRepository()
+var QuizzesRepo QuizRepository = NewInMemoryQuizRepository()
 var DEBUG = common.DebugOn()
 
 func NewQuizzesRouter() http.Handler {
@@ -24,14 +24,64 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("GET /quizzes/update/{qid}", getQuizUpdateHandler)
 	mux.HandleFunc("PUT /quizzes/update/{qid}", updateQuizHandler)
 	mux.HandleFunc("DELETE /quizzes/delete/{qid}", deleteQuizHandler)
-	return mux
 
+	// Add quiz if in debug mode
+	if common.DevMode() {
+		exampleQuiz := Quiz{
+			Title:       "Geography",
+			Description: "This is a quiz about capitals around the world",
+			Questions: []*Question{
+				{
+					Text: "What is the capital of France?",
+					Answers: []*Answer{
+						{Text: "Paris", IsCorrect: true},
+						{Text: "Berlin", IsCorrect: false},
+						{Text: "Warsaw", IsCorrect: false},
+						{Text: "Barcelona", IsCorrect: false},
+					},
+				},
+				{
+					Text: "On which continent is Russia?",
+					Answers: []*Answer{
+						{Text: "Europe", IsCorrect: true},
+						{Text: "Asia", IsCorrect: true},
+						{Text: "North America", IsCorrect: false},
+						{Text: "South America", IsCorrect: false},
+					},
+				},
+			},
+		}
+		QuizzesRepo.AddQuiz(&exampleQuiz)
+		exampleQuiz2 := Quiz{
+			Title:       "Math",
+			Description: "This is a quiz about math",
+			Questions: []*Question{
+				{
+					Text: "What is 2 + 2?",
+					Answers: []*Answer{
+						{Text: "4", IsCorrect: true},
+						{Text: "5", IsCorrect: false},
+					},
+				},
+				{
+					Text: "What is 3 * 3?",
+					Answers: []*Answer{
+						{Text: "9", IsCorrect: true},
+						{Text: "6", IsCorrect: false},
+					},
+				},
+			},
+		}
+		QuizzesRepo.AddQuiz(&exampleQuiz2)
+	}
+
+	return mux
 }
 
 // TODO: Make it only accessible by admin
 func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	quizzes, err := quizzesRepo.GetAllQuizzes()
+	quizzes, err := QuizzesRepo.GetAllQuizzes()
 	if err != nil {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -55,7 +105,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := quizzesRepo.GetQuiz(qid)
+	quiz, err := QuizzesRepo.GetQuiz(qid)
 	if err != nil {
 		var errQuizNotFound ErrQuizNotFound
 		switch {
@@ -92,7 +142,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quizID, err := quizzesRepo.AddQuiz(quiz)
+	quizID, err := QuizzesRepo.AddQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		renderQuizCreateForm(w, quiz, err)
@@ -204,7 +254,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := quizzesRepo.GetQuiz(qid)
+	quiz, err := QuizzesRepo.GetQuiz(qid)
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:
@@ -245,7 +295,7 @@ func updateQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quizID, err := quizzesRepo.UpdateQuiz(quiz)
+	quizID, err := QuizzesRepo.UpdateQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		renderQuizCreateForm(w, quiz, err)
@@ -268,7 +318,7 @@ func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = quizzesRepo.DeleteQuiz(qid)
+	err = QuizzesRepo.DeleteQuiz(qid)
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:

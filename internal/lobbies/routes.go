@@ -3,6 +3,7 @@ package lobbies
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -21,6 +22,8 @@ func NewLobbiesRouter() http.Handler {
 	mux.HandleFunc("POST /lobbies/{$}", postLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
+	mux.HandleFunc("GET /lobbies/{pin}/settings", getLobbySettingsHandler)
+	mux.HandleFunc("PUT /lobbies/{pin}/settings", putLobbySettingsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
 
@@ -251,4 +254,109 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") != "true" {
 		http.Redirect(w, r, "/lobbies/"+pin, http.StatusFound)
 	}
+}
+
+// return lobby-settings
+func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+	pin := r.PathValue("pin")
+
+	lobby, err := lobbiesRepo.GetLobby(pin)
+	if err != nil {
+		switch err.(type) {
+		case errLobbyNotFound:
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+		default:
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	if err != nil {
+		slog.Error("Error getting quizzes", "err", err)
+		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		return
+	}
+	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
+		Quizzes: quizzes,
+		Lobby:   lobby,
+	})
+	if err != nil {
+		slog.Error("Error rendering template", "err", err)
+	}
+}
+
+// Handler used for updating the lobby settings from the waiting room
+func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+	pin := r.PathValue("pin")
+
+	lobby, err := lobbiesRepo.GetLobby(pin)
+	if err != nil {
+		switch err.(type) {
+		case errLobbyNotFound:
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+		default:
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	timePerQuestionStr := r.FormValue("time-per-question")
+	if timePerQuestionStr != "" {
+		timePerQuestion, err := time.ParseDuration(timePerQuestionStr + "s")
+		if err != nil {
+			slog.Error("Error parsing time-per-question", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		lobby.TimePerQuestion = timePerQuestion
+		slog.Debug("Updated time-per-question", "lobby.Pin", lobby.Pin, "timePerQuestion", timePerQuestion.String())
+	} else {
+		lobby.TimePerQuestion = 0
+	}
+
+	timeForReadingStr := r.FormValue("time-for-reading")
+	if timeForReadingStr != "" {
+		timeForReading, err := time.ParseDuration(timeForReadingStr + "s")
+		if err != nil {
+			slog.Error("Error parsing time-for-reading", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		lobby.TimeForReading = timeForReading
+		slog.Debug("Updated time-for-reading", "lobby.Pin", lobby.Pin, "timeForReading", timeForReading.String())
+	} else {
+		lobby.TimeForReading = 0
+	}
+
+	quizIDStr := r.FormValue("quiz")
+	if quizIDStr != "" {
+		quizID, err := strconv.Atoi(quizIDStr)
+		if err != nil {
+			slog.Error("Error parsing quizID", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		quiz, err := quiz.QuizzesRepo.GetQuiz(quizID)
+		if err != nil {
+			slog.Error("Error getting quiz", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		lobby.Quiz = quiz
+		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
+	}
+
+	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	if err != nil {
+		slog.Error("Error getting quizzes", "err", err)
+		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		return
+	}
+	lobbySettingsTmpl.Execute(w, lobbySettingsData{
+		Quizzes: quizzes,
+		Lobby:   lobby,
+	})
 }
