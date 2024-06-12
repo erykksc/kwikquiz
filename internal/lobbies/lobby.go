@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/quiz"
-	// "github.com/gorilla/websocket"
 )
 
 // lobby is a actively running game session
@@ -15,7 +14,7 @@ type lobby struct {
 	CreatedAt       time.Time
 	StartedAt       time.Time
 	FinishedAt      time.Time
-	Quiz            *quiz.Quiz
+	Quiz            *quiz.Quiz // TODO: This shouldn't be a pointer
 	mu              sync.Mutex
 	Host            *user
 	Pin             string
