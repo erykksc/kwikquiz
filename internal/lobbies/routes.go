@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -197,12 +198,15 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// HANDLE REQUESTS
 	for {
 		messageType, message, err := ws.ReadMessage()
-		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-			slog.Info("Client disconnected from websocket", "clientID", user)
-			break
-		}
+		// Handle disconnection
 		if err != nil {
-			slog.Error("Unexpected error reading ws message", "err", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				slog.Info("Client disconnected from websocket", "clientID", user)
+			} else if strings.Contains(err.Error(), "use of closed network connection") {
+				slog.Info("Server closed the connection", "clientID", user)
+			} else {
+				slog.Error("Unexpected error while reading ws message, disconnecting", "err", err)
+			}
 			break
 		}
 		if messageType != websocket.TextMessage {
