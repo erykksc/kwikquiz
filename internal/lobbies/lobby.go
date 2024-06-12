@@ -14,7 +14,7 @@ type lobby struct {
 	CreatedAt       time.Time
 	StartedAt       time.Time
 	FinishedAt      time.Time
-	Quiz            *quiz.Quiz // TODO: This shouldn't be a pointer
+	Quiz            quiz.Quiz
 	mu              sync.Mutex
 	Host            *user
 	Pin             string
@@ -90,7 +90,7 @@ func (l *lobby) startNextQuestion() error {
 		return l.endGame()
 	}
 
-	l.CurrentQuestion = l.Quiz.Questions[l.CurrentQuestionIdx]
+	l.CurrentQuestion = &l.Quiz.Questions[l.CurrentQuestionIdx]
 
 	// Start the question timer
 	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)

@@ -56,15 +56,15 @@
   <span for="quiz">Quiz:</span>
   <!-- Dropdown for quiz selection -->
   <select name="quiz">
-    {{ if not .Lobby.Quiz }}
-    <option value="">Select a quiz</option>
+    {{ if eq .Lobby.Quiz.ID 0 }}
+    <option value="" selected>Select a quiz</option>
     {{ end }}
     <!-- Add quizzes options -->
     {{ range .Quizzes }}
     <!-- prettier-ignore -->
     <option
       value="{{ .ID }}"
-      {{ if and $.Lobby.Quiz (eq $.Lobby.Quiz.ID .ID)}} selected {{end}}
+      {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID)}} selected {{end}}
     >
       {{ .Title }}
     </option>

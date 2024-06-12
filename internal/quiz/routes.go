@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
-	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -28,12 +27,13 @@ func NewQuizzesRouter() http.Handler {
 	// Add quiz if in debug mode
 	if common.DevMode() {
 		exampleQuiz := Quiz{
+			ID:          1,
 			Title:       "Geography",
 			Description: "This is a quiz about capitals around the world",
-			Questions: []*Question{
+			Questions: []Question{
 				{
 					Text: "What is the capital of France?",
-					Answers: []*Answer{
+					Answers: []Answer{
 						{Text: "Paris", IsCorrect: true},
 						{Text: "Berlin", IsCorrect: false},
 						{Text: "Warsaw", IsCorrect: false},
@@ -42,7 +42,7 @@ func NewQuizzesRouter() http.Handler {
 				},
 				{
 					Text: "On which continent is Russia?",
-					Answers: []*Answer{
+					Answers: []Answer{
 						{Text: "Europe", IsCorrect: true},
 						{Text: "Asia", IsCorrect: true},
 						{Text: "North America", IsCorrect: false},
@@ -51,28 +51,29 @@ func NewQuizzesRouter() http.Handler {
 				},
 			},
 		}
-		QuizzesRepo.AddQuiz(&exampleQuiz)
+		QuizzesRepo.AddQuiz(exampleQuiz)
 		exampleQuiz2 := Quiz{
+			ID:          2,
 			Title:       "Math",
 			Description: "This is a quiz about math",
-			Questions: []*Question{
+			Questions: []Question{
 				{
 					Text: "What is 2 + 2?",
-					Answers: []*Answer{
+					Answers: []Answer{
 						{Text: "4", IsCorrect: true},
 						{Text: "5", IsCorrect: false},
 					},
 				},
 				{
 					Text: "What is 3 * 3?",
-					Answers: []*Answer{
+					Answers: []Answer{
 						{Text: "9", IsCorrect: true},
 						{Text: "6", IsCorrect: false},
 					},
 				},
 			},
 		}
-		QuizzesRepo.AddQuiz(&exampleQuiz2)
+		QuizzesRepo.AddQuiz(exampleQuiz2)
 	}
 
 	return mux
@@ -121,15 +122,15 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Error getting quiz..", "err", err)
 	}
-	fmt.Println(quiz)
 }
 
 type createQuizForm struct {
 	Qid           int
 	Title         string
+	Password      string
 	Description   string
 	QuestionOrder string
-	Questions     []*Question
+	Questions     []Question
 	FormError     string
 }
 
@@ -152,7 +153,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	redirectToQuiz(w, quizID)
 }
 
-func parseQuizForm(r *http.Request) (*Quiz, error) {
+func parseQuizForm(r *http.Request) (Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
@@ -160,10 +161,10 @@ func parseQuizForm(r *http.Request) (*Quiz, error) {
 
 	questions, err := parseQuestions(r)
 	if err != nil {
-		return &Quiz{}, err
+		return Quiz{}, err
 	}
 
-	return &Quiz{
+	return Quiz{
 		Title:         title,
 		Password:      password,
 		Description:   description,
@@ -172,8 +173,8 @@ func parseQuizForm(r *http.Request) (*Quiz, error) {
 	}, nil
 }
 
-func parseQuestions(r *http.Request) ([]*Question, error) {
-	var questions []*Question
+func parseQuestions(r *http.Request) ([]Question, error) {
+	var questions []Question
 	questionIndex := 1
 
 	for {
@@ -188,13 +189,13 @@ func parseQuestions(r *http.Request) ([]*Question, error) {
 			return nil, fmt.Errorf("invalid answer option value")
 		}
 		// Append answers to a slice
-		var answers []*Answer
+		var answers []Answer
 		for answerIndex := 1; answerIndex <= 4; answerIndex++ {
 			answerText := r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
 			if answerText == "" {
 				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
 			}
-			answers = append(answers, &Answer{
+			answers = append(answers, Answer{
 				Number:    answerIndex,
 				IsCorrect: answerIndex == correctAnswer,
 				Text:      answerText,
@@ -202,7 +203,7 @@ func parseQuestions(r *http.Request) ([]*Question, error) {
 
 		}
 		// Append questions to a slice
-		questions = append(questions, &Question{
+		questions = append(questions, Question{
 			Number:        questionIndex,
 			Text:          questionText,
 			Answers:       answers,
@@ -213,7 +214,7 @@ func parseQuestions(r *http.Request) ([]*Question, error) {
 	return questions, nil
 }
 
-func renderQuizCreateForm(w http.ResponseWriter, quiz *Quiz, err error) {
+func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
 		Title:         quiz.Title,
 		Description:   quiz.Description,
@@ -222,7 +223,7 @@ func renderQuizCreateForm(w http.ResponseWriter, quiz *Quiz, err error) {
 		FormError:     err.Error(),
 	})
 	if err != nil {
-		log.Printf("Error executing template: %v", err)
+		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
@@ -236,7 +237,7 @@ func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	err := QuizCreateTemplate.Execute(w, nil)
 	if err != nil {
-		log.Printf("Error executing template: %v", err)
+		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
@@ -266,12 +267,11 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	fmt.Println(quiz)
 
 	// Serialize quiz data to JSON
 	quizJSON, err := json.Marshal(quiz)
 	if err != nil {
-		log.Println("Error marshaling quiz data to JSON:", err)
+		slog.Error("Error marshaling quiz data to JSON", "err", err)
 		http.Error(w, "Error processing quiz data", http.StatusInternalServerError)
 		return
 	}
@@ -280,7 +280,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		"QuizJSON": string(quizJSON),
 	})
 	if err != nil {
-		log.Println("Error executing templates:", err)
+		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Error executing templates", http.StatusInternalServerError)
 		return
 	}
@@ -330,7 +330,7 @@ func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	fmt.Printf("Quiz %d deleted\n", qid)
+	slog.Info("Quiz deleted", "qid", qid)
 	w.Header().Add("HX-Redirect", fmt.Sprintf("/"))
 	w.WriteHeader(http.StatusNoContent)
 }

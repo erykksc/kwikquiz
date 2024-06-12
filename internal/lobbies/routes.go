@@ -35,13 +35,13 @@ func NewLobbiesRouter() http.Handler {
 			Pin:             "1234",
 		}
 		testLobby := createLobby(lOptions)
-		testLobby.Quiz = &quiz.Quiz{
+		testLobby.Quiz = quiz.Quiz{
 			Title:       "Geography",
 			Description: "This is a quiz about capitals around the world",
-			Questions: []*quiz.Question{
+			Questions: []quiz.Question{
 				{
 					Text: "What is the capital of France?",
-					Answers: []*quiz.Answer{
+					Answers: []quiz.Answer{
 						{Text: "Paris", IsCorrect: true},
 						{Text: "Berlin", IsCorrect: false},
 						{Text: "Warsaw", IsCorrect: false},
@@ -50,7 +50,7 @@ func NewLobbiesRouter() http.Handler {
 				},
 				{
 					Text: "On which continent is Russia?",
-					Answers: []*quiz.Answer{
+					Answers: []quiz.Answer{
 						{Text: "Europe", IsCorrect: true},
 						{Text: "Asia", IsCorrect: true},
 						{Text: "North America", IsCorrect: false},
@@ -276,20 +276,11 @@ func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO: Get only quizzes metadata
-	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
 	if err != nil {
-		slog.Error("Error getting quizzes", "err", err)
-		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		slog.Error("Error getting quizzes metadata", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
-	}
-	// NOTE: This is only neccesary as for now we don't have a way to get only metadata
-	quizzesMeta := make([]QuizMetadata, len(quizzes))
-	for i, q := range quizzes {
-		quizzesMeta[i] = QuizMetadata{
-			ID:    q.ID,
-			Title: q.Title,
-		}
 	}
 
 	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
@@ -363,20 +354,11 @@ func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
 	}
 
-	// TODO: Get only quizzes metadata
-	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
 	if err != nil {
-		slog.Error("Error getting quizzes", "err", err)
-		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		slog.Error("Error getting quizzes metadata", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
-	}
-	// NOTE: This is only neccesary as for now we don't have a way to get only metadata
-	quizzesMeta := make([]QuizMetadata, len(quizzes))
-	for i, q := range quizzes {
-		quizzesMeta[i] = QuizMetadata{
-			ID:    q.ID,
-			Title: q.Title,
-		}
 	}
 
 	lobbySettingsTmpl.Execute(w, lobbySettingsData{
