@@ -276,20 +276,11 @@ func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO: Get only quizzes metadata
-	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
 	if err != nil {
-		slog.Error("Error getting quizzes", "err", err)
-		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		slog.Error("Error getting quizzes metadata", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
-	}
-	// NOTE: This is only neccesary as for now we don't have a way to get only metadata
-	quizzesMeta := make([]QuizMetadata, len(quizzes))
-	for i, q := range quizzes {
-		quizzesMeta[i] = QuizMetadata{
-			ID:    q.ID,
-			Title: q.Title,
-		}
 	}
 
 	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
@@ -363,20 +354,11 @@ func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
 	}
 
-	// TODO: Get only quizzes metadata
-	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
 	if err != nil {
-		slog.Error("Error getting quizzes", "err", err)
-		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		slog.Error("Error getting quizzes metadata", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
-	}
-	// NOTE: This is only neccesary as for now we don't have a way to get only metadata
-	quizzesMeta := make([]QuizMetadata, len(quizzes))
-	for i, q := range quizzes {
-		quizzesMeta[i] = QuizMetadata{
-			ID:    q.ID,
-			Title: q.Title,
-		}
 	}
 
 	lobbySettingsTmpl.Execute(w, lobbySettingsData{

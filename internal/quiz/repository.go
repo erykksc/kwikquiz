@@ -27,6 +27,12 @@ type Answer struct {
 	// later we can add img, video etc. to allow multimodal questions
 }
 
+// It is used for faster lookups if only limited data is needed
+type QuizMetadata struct {
+	ID    int
+	Title string
+}
+
 type ErrQuizNotFound struct{}
 
 func (ErrQuizNotFound) Error() string { return "Quiz not found" }
@@ -41,6 +47,7 @@ type QuizRepository interface {
 	GetQuiz(id int) (Quiz, error)
 	DeleteQuiz(id int) error
 	GetAllQuizzes() ([]Quiz, error)
+	GetAllQuizzesMetadata() ([]QuizMetadata, error)
 }
 
 // InMemoryQuizRepository In-mem store for quizzes
@@ -120,6 +127,20 @@ func (s *InMemoryQuizRepository) GetAllQuizzes() ([]Quiz, error) {
 	var quizzes []Quiz
 	for _, quiz := range s.quizzes {
 		quizzes = append(quizzes, quiz)
+	}
+	return quizzes, nil
+}
+
+func (s *InMemoryQuizRepository) GetAllQuizzesMetadata() ([]QuizMetadata, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	var quizzes []QuizMetadata
+	for _, quiz := range s.quizzes {
+		quizzes = append(quizzes, QuizMetadata{
+			ID:    quiz.ID,
+			Title: quiz.Title,
+		})
 	}
 	return quizzes, nil
 }
