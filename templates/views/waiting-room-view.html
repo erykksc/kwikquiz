@@ -32,7 +32,7 @@
 {{ define "lobby-settings" }}
 <form
   hx-put="/lobbies/{{ .Lobby.Pin }}/settings"
-  hx-trigger="change delay:500ms"
+  hx-trigger="change"
   hx-swap="outerHTML"
 >
   <span for="time-per-question">Time per question in seconds:</span>
