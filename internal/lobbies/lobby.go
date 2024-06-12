@@ -57,21 +57,30 @@ func createLobby(options lobbyOptions) *lobby {
 	}
 
 	return &lobby{
-		Host:               nil,
-		Pin:                options.Pin,
-		TimePerQuestion:    timePerQuestion,
-		TimeForReading:     timeForReading,
-		CreatedAt:          time.Now(),
-		Players:            make(map[clientID]*user),
-		State:              lsWaitingForPlayers,
-		CurrentQuestionIdx: -1,
-		Quiz:               options.Quiz,
+		Pin:             options.Pin,
+		TimePerQuestion: timePerQuestion,
+		TimeForReading:  timeForReading,
+		CreatedAt:       time.Now(),
+		Players:         make(map[clientID]*user),
+		State:           lsWaitingForPlayers,
+		Quiz:            options.Quiz,
 	}
 }
 
+func (l *lobby) startGame() error {
+	l.StartedAt = time.Now()
+	// Next question increments the index, so we start at -1
+	l.CurrentQuestionIdx = -1
+
+	return l.startNextQuestion()
+}
+
 func (l *lobby) startNextQuestion() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.State = lsQuestion
+	l.CurrentQuestionIdx++
+	l.CurrentQuestionStartTime = time.Now()
+	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
+	l.PlayersAnswering = len(l.Players)
 
 	// Reset Player answers
 	l.Host.SubmittedAnswerIdx = -1
@@ -80,12 +89,6 @@ func (l *lobby) startNextQuestion() error {
 		player.SubmittedAnswerIdx = -1
 		player.AnswerSubmissionTime = time.Time{}
 	}
-
-	l.CurrentQuestionIdx++
-	l.State = lsQuestion
-	l.CurrentQuestionStartTime = time.Now()
-	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
-	l.PlayersAnswering = len(l.Players)
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
@@ -101,11 +104,16 @@ func (l *lobby) startNextQuestion() error {
 		case <-l.questionTimer.timer.C:
 			// Time completed
 			slog.Debug("Question timeout reached")
+			l.mu.Lock()
 			l.showAnswer()
+			l.mu.Unlock()
 			break
 		case <-l.questionTimer.cancelChan:
 			// Timer cancelled
 			slog.Debug("Question timer cancelled")
+			// Doesnt require a lock because cancel
+			// can only be triggered by an event
+			// and all events handlers are locked
 			l.showAnswer()
 			break
 		}
@@ -138,9 +146,6 @@ func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
 func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func (l *lobby) showAnswer() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	l.State = lsAnswer
 
 	// Add points to players
@@ -190,7 +195,6 @@ func (l *lobby) showAnswer() error {
 }
 
 func (l *lobby) endGame() error {
-
 	// Close the lobby
 	l.FinishedAt = time.Now()
 	if err := lobbiesRepo.DeleteLobby(l.Pin); err != nil {
