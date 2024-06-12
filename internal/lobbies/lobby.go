@@ -34,14 +34,32 @@ type lobby struct {
 
 type lobbyOptions struct {
 	TimePerQuestion time.Duration
+	TimeForReading  time.Duration
 	Pin             string
 }
 
 func createLobby(options lobbyOptions) *lobby {
+	// Default time per question is 30 seconds
+	var timePerQuestion time.Duration
+	if options.TimePerQuestion != 0 {
+		timePerQuestion = options.TimePerQuestion
+	} else {
+		timePerQuestion = 30 * time.Second
+	}
+
+	// Default time for reading is 5 seconds
+	var timeForReading time.Duration
+	if options.TimeForReading != 0 {
+		timeForReading = options.TimeForReading
+	} else {
+		timeForReading = 5 * time.Second
+	}
+
 	return &lobby{
 		Host:               nil,
 		Pin:                options.Pin,
-		TimePerQuestion:    options.TimePerQuestion,
+		TimePerQuestion:    timePerQuestion,
+		TimeForReading:     timeForReading,
 		CreatedAt:          time.Now(),
 		Players:            make(map[clientID]*user),
 		State:              lsWaitingForPlayers,
