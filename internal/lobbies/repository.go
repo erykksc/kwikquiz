@@ -111,7 +111,7 @@ func (s *inMemoryLobbyRepository) GetLobbyByHost(host clientID) (*lobby, error) 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, l := range s.lobbies {
-		if l.Host.ClientID == host {
+		if l.Host != nil && l.Host.ClientID == host {
 			return l, nil
 		}
 	}
