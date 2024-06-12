@@ -33,33 +33,9 @@ func NewLobbiesRouter() http.Handler {
 		lOptions := lobbyOptions{
 			TimePerQuestion: 30 * time.Second,
 			Pin:             "1234",
+			Quiz:            quiz.ExampleQuizGeography,
 		}
 		testLobby := createLobby(lOptions)
-		testLobby.Quiz = quiz.Quiz{
-			Title:       "Geography",
-			Description: "This is a quiz about capitals around the world",
-			Questions: []quiz.Question{
-				{
-					Text: "What is the capital of France?",
-					Answers: []quiz.Answer{
-						{Text: "Paris", IsCorrect: true},
-						{Text: "Berlin", IsCorrect: false},
-						{Text: "Warsaw", IsCorrect: false},
-						{Text: "Barcelona", IsCorrect: false},
-					},
-				},
-				{
-					Text: "On which continent is Russia?",
-					Answers: []quiz.Answer{
-						{Text: "Europe", IsCorrect: true},
-						{Text: "Asia", IsCorrect: true},
-						{Text: "North America", IsCorrect: false},
-						{Text: "South America", IsCorrect: false},
-					},
-				},
-			},
-		}
-
 		lobbiesRepo.AddLobby(testLobby)
 		slog.Info("Added test lobby", "lobby", testLobby)
 	}

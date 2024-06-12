@@ -36,6 +36,7 @@ type lobbyOptions struct {
 	TimePerQuestion time.Duration
 	TimeForReading  time.Duration
 	Pin             string
+	Quiz            quiz.Quiz
 }
 
 func createLobby(options lobbyOptions) *lobby {
@@ -64,6 +65,7 @@ func createLobby(options lobbyOptions) *lobby {
 		Players:            make(map[clientID]*user),
 		State:              lsWaitingForPlayers,
 		CurrentQuestionIdx: -1,
+		Quiz:               options.Quiz,
 	}
 }
 
