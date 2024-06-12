@@ -175,11 +175,6 @@ func (event leUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 		initiator.Username = event.Username
 	}
 
-	// l.Players[initiator.ClientID] = &User{
-	// 	Conn:     initiator.Conn,
-	// 	Username: event.Username,
-	// }
-
 	// Send the lobby screen to all players
 	vData := viewData{
 		Lobby: l,
