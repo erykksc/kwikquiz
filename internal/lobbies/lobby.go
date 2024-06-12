@@ -11,15 +11,17 @@ import (
 
 // lobby is a actively running game session
 type lobby struct {
-	CreatedAt                time.Time
-	StartedAt                time.Time
-	FinishedAt               time.Time
-	Quiz                     *quiz.Quiz
-	mu                       sync.Mutex
-	Host                     *user
-	Pin                      string
-	TimePerQuestion          time.Duration
-	Players                  map[clientID]*user
+	CreatedAt       time.Time
+	StartedAt       time.Time
+	FinishedAt      time.Time
+	Quiz            *quiz.Quiz
+	mu              sync.Mutex
+	Host            *user
+	Pin             string
+	TimePerQuestion time.Duration // Time to read the question before answering is allowed
+	TimeForReading  time.Duration
+	Players         map[clientID]*user
+
 	State                    lobbyState
 	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time

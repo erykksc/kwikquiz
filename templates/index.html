@@ -82,11 +82,14 @@
         >
 
         <div class="flex space-x-4">
-          <a
-            href="/lobbies/create"
+          <button
+            hx-post="/lobbies/"
+            hx-trigger="click"
+            hx-swap="none"
             class="px-6 py-3 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green"
-            >Create new KWIKQUIZ</a
           >
+            Create new KWIKQUIZ
+          </button>
         </div>
       </div>
     </div>

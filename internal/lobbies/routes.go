@@ -1,10 +1,12 @@
 package lobbies
 
 import (
-	"github.com/erykksc/kwikquiz/internal/quiz"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/erykksc/kwikquiz/internal/quiz"
 
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/gorilla/websocket"
@@ -17,16 +19,13 @@ func NewLobbiesRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
+	mux.HandleFunc("POST /lobbies/{$}", postLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
+	mux.HandleFunc("GET /lobbies/{pin}/settings", getLobbySettingsHandler)
+	mux.HandleFunc("PUT /lobbies/{pin}/settings", putLobbySettingsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
-	mux.HandleFunc("GET /lobbies/create", func(w http.ResponseWriter, r *http.Request) {
-		if err := lobbyCreateTmpl.Execute(w, nil); err != nil {
-			slog.Error("Error rendering template", "error", err)
-		}
-	})
-	mux.HandleFunc("POST /lobbies/create", postLobbyCreateHandler)
 
 	// Add test lobby
 	if common.DevMode() {
@@ -79,6 +78,31 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	if err := lobbiesTmpl.Execute(w, lobbies); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
+}
+
+func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if the client isn't a host of another lobby
+	clientIDCookie, err := r.Cookie("client-id")
+	if err == nil {
+		cID := clientID(clientIDCookie.Value)
+		lobby, err := lobbiesRepo.GetLobbyByHost(cID)
+		if err == nil {
+			// Redirect to the lobby
+			w.Header().Add("HX-Redirect", "/lobbies/"+lobby.Pin)
+			w.WriteHeader(http.StatusFound)
+		}
+		return
+	}
+	// Otherwise, create a new lobby
+
+	// TODO: Parse possible arguments
+	options := lobbyOptions{}
+	newLobby := createLobby(options)
+	lobbiesRepo.AddLobby(newLobby)
+	slog.Info("Created new lobby", "lobby", newLobby)
+	// Redirect to the new lobby
+	w.Header().Add("HX-Redirect", "/lobbies/"+newLobby.Pin)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // getLobbyByPinHandler handles requests to /lobbies/{pin}
@@ -157,7 +181,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// GET CLIENT ID from COOKIE
 	clientIDCookie, err := r.Cookie("client-id")
 	if err == http.ErrNoCookie {
-		slog.Error("Client ID cookie not found")
+		slog.Error("Client ID cookie not found while in ws handler")
 		common.ErrorHandler(w, r, http.StatusForbidden)
 		return
 	}
@@ -173,8 +197,12 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// HANDLE REQUESTS
 	for {
 		messageType, message, err := ws.ReadMessage()
+		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+			slog.Info("Client disconnected from websocket", "clientID", user)
+			break
+		}
 		if err != nil {
-			slog.Error("Error reading ws message", "err", err)
+			slog.Error("Unexpected error reading ws message", "err", err)
 			break
 		}
 		if messageType != websocket.TextMessage {
@@ -184,7 +212,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 
 		event, err := parseLobbyEvent(message)
 		if err != nil {
-			slog.Error("Error parsing lobby event", "err", err)
+			slog.Warn("Error parsing lobby event, skipping", "err", err, "message", message)
 			continue
 		}
 
@@ -194,10 +222,6 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 			slog.Error("Error handling lobby event", "event", event, "err", err)
 		}
 	}
-}
-
-type joinFormData struct {
-	GamePinError string
 }
 
 // getLobbyJoinHandler handles requests to /lobbies/join
@@ -217,7 +241,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		// Do nothing
 	case errLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
-		common.IndexTmpl.ExecuteTemplate(w, "join-form", joinFormData{GamePinError: "Game not found"})
+		common.JoinFormTmpl.Execute(w, common.JoinFormData{GamePinError: "Game not found"})
 		return
 	default:
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
@@ -232,46 +256,107 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type createGameForm struct {
-	Pin       string
-	Username  string
-	FormError string
+// return lobby-settings
+func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+	pin := r.PathValue("pin")
+
+	lobby, err := lobbiesRepo.GetLobby(pin)
+	if err != nil {
+		switch err.(type) {
+		case errLobbyNotFound:
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+		default:
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	if err != nil {
+		slog.Error("Error getting quizzes", "err", err)
+		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		return
+	}
+	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
+		Quizzes: quizzes,
+		Lobby:   lobby,
+	})
+	if err != nil {
+		slog.Error("Error rendering template", "err", err)
+	}
 }
 
-// postLobbyCreateHandler handles requests to POST /lobbies/create
-func postLobbyCreateHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	pin := r.FormValue("pin") // Game Pin
-	username := r.FormValue("username")
+// Handler used for updating the lobby settings from the waiting room
+func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+	pin := r.PathValue("pin")
 
-	if pin == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("pin in form is required"))
-		return
-	}
-
-	if username == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("username in form is required"))
-		return
-	}
-
-	newLobby := createLobby(lobbyOptions{})
-
-	if err := lobbiesRepo.AddLobby(newLobby); err != nil {
-		slog.Error("Error adding game", "error", err)
-		err = lobbyCreateTmpl.ExecuteTemplate(w, "create-form", createGameForm{
-			Pin:       pin,
-			Username:  username,
-			FormError: err.Error(),
-		})
-		if err != nil {
-			slog.Error("Error rendering template", "error", err)
+	lobby, err := lobbiesRepo.GetLobby(pin)
+	if err != nil {
+		switch err.(type) {
+		case errLobbyNotFound:
+			common.ErrorHandler(w, r, http.StatusNotFound)
+			return
+		default:
+			common.ErrorHandler(w, r, http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
-	// Redirect to the game
-	w.Header().Add("HX-Redirect", "/lobbies/"+pin)
-	w.WriteHeader(http.StatusCreated)
+	timePerQuestionStr := r.FormValue("time-per-question")
+	if timePerQuestionStr != "" {
+		timePerQuestion, err := time.ParseDuration(timePerQuestionStr + "s")
+		if err != nil {
+			slog.Error("Error parsing time-per-question", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		lobby.TimePerQuestion = timePerQuestion
+		slog.Debug("Updated time-per-question", "lobby.Pin", lobby.Pin, "timePerQuestion", timePerQuestion.String())
+	} else {
+		lobby.TimePerQuestion = 0
+	}
+
+	timeForReadingStr := r.FormValue("time-for-reading")
+	if timeForReadingStr != "" {
+		timeForReading, err := time.ParseDuration(timeForReadingStr + "s")
+		if err != nil {
+			slog.Error("Error parsing time-for-reading", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		lobby.TimeForReading = timeForReading
+		slog.Debug("Updated time-for-reading", "lobby.Pin", lobby.Pin, "timeForReading", timeForReading.String())
+	} else {
+		lobby.TimeForReading = 0
+	}
+
+	quizIDStr := r.FormValue("quiz")
+	if quizIDStr != "" {
+		quizID, err := strconv.Atoi(quizIDStr)
+		if err != nil {
+			slog.Error("Error parsing quizID", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		quiz, err := quiz.QuizzesRepo.GetQuiz(quizID)
+		if err != nil {
+			slog.Error("Error getting quiz", "err", err)
+			common.ErrorHandler(w, r, http.StatusBadRequest)
+			return
+		}
+		lobby.Quiz = quiz
+		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
+	}
+
+	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	if err != nil {
+		slog.Error("Error getting quizzes", "err", err)
+		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		return
+	}
+	lobbySettingsTmpl.Execute(w, lobbySettingsData{
+		Quizzes: quizzes,
+		Lobby:   lobby,
+	})
 }
