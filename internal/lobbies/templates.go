@@ -33,13 +33,13 @@ var chooseUsernameView *template.Template
 var waitingRoomView *template.Template
 var questionView *template.Template
 var answerView *template.Template
-var finalResultsView *template.Template
+var onFinishView *template.Template
 
 // This template is used to render the lobby settings inside waitingRoomView
 var lobbySettingsTmpl *template.Template
 
 type lobbySettingsData struct {
-	Quizzes []*quiz.Quiz
+	Quizzes []quiz.QuizMetadata
 	Lobby   *lobby
 }
 
@@ -47,8 +47,13 @@ func init() {
 	chooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
 	waitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
 	questionView = tmplParseWithBase("templates/views/question-view.html")
-	answerView = tmplParseWithBase("templates/views/answer-view.html")
-	finalResultsView = tmplParseWithBase("templates/views/final-results-view.html")
+	// Decrement function used for checking if the current question is the last one
+	answerView = template.Must(template.New("answer-view.html").Funcs(template.FuncMap{
+		"decrement": func(i int) int {
+			return i - 1
+		},
+	}).ParseFiles("templates/views/answer-view.html", common.BaseTmplPath))
+	onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
 	lobbySettingsTmpl = waitingRoomView.Lookup("lobby-settings")
 }
 
@@ -58,7 +63,6 @@ const (
 	lsWaitingForPlayers lobbyState = iota
 	lsQuestion
 	lsAnswer
-	lsFinalResults
 )
 
 // View returns the view template for the given state
@@ -70,8 +74,6 @@ func (state lobbyState) View() *template.Template {
 		return questionView
 	case lsAnswer:
 		return answerView
-	case lsFinalResults:
-		return finalResultsView
 	default:
 		panic("Undefined ViewName for state:" + fmt.Sprint(state))
 	}

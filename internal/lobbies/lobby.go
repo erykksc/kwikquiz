@@ -11,15 +11,15 @@ import (
 
 // lobby is a actively running game session
 type lobby struct {
+	mu              sync.Mutex
 	CreatedAt       time.Time
 	StartedAt       time.Time
 	FinishedAt      time.Time
-	Quiz            *quiz.Quiz
-	mu              sync.Mutex
+	Quiz            quiz.Quiz
 	Host            *user
 	Pin             string
-	TimePerQuestion time.Duration // Time to read the question before answering is allowed
-	TimeForReading  time.Duration
+	TimePerQuestion time.Duration // Time for players to answer a question
+	TimeForReading  time.Duration // Time to read the question before answering is allowed
 	Players         map[clientID]*user
 
 	State                    lobbyState
@@ -34,24 +34,53 @@ type lobby struct {
 
 type lobbyOptions struct {
 	TimePerQuestion time.Duration
+	TimeForReading  time.Duration
 	Pin             string
+	Quiz            quiz.Quiz
 }
 
 func createLobby(options lobbyOptions) *lobby {
+	// Default time per question is 30 seconds
+	var timePerQuestion time.Duration
+	if options.TimePerQuestion != 0 {
+		timePerQuestion = options.TimePerQuestion
+	} else {
+		timePerQuestion = 30 * time.Second
+	}
+
+	// Default time for reading is 5 seconds
+	var timeForReading time.Duration
+	if options.TimeForReading != 0 {
+		timeForReading = options.TimeForReading
+	} else {
+		timeForReading = 5 * time.Second
+	}
+
 	return &lobby{
-		Host:               nil,
-		Pin:                options.Pin,
-		TimePerQuestion:    options.TimePerQuestion,
-		CreatedAt:          time.Now(),
-		Players:            make(map[clientID]*user),
-		State:              lsWaitingForPlayers,
-		CurrentQuestionIdx: -1,
+		Pin:             options.Pin,
+		TimePerQuestion: timePerQuestion,
+		TimeForReading:  timeForReading,
+		CreatedAt:       time.Now(),
+		Players:         make(map[clientID]*user),
+		State:           lsWaitingForPlayers,
+		Quiz:            options.Quiz,
 	}
 }
 
+func (l *lobby) startGame() error {
+	l.StartedAt = time.Now()
+	// Next question increments the index, so we start at -1
+	l.CurrentQuestionIdx = -1
+
+	return l.startNextQuestion()
+}
+
 func (l *lobby) startNextQuestion() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.State = lsQuestion
+	l.CurrentQuestionIdx++
+	l.CurrentQuestionStartTime = time.Now()
+	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
+	l.PlayersAnswering = len(l.Players)
 
 	// Reset Player answers
 	l.Host.SubmittedAnswerIdx = -1
@@ -61,35 +90,12 @@ func (l *lobby) startNextQuestion() error {
 		player.AnswerSubmissionTime = time.Time{}
 	}
 
-	l.CurrentQuestionIdx++
-	l.State = lsQuestion
-	l.CurrentQuestionStartTime = time.Now()
-	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
-	l.PlayersAnswering = len(l.Players)
-
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
-		l.State = lsFinalResults
-		l.FinishedAt = time.Now()
-		// Send final results view to all
-		vData := viewData{
-			Lobby: l,
-			User:  l.Host,
-		}
-		if err := l.Host.writeTemplate(finalResultsView, vData); err != nil {
-			slog.Error("Error sending FinalResultsView to host", "error", err)
-		}
-		for _, player := range l.Players {
-			vData.User = player
-			err := player.writeTemplate(finalResultsView, vData)
-			if err != nil {
-				slog.Error("Error sending FinalResultsView to user", "error", err)
-			}
-		}
-		return nil
+		return l.endGame()
 	}
 
-	l.CurrentQuestion = l.Quiz.Questions[l.CurrentQuestionIdx]
+	l.CurrentQuestion = &l.Quiz.Questions[l.CurrentQuestionIdx]
 
 	// Start the question timer
 	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)
@@ -98,11 +104,16 @@ func (l *lobby) startNextQuestion() error {
 		case <-l.questionTimer.timer.C:
 			// Time completed
 			slog.Debug("Question timeout reached")
+			l.mu.Lock()
 			l.showAnswer()
+			l.mu.Unlock()
 			break
 		case <-l.questionTimer.cancelChan:
 			// Timer cancelled
 			slog.Debug("Question timer cancelled")
+			// Doesnt require a lock because cancel
+			// can only be triggered by an event
+			// and all events handlers are locked
 			l.showAnswer()
 			break
 		}
@@ -135,9 +146,6 @@ func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
 func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func (l *lobby) showAnswer() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	l.State = lsAnswer
 
 	// Add points to players
@@ -183,5 +191,26 @@ func (l *lobby) showAnswer() error {
 			slog.Error("Error sending AnswerView to user", "error", err)
 		}
 	}
+	return nil
+}
+
+func (l *lobby) endGame() error {
+	// Close the lobby
+	l.FinishedAt = time.Now()
+	if err := lobbiesRepo.DeleteLobby(l.Pin); err != nil {
+		return err
+	}
+
+	// TODO: Save the game results (Eren's package)
+
+	// Close websocket connections
+	// The redirection to lobby results is handled by the client
+	l.Host.writeTemplate(onFinishView, nil)
+	l.Host.Conn.Close()
+	for _, player := range l.Players {
+		player.writeTemplate(onFinishView, nil)
+		player.Conn.Close()
+	}
+
 	return nil
 }

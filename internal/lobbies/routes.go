@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -32,33 +33,9 @@ func NewLobbiesRouter() http.Handler {
 		lOptions := lobbyOptions{
 			TimePerQuestion: 30 * time.Second,
 			Pin:             "1234",
+			Quiz:            quiz.ExampleQuizGeography,
 		}
 		testLobby := createLobby(lOptions)
-		testLobby.Quiz = &quiz.Quiz{
-			Title:       "Geography",
-			Description: "This is a quiz about capitals around the world",
-			Questions: []*quiz.Question{
-				{
-					Text: "What is the capital of France?",
-					Answers: []*quiz.Answer{
-						{Text: "Paris", IsCorrect: true},
-						{Text: "Berlin", IsCorrect: false},
-						{Text: "Warsaw", IsCorrect: false},
-						{Text: "Barcelona", IsCorrect: false},
-					},
-				},
-				{
-					Text: "On which continent is Russia?",
-					Answers: []*quiz.Answer{
-						{Text: "Europe", IsCorrect: true},
-						{Text: "Asia", IsCorrect: true},
-						{Text: "North America", IsCorrect: false},
-						{Text: "South America", IsCorrect: false},
-					},
-				},
-			},
-		}
-
 		lobbiesRepo.AddLobby(testLobby)
 		slog.Info("Added test lobby", "lobby", testLobby)
 	}
@@ -188,7 +165,9 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	clientID := clientID(clientIDCookie.Value)
 
 	slog.Debug("Handling new ws connection", "clientID", clientID, "Lobby-Pin", lobby.Pin)
+	lobby.mu.Lock()
 	user, err := handleNewWebsocketConn(lobby, ws, clientID)
+	lobby.mu.Unlock()
 	if err != nil {
 		slog.Error("Error handling user connection", "err", err)
 		return
@@ -197,12 +176,15 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	// HANDLE REQUESTS
 	for {
 		messageType, message, err := ws.ReadMessage()
-		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-			slog.Info("Client disconnected from websocket", "clientID", user)
-			break
-		}
+		// Handle disconnection
 		if err != nil {
-			slog.Error("Unexpected error reading ws message", "err", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				slog.Info("Client disconnected from websocket", "clientID", user)
+			} else if strings.Contains(err.Error(), "use of closed network connection") {
+				slog.Info("Server closed the connection", "clientID", user)
+			} else {
+				slog.Error("Unexpected error while reading ws message, disconnecting", "err", err)
+			}
 			break
 		}
 		if messageType != websocket.TextMessage {
@@ -218,9 +200,11 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 
 		slog.Info("Handling lobby event", "event", event.String(), "initiator", user)
 
+		lobby.mu.Lock()
 		if err := event.Handle(lobby, user); err != nil {
 			slog.Error("Error handling lobby event", "event", event, "err", err)
 		}
+		lobby.mu.Unlock()
 	}
 }
 
@@ -272,14 +256,15 @@ func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
 	if err != nil {
-		slog.Error("Error getting quizzes", "err", err)
-		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		slog.Error("Error getting quizzes metadata", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
 	}
+
 	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
-		Quizzes: quizzes,
+		Quizzes: quizzesMeta,
 		Lobby:   lobby,
 	})
 	if err != nil {
@@ -349,14 +334,15 @@ func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
 	}
 
-	quizzes, err := quiz.QuizzesRepo.GetAllQuizzes()
+	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
 	if err != nil {
-		slog.Error("Error getting quizzes", "err", err)
-		common.ErrorHandler(w, nil, http.StatusInternalServerError)
+		slog.Error("Error getting quizzes metadata", "err", err)
+		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
 	}
+
 	lobbySettingsTmpl.Execute(w, lobbySettingsData{
-		Quizzes: quizzes,
+		Quizzes: quizzesMeta,
 		Lobby:   lobby,
 	})
 }
