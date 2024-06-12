@@ -20,7 +20,6 @@ func (errLobbyAlreadyExists) Error() string {
 
 type lobbyRepository interface {
 	AddLobby(*lobby) error
-	UpdateLobby(*lobby) error
 	GetLobby(pin string) (*lobby, error)
 	DeleteLobby(pin string) error
 	GetAllLobbies() ([]*lobby, error)
@@ -45,6 +44,8 @@ func newInMemoryLobbyRepository() *inMemoryLobbyRepository {
 func (s *inMemoryLobbyRepository) AddLobby(l *lobby) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	// If the lobby doesn't have a pin, create one
 	if l.Pin == "" {
@@ -57,17 +58,6 @@ func (s *inMemoryLobbyRepository) AddLobby(l *lobby) error {
 
 	if _, ok := s.lobbies[l.Pin]; ok {
 		return errLobbyAlreadyExists{}
-	}
-
-	s.lobbies[l.Pin] = l
-	return nil
-}
-
-func (s *inMemoryLobbyRepository) UpdateLobby(l *lobby) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.lobbies[l.Pin]; !ok {
-		return errLobbyNotFound{}
 	}
 
 	s.lobbies[l.Pin] = l

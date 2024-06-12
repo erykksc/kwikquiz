@@ -13,7 +13,7 @@ import (
 
 type lobbyEvent interface {
 	String() string
-	Handle(lobby *lobby, initiator *user) error
+	Handle(lobby *lobby, initiator *user) error // Handle the event, is executed with the lobby's mutex locked
 }
 
 // parseLobbyEvent parses a GameEvent from a JSON in a byte slice
@@ -63,9 +63,6 @@ func parseLobbyEvent(data []byte) (lobbyEvent, error) {
 // handleNewWebsocketConn handles a new websocket connection to the lobby
 // This function bridges routes and events
 func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (*user, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	// Assume that connectedUser at this point only has the Conn and ClientID fields
 	// This function should set any other fields that are needed
 	connectedUser := &user{
@@ -123,9 +120,6 @@ func (e leUsernameSubmitted) String() string {
 }
 
 func (event leUsernameSubmitted) Handle(l *lobby, initiator *user) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	// Check if the username is empty
 	if event.Username == "" {
 		initiator.writeTemplate(lobbyErrorAlertTmpl, "Username cannot be empty")
@@ -259,8 +253,7 @@ func (event leGameStartRequested) Handle(l *lobby, initiator *user) error {
 	}
 
 	// Start game: go to the first question
-	l.StartedAt = time.Now()
-	if err := l.startNextQuestion(); err != nil {
+	if err := l.startGame(); err != nil {
 		return err
 	}
 
@@ -301,9 +294,6 @@ func (e leAnswerSubmitted) String() string {
 }
 
 func (e leAnswerSubmitted) Handle(l *lobby, initiator *user) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	// Check if the answer index is valid
 	if e.AnswerIdx < 0 || e.AnswerIdx >= len(l.CurrentQuestion.Answers) {
 		initiator.writeTemplate(lobbyErrorAlertTmpl, "Invalid answer index")
