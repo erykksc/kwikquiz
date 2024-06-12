@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
-	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -123,12 +122,12 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Error getting quiz..", "err", err)
 	}
-	fmt.Println(quiz)
 }
 
 type createQuizForm struct {
 	Qid           int
 	Title         string
+	Password      string
 	Description   string
 	QuestionOrder string
 	Questions     []Question
@@ -224,7 +223,7 @@ func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 		FormError:     err.Error(),
 	})
 	if err != nil {
-		log.Printf("Error executing template: %v", err)
+		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
@@ -238,7 +237,7 @@ func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	err := QuizCreateTemplate.Execute(w, nil)
 	if err != nil {
-		log.Printf("Error executing template: %v", err)
+		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
@@ -268,12 +267,11 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	fmt.Println(quiz)
 
 	// Serialize quiz data to JSON
 	quizJSON, err := json.Marshal(quiz)
 	if err != nil {
-		log.Println("Error marshaling quiz data to JSON:", err)
+		slog.Error("Error marshaling quiz data to JSON", "err", err)
 		http.Error(w, "Error processing quiz data", http.StatusInternalServerError)
 		return
 	}
@@ -282,7 +280,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		"QuizJSON": string(quizJSON),
 	})
 	if err != nil {
-		log.Println("Error executing templates:", err)
+		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Error executing templates", http.StatusInternalServerError)
 		return
 	}
@@ -332,7 +330,7 @@ func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	fmt.Printf("Quiz %d deleted\n", qid)
+	slog.Info("Quiz deleted", "qid", qid)
 	w.Header().Add("HX-Redirect", fmt.Sprintf("/"))
 	w.WriteHeader(http.StatusNoContent)
 }
