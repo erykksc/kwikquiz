@@ -14,7 +14,7 @@ _The app will be available at `http://localhost:3000`_
 Requirements: Go 1.22 installed
 
 ```bash
-go run cmd/kwikquiz/main.go
+go run cmd/main.go
 ```
 _The app will be available at `http://localhost:3000`_
 
