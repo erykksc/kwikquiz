@@ -39,7 +39,7 @@
   <input
     name="time-per-question"
     type="number"
-    min="0"
+    min="1"
     value="{{ .Lobby.TimePerQuestion.Seconds }}"
     placeholder="seconds"
   />
@@ -56,6 +56,7 @@
   <span for="quiz">Quiz:</span>
   <!-- Dropdown for quiz selection -->
   <select name="quiz">
+    <!-- Check if no quiz is selected -->
     {{ if eq .Lobby.Quiz.ID 0 }}
     <option value="" selected>Select a quiz</option>
     {{ end }}

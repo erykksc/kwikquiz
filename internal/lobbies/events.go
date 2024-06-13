@@ -13,17 +13,17 @@ import (
 
 type lobbyEvent interface {
 	String() string
-	Handle(lobby *lobby, initiator *user) error // Handle the event, is executed with the lobby's mutex locked
+	Handle(lobby *lobby, initiator *user) error // Handles the event, is executed with the lobby's mutex locked
 }
 
-// parseLobbyEvent parses a GameEvent from a JSON in a byte slice
-func parseLobbyEvent(data []byte) (lobbyEvent, error) {
+// parseLobbyEvent parses a [lobbyEvent] from a JSON in a byte slice
+func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 	type WsRequest struct {
 		HEADERS common.HX_Headers
 	}
 
 	var wsRequest WsRequest
-	if err := json.Unmarshal(data, &wsRequest); err != nil {
+	if err := json.Unmarshal(jsonData, &wsRequest); err != nil {
 		return nil, err
 	}
 
@@ -49,8 +49,8 @@ func parseLobbyEvent(data []byte) (lobbyEvent, error) {
 		var event leGameStartRequested
 		return event, nil
 	case "new-username-form":
-		var event leUsernameSubmitted
-		if err := json.Unmarshal(data, &event); err != nil {
+		var event leNewUsernameSubmitted
+		if err := json.Unmarshal(jsonData, &event); err != nil {
 			return nil, err
 		}
 		return event, nil
@@ -63,8 +63,6 @@ func parseLobbyEvent(data []byte) (lobbyEvent, error) {
 // handleNewWebsocketConn handles a new websocket connection to the lobby
 // This function bridges routes and events
 func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (*user, error) {
-	// Assume that connectedUser at this point only has the Conn and ClientID fields
-	// This function should set any other fields that are needed
 	connectedUser := &user{
 		Conn:     conn,
 		ClientID: clientID,
@@ -111,15 +109,16 @@ func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (
 	return connectedUser, nil
 }
 
-type leUsernameSubmitted struct {
+// leNewUsernameSubmitted is an event that is triggered when a user submits a new username
+type leNewUsernameSubmitted struct {
 	Username string
 }
 
-func (e leUsernameSubmitted) String() string {
+func (e leNewUsernameSubmitted) String() string {
 	return "GEUserSubmittedUsername: " + e.Username
 }
 
-func (event leUsernameSubmitted) Handle(l *lobby, initiator *user) error {
+func (event leNewUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 	// Check if the username is empty
 	if event.Username == "" {
 		initiator.writeTemplate(lobbyErrorAlertTmpl, "Username cannot be empty")
@@ -187,6 +186,7 @@ func (event leUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 	return nil
 }
 
+// leUsernameChangeRequested is an event that is triggered when a user requests to change his username
 type leUsernameChangeRequested struct{}
 
 func (e leUsernameChangeRequested) String() string {
@@ -212,6 +212,7 @@ func (event leUsernameChangeRequested) Handle(l *lobby, initiator *user) error {
 	return nil
 }
 
+// leGameStartRequested is an event that is triggered when a user requests to start the game
 type leGameStartRequested struct{}
 
 func (e leGameStartRequested) String() string {
@@ -260,6 +261,7 @@ func (event leGameStartRequested) Handle(l *lobby, initiator *user) error {
 	return nil
 }
 
+// leSkipToAnswerRequested is an event that is triggered when a user requests to skip to the answer
 type leSkipToAnswerRequested struct{}
 
 func (e leSkipToAnswerRequested) String() string {
@@ -271,6 +273,7 @@ func (event leSkipToAnswerRequested) Handle(l *lobby, initiator *user) error {
 	return nil
 }
 
+// leNextQuestionRequested is an event that is triggered when a user requests to go to the next question
 type leNextQuestionRequested struct{}
 
 func (e leNextQuestionRequested) String() string {
@@ -284,6 +287,7 @@ func (event leNextQuestionRequested) Handle(l *lobby, initiator *user) error {
 	return nil
 }
 
+// leAnswerSubmitted is an event that is triggered when a user submits an answer
 type leAnswerSubmitted struct {
 	QuestionIdx int // Index of the question in Quiz.Questions
 	AnswerIdx   int // Index of the answer in CurrentQuestion.Answers

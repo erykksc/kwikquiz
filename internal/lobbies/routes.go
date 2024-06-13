@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erykksc/kwikquiz/internal/quiz"
-
 	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"github.com/gorilla/websocket"
 )
 
