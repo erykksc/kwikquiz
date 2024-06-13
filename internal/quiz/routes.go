@@ -11,7 +11,6 @@ import (
 )
 
 var QuizzesRepo QuizRepository = NewInMemoryQuizRepository()
-var DEBUG = common.DebugOn()
 
 func NewQuizzesRouter() http.Handler {
 	mux := http.NewServeMux()
@@ -27,7 +26,9 @@ func NewQuizzesRouter() http.Handler {
 	// Add quiz if in debug mode
 	if common.DevMode() {
 		QuizzesRepo.AddQuiz(ExampleQuizGeography)
+		slog.Info("Added example geography quiz")
 		QuizzesRepo.AddQuiz(ExampleQuizMath)
+		slog.Info("Added example math quiz")
 	}
 
 	return mux
