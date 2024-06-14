@@ -13,4 +13,4 @@ RUN go mod download
 RUN go build -o bin/kwikquiz cmd/kwikquiz/main.go
 
 # Command to run the executable
-CMD ["./bin/kwikquiz"]
+CMD ["PROD=1 ./bin/kwikquiz"]

@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erykksc/kwikquiz/internal/quiz"
-
 	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"github.com/gorilla/websocket"
 )
 
@@ -23,8 +22,7 @@ func NewLobbiesRouter() http.Handler {
 	mux.HandleFunc("POST /lobbies/{$}", postLobbiesHandler)
 	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
 	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
-	mux.HandleFunc("GET /lobbies/{pin}/settings", getLobbySettingsHandler)
-	mux.HandleFunc("PUT /lobbies/{pin}/settings", putLobbySettingsHandler)
+	mux.HandleFunc("/lobbies/{pin}/settings", lobbySettingsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
 
@@ -43,6 +41,15 @@ func NewLobbiesRouter() http.Handler {
 	return mux
 }
 
+// getClientIDFromRequest returns the clientID from the request cookie
+func getClientIDFromRequest(r *http.Request) (clientID, error) {
+	clientIDCookie, err := r.Cookie("client-id")
+	if err == http.ErrNoCookie {
+		return "", err
+	}
+	return clientID(clientIDCookie.Value), nil
+}
+
 // TODO: Make it only accessible by admin
 func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
@@ -59,10 +66,9 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 
 func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the client isn't a host of another lobby
-	clientIDCookie, err := r.Cookie("client-id")
+	clientID, err := getClientIDFromRequest(r)
 	if err == nil {
-		cID := clientID(clientIDCookie.Value)
-		lobby, err := lobbiesRepo.GetLobbyByHost(cID)
+		lobby, err := lobbiesRepo.GetLobbyByHost(clientID)
 		if err == nil {
 			// Redirect to the lobby
 			w.Header().Add("HX-Redirect", "/lobbies/"+lobby.Pin)
@@ -100,18 +106,15 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GET CLIENT ID from COOKIE
-	var cID clientID
-	clientIDCookie, err := r.Cookie("client-id")
+	cID, err := getClientIDFromRequest(r)
 	if err == http.ErrNoCookie {
-		// Generate new client id
+		// Set new client id if not present
 		cID, err = newClientID()
 		if err != nil {
 			slog.Error("Error generating new client id", "err", err)
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
 			return
 		}
-	} else {
-		cID = clientID(clientIDCookie.Value)
 	}
 
 	// SET CLIENT ID COOKIE or UPDATE EXPIRATION
@@ -128,6 +131,12 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
 func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
+	clientID, err := getClientIDFromRequest(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	pin := r.PathValue("pin")
 
 	lobby, err := lobbiesRepo.GetLobby(pin)
@@ -154,15 +163,6 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed to upgrade to websocket", "err", err)
 		return
 	}
-
-	// GET CLIENT ID from COOKIE
-	clientIDCookie, err := r.Cookie("client-id")
-	if err == http.ErrNoCookie {
-		slog.Error("Client ID cookie not found while in ws handler")
-		common.ErrorHandler(w, r, http.StatusForbidden)
-		return
-	}
-	clientID := clientID(clientIDCookie.Value)
 
 	slog.Debug("Handling new ws connection", "clientID", clientID, "Lobby-Pin", lobby.Pin)
 	lobby.mu.Lock()
@@ -240,8 +240,14 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// return lobby-settings
-func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+// Handler used for getting/updating the lobby settings from the waiting room
+func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+	clientID, err := getClientIDFromRequest(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	pin := r.PathValue("pin")
 
 	lobby, err := lobbiesRepo.GetLobby(pin)
@@ -253,6 +259,56 @@ func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		default:
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
 			return
+		}
+	}
+	// Check if the client is the host
+	if lobby.Host.ClientID != clientID {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// Only update settings if the method is PUT
+	if r.Method == "PUT" {
+		timePerQuestionStr := r.FormValue("time-per-question")
+		if timePerQuestionStr != "" {
+			timePerQuestion, err := time.ParseDuration(timePerQuestionStr + "s")
+			if err != nil {
+				slog.Error("Error parsing time-per-question", "err", err)
+				common.ErrorHandler(w, r, http.StatusBadRequest)
+				return
+			}
+			lobby.TimePerQuestion = timePerQuestion
+			slog.Debug("Updated time-per-question", "lobby.Pin", lobby.Pin, "timePerQuestion", timePerQuestion.String())
+		}
+
+		timeForReadingStr := r.FormValue("time-for-reading")
+		if timeForReadingStr != "" {
+			timeForReading, err := time.ParseDuration(timeForReadingStr + "s")
+			if err != nil {
+				slog.Error("Error parsing time-for-reading", "err", err)
+				common.ErrorHandler(w, r, http.StatusBadRequest)
+				return
+			}
+			lobby.TimeForReading = timeForReading
+			slog.Debug("Updated time-for-reading", "lobby.Pin", lobby.Pin, "timeForReading", timeForReading.String())
+		}
+
+		quizIDStr := r.FormValue("quiz")
+		if quizIDStr != "" {
+			quizID, err := strconv.Atoi(quizIDStr)
+			if err != nil {
+				slog.Error("Error parsing quizID", "err", err)
+				common.ErrorHandler(w, r, http.StatusBadRequest)
+				return
+			}
+			quiz, err := quiz.QuizzesRepo.GetQuiz(quizID)
+			if err != nil {
+				slog.Error("Error getting quiz", "err", err)
+				common.ErrorHandler(w, r, http.StatusBadRequest)
+				return
+			}
+			lobby.Quiz = quiz
+			slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
 		}
 	}
 
@@ -270,79 +326,4 @@ func getLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
-}
-
-// Handler used for updating the lobby settings from the waiting room
-func putLobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
-	pin := r.PathValue("pin")
-
-	lobby, err := lobbiesRepo.GetLobby(pin)
-	if err != nil {
-		switch err.(type) {
-		case errLobbyNotFound:
-			common.ErrorHandler(w, r, http.StatusNotFound)
-			return
-		default:
-			common.ErrorHandler(w, r, http.StatusInternalServerError)
-			return
-		}
-	}
-
-	timePerQuestionStr := r.FormValue("time-per-question")
-	if timePerQuestionStr != "" {
-		timePerQuestion, err := time.ParseDuration(timePerQuestionStr + "s")
-		if err != nil {
-			slog.Error("Error parsing time-per-question", "err", err)
-			common.ErrorHandler(w, r, http.StatusBadRequest)
-			return
-		}
-		lobby.TimePerQuestion = timePerQuestion
-		slog.Debug("Updated time-per-question", "lobby.Pin", lobby.Pin, "timePerQuestion", timePerQuestion.String())
-	} else {
-		lobby.TimePerQuestion = 0
-	}
-
-	timeForReadingStr := r.FormValue("time-for-reading")
-	if timeForReadingStr != "" {
-		timeForReading, err := time.ParseDuration(timeForReadingStr + "s")
-		if err != nil {
-			slog.Error("Error parsing time-for-reading", "err", err)
-			common.ErrorHandler(w, r, http.StatusBadRequest)
-			return
-		}
-		lobby.TimeForReading = timeForReading
-		slog.Debug("Updated time-for-reading", "lobby.Pin", lobby.Pin, "timeForReading", timeForReading.String())
-	} else {
-		lobby.TimeForReading = 0
-	}
-
-	quizIDStr := r.FormValue("quiz")
-	if quizIDStr != "" {
-		quizID, err := strconv.Atoi(quizIDStr)
-		if err != nil {
-			slog.Error("Error parsing quizID", "err", err)
-			common.ErrorHandler(w, r, http.StatusBadRequest)
-			return
-		}
-		quiz, err := quiz.QuizzesRepo.GetQuiz(quizID)
-		if err != nil {
-			slog.Error("Error getting quiz", "err", err)
-			common.ErrorHandler(w, r, http.StatusBadRequest)
-			return
-		}
-		lobby.Quiz = quiz
-		slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
-	}
-
-	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
-	if err != nil {
-		slog.Error("Error getting quizzes metadata", "err", err)
-		common.ErrorHandler(w, r, http.StatusInternalServerError)
-		return
-	}
-
-	lobbySettingsTmpl.Execute(w, lobbySettingsData{
-		Quizzes: quizzesMeta,
-		Lobby:   lobby,
-	})
 }
