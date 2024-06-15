@@ -1,15 +1,15 @@
 {{define "title"}}KwikQuiz All Quizzes{{end}}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    {{template "header-content" .}}
-    <body>
-        <h1>Quizzes</h1>
-        {{range .}}
-        <div>
-            <a href="/quizzes/{{.ID}}">{{.Title}}</a>
-        </div>
-        {{else}}
-        <p>No quizzes found</p>
-        {{end}}
-    </body>
+  {{template "header-content" .}}
+  <body>
+    <h1>Quizzes</h1>
+    {{range .}}
+    <div>
+      <a href="/quizzes/{{.ID}}">{{.Title}}</a>
+    </div>
+    {{else}}
+    <p>No quizzes found</p>
+    {{end}}
+  </body>
 </html>
