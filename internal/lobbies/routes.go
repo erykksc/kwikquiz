@@ -119,9 +119,8 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 
 	// SET CLIENT ID COOKIE or UPDATE EXPIRATION
 	http.SetCookie(w, &http.Cookie{
-		Name:    "client-id",
-		Value:   string(cID),
-		Expires: time.Now().Add(6 * time.Hour),
+		Name:  "client-id",
+		Value: string(cID),
 	})
 
 	if err := lobbyTmpl.Execute(w, &lobby); err != nil {
