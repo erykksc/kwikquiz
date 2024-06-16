@@ -135,7 +135,7 @@
         </div>
         {{ end }}
         <!-- Skip to answer button -->
-        {{ if .User.IsHost }}
+        {{ if eq .Lobby.Host .User }}
         <button name="skip-to-answer-btn" ws-send class="rounded bg-blue-200 p-1">Skip to Answer</button>
         {{ end }}
       </div>
@@ -151,7 +151,7 @@
           {{ end}}
         </p>
         <!-- Score Counter -->
-        {{ if .User.IsHost }}
+        {{ if eq .Lobby.Host .User }}
         <!-- The host doesn't have a score -->
         {{ else }}
         <p class="text-lg md:text-xl font-semibold text-dark-green">
