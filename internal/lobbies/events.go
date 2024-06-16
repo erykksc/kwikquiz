@@ -75,7 +75,6 @@ func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (
 	case l.Host == nil:
 		slog.Info("New Host for the Lobby", "Lobby-Pin", l.Pin, "Client-ID", connectedUser.ClientID)
 		l.Host = connectedUser
-		connectedUser.IsHost = true
 
 	// Check if host is trying to reconnect
 	case l.Host.ClientID == connectedUser.ClientID:

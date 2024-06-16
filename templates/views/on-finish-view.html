@@ -1,5 +1,5 @@
 <div id="view">
-  {{ if .User.IsHost }}
+  {{ if eq .Lobby.Host .User }}
   <script>
     // TODO: Sends Host to the lobby results view
     window.location.href = "/";
