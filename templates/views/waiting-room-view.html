@@ -25,7 +25,7 @@
   </style>
 
   <!-- View for Host -->
-  {{ if .User.IsHost }}
+  {{ if eq .Lobby.Host .User }}
   <div class="text-center">
     <h0 class="text-3xl font-bold mb-4 text-white">GAME SETTINGS</h0>
     <h1 class="text-xl font-bold mt-4 mb-4 text-dark-green">Your Lobby Pin: {{ .Lobby.Pin }}</h1>
