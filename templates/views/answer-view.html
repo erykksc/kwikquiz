@@ -1,11 +1,38 @@
-<div id="view">
-  <h1>Answer view</h1>
-  <p>Your new points: {{.User.NewPoints}}</p>
-  <p>Your score: {{.User.Score}}</p>
-  {{ if .User.IsHost }}
-  <button name="next-question-btn" ws-send class="rounded bg-blue-200 p-1">
-    {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next Question
+<div id="view" class="p-6 bg-baby-pink min-h-screen flex flex-col justify-center items-center">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+
+  <style>
+    .bg-baby-pink {
+      background-color: #fec6e2;
+    }
+    .bg-dark-green {
+      background-color: #123f16;
+    }
+    .text-baby-pink {
+      color: #fec6e2;
+    }
+    .text-dark-green {
+      color: #123f16;
+    }
+    .input-border-green {
+      border-color: #123f16;
+    }
+    h0 {
+      background-color: #123f16;
+      padding: 1px;
+      border-radius: 8px;
+    }
+  </style>
+
+  <div class="text-center">
+    <h1 class="text-5xl mb-8">Answer view</h1>
+    <h1 class="text-4xl md:text-5xl font-semibold text-dark-green mb-8">Your new points: {{.User.NewPoints}}</h1>
+    <h1 class="text-4xl md:text-5xl font-semibold text-dark-green mb-8">Your score: {{.User.Score}}</h1>
+    {{ if .User.IsHost }}
+    <button name="next-question-btn" ws-send class="rounded bg-blue-200 p-4 text-2xl">
+      {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next Question
+      {{ end }}
+    </button>
     {{ end }}
-  </button>
-  {{ end }}
+  </div>
 </div>
