@@ -1,5 +1,5 @@
 <div id="view" class="p-6 bg-baby-pink min-h-screen flex justify-center items-center">
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 
   <style>
     .bg-baby-pink {
@@ -20,7 +20,7 @@
     h0 {
       background-color: #123f16;
       padding: 1px;
-      border-radius: 8px
+      border-radius: 8px;
     }
   </style>
 
@@ -44,7 +44,11 @@
       <li class="text-lg">{{ $value.Username }}</li>
       {{ end }}
     </ul>
-    <button name="start-game-btn" ws-send class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed">
+    <button
+      name="start-game-btn"
+      ws-send
+      class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed"
+    >
       Start Game
     </button>
   </div>
@@ -52,7 +56,11 @@
   {{ else }}
   <div class="text-center">
     <p class="text-3xl font-bold mb-4 text-dark-green">Welcome to this KWIKQUIZ, {{ .User.Username }}</p>
-    <button name="change-username-btn" class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed" ws-send>
+    <button
+      name="change-username-btn"
+      class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed"
+      ws-send
+    >
       Change Username
     </button>
     <p class="text-2xl font-semibold mt-4 mb-2 text-dark-green">Wait for the host to start the game</p>
@@ -61,12 +69,7 @@
 </div>
 
 {{ define "lobby-settings" }}
-<form
-  hx-put="/lobbies/{{ .Lobby.Pin }}/settings"
-  hx-trigger="change"
-  hx-swap="outerHTML"
-  class="space-y-4 text-center"
->
+<form hx-put="/lobbies/{{ .Lobby.Pin }}/settings" hx-trigger="change" hx-swap="outerHTML" class="space-y-4 text-center">
   <div class="flex flex-col">
     <label for="time-per-question" class="mb-1 font-semibold text-dark-green">Time per question in seconds:</label>
     <input
@@ -91,7 +94,10 @@
   </div>
   <div class="flex flex-col">
     <label for="quiz" class="mb-1 font-semibold text-dark-green">Quiz:</label>
-    <select name="quiz" class="p-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green">
+    <select
+      name="quiz"
+      class="p-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+    >
       <!-- Check if no quiz is selected -->
       {{ if eq .Lobby.Quiz.ID 0 }}
       <option value="" selected>Select a quiz</option>
@@ -100,7 +106,15 @@
       {{ range .Quizzes }}
       <option
         value="{{ .ID }}"
-        {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID)}} selected {{end}}
+        {{
+        if
+        and
+        $.Lobby.Quiz.ID
+        (eq
+        $.Lobby.Quiz.ID
+        .ID)}}
+        selected
+        {{end}}
         class="text-dark-green"
       >
         {{ .Title }}

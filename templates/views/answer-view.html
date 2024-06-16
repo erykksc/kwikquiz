@@ -4,8 +4,8 @@
   <p>Your score: {{.User.Score}}</p>
   {{ if .User.IsHost }}
   <button name="next-question-btn" ws-send class="rounded bg-blue-200 p-1">
-    {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions))
-    }} Finish Quiz {{ else }} Next Question {{ end }}
+    {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next Question
+    {{ end }}
   </button>
   {{ end }}
 </div>

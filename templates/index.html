@@ -43,20 +43,12 @@
   </head>
   <body class="background-pattern">
     <div class="text-center">
-      <h1 class="text-4xl md:text-6xl font-bold text-dark-green mb-4">
-        KWIKQUIZ
-      </h1>
+      <h1 class="text-4xl md:text-6xl font-bold text-dark-green mb-4">KWIKQUIZ</h1>
       <h2 class="text-lg md:text-xl text-dark-green mb-8">Learning is Fun!</h2>
       <div class="flex flex-col items-center space-y-4">
         <!-- Game Code Input -->
         {{ block "join-form" . }}
-        <form
-          method="GET"
-          hx-get="/lobbies/join"
-          hx-include="#pin"
-          hx-swap="outerHTML"
-          class="mt-8 w-full max-w-xs"
-        >
+        <form method="GET" hx-get="/lobbies/join" hx-include="#pin" hx-swap="outerHTML" class="mt-8 w-full max-w-xs">
           <input
             type="text"
             id="pin"
@@ -77,9 +69,7 @@
         </form>
         {{ end }}
 
-        <label for="game-code" class="block text-dark-green font-semibold mb-2"
-          >OR</label
-        >
+        <label for="game-code" class="block text-dark-green font-semibold mb-2">OR</label>
 
         <div class="flex space-x-4">
           <button

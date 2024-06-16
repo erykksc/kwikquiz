@@ -57,7 +57,6 @@ func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 	default:
 		return nil, errors.New("unrecognized trigger name, cannot parse event: " + wsRequest.HEADERS.HxTriggerName)
 	}
-
 }
 
 // handleNewWebsocketConn handles a new websocket connection to the lobby
