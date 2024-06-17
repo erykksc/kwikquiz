@@ -1,12 +1,11 @@
 package quiz
 
 type Quiz struct {
-	ID            int
-	Title         string
-	Password      string
-	Description   string
-	QuestionOrder string
-	Questions     []Question
+	ID          int
+	Title       string
+	Password    string
+	Description string
+	Questions   []Question
 }
 
 type Question struct {
@@ -17,7 +16,6 @@ type Question struct {
 }
 
 type Answer struct {
-	Number    int
 	IsCorrect bool
 	Text      string
 	// later we can add img, video etc. to allow multimodal questions

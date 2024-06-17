@@ -34,7 +34,6 @@ func NewQuizzesRouter() http.Handler {
 	return mux
 }
 
-// TODO: Make it only accessible by admin
 func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	quizzes, err := QuizzesRepo.GetAllQuizzes()
@@ -112,7 +111,6 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
-	questionOrder := r.FormValue("question-order")
 
 	questions, err := parseQuestions(r)
 	if err != nil {
@@ -120,11 +118,10 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	}
 
 	return Quiz{
-		Title:         title,
-		Password:      password,
-		Description:   description,
-		QuestionOrder: questionOrder,
-		Questions:     questions,
+		Title:       title,
+		Password:    password,
+		Description: description,
+		Questions:   questions,
 	}, nil
 }
 
@@ -151,7 +148,6 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
 			}
 			answers = append(answers, Answer{
-				Number:    answerIndex,
 				IsCorrect: answerIndex == correctAnswer,
 				Text:      answerText,
 			})
@@ -170,12 +166,11 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 }
 
 func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
-	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
-		Title:         quiz.Title,
-		Description:   quiz.Description,
-		QuestionOrder: quiz.QuestionOrder,
-		Questions:     quiz.Questions,
-		FormError:     err.Error(),
+	err = QuizCreateUpdateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
+		Title:       quiz.Title,
+		Description: quiz.Description,
+		Questions:   quiz.Questions,
+		FormError:   err.Error(),
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
@@ -190,7 +185,7 @@ func redirectToQuiz(w http.ResponseWriter, quizID int) {
 
 func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	err := QuizCreateTemplate.Execute(w, nil)
+	err := QuizCreateUpdateTemplate.Execute(w, nil)
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -231,7 +226,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
+	err = QuizCreateUpdateTemplate.Execute(w, map[string]interface{}{
 		"QuizJSON": string(quizJSON),
 	})
 	if err != nil {
