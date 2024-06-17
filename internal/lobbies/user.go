@@ -14,7 +14,6 @@ type user struct {
 	Conn                 *websocket.Conn
 	ClientID             clientID
 	Username             string
-	IsHost               bool
 	SubmittedAnswerIdx   int
 	AnswerSubmissionTime time.Time
 	Score                int64

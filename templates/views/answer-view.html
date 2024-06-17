@@ -2,7 +2,7 @@
   <h1>Answer view</h1>
   <p>Your new points: {{.User.NewPoints}}</p>
   <p>Your score: {{.User.Score}}</p>
-  {{ if .User.IsHost }}
+  {{ if eq .Lobby.Host .User}}
   <button name="next-question-btn" ws-send class="rounded bg-blue-200 p-1">
     {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next Question
     {{ end }}
