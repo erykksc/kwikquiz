@@ -5,6 +5,7 @@ import (
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
 	"github.com/erykksc/kwikquiz/internal/quiz"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"log/slog"
 	"net/http"
 	"os"
@@ -49,6 +50,7 @@ func main() {
 
 	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
+	router.Handle("/past-games/", pastgames.NewPastGamesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
 			slog.Error("Error rendering template", "error", err)
