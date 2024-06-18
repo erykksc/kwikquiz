@@ -34,7 +34,6 @@ func NewQuizzesRouter() http.Handler {
 	return mux
 }
 
-// TODO: Make it only accessible by admin
 func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	quizzes, err := QuizzesRepo.GetAllQuizzes()
@@ -80,13 +79,12 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type createQuizForm struct {
-	Qid           int
-	Title         string
-	Password      string
-	Description   string
-	QuestionOrder string
-	Questions     []Question
-	FormError     string
+	Qid         int
+	Title       string
+	Password    string
+	Description string
+	Questions   []Question
+	FormError   string
 }
 
 func postQuizHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,10 +107,17 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseQuizForm(r *http.Request) (Quiz, error) {
+	qidStr := r.PathValue("qid")
+
+	// Convert the string to an integer
+	qid, err := strconv.Atoi(qidStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		slog.Error("Error converting qid", "error", err)
+	}
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
-	questionOrder := r.FormValue("question-order")
 
 	questions, err := parseQuestions(r)
 	if err != nil {
@@ -120,11 +125,11 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	}
 
 	return Quiz{
-		Title:         title,
-		Password:      password,
-		Description:   description,
-		QuestionOrder: questionOrder,
-		Questions:     questions,
+		ID:          qid,
+		Title:       title,
+		Password:    password,
+		Description: description,
+		Questions:   questions,
 	}, nil
 }
 
@@ -151,7 +156,6 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
 			}
 			answers = append(answers, Answer{
-				Number:    answerIndex,
 				IsCorrect: answerIndex == correctAnswer,
 				Text:      answerText,
 			})
@@ -159,7 +163,6 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 		}
 		// Append questions to a slice
 		questions = append(questions, Question{
-			Number:        questionIndex,
 			Text:          questionText,
 			Answers:       answers,
 			CorrectAnswer: correctAnswer,
@@ -171,11 +174,10 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 
 func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
-		Title:         quiz.Title,
-		Description:   quiz.Description,
-		QuestionOrder: quiz.QuestionOrder,
-		Questions:     quiz.Questions,
-		FormError:     err.Error(),
+		Title:       quiz.Title,
+		Description: quiz.Description,
+		Questions:   quiz.Questions,
+		FormError:   err.Error(),
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
@@ -232,6 +234,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
+		"Quiz":     quiz,
 		"QuizJSON": string(quizJSON),
 	})
 	if err != nil {
