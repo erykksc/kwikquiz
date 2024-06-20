@@ -16,8 +16,8 @@ type user struct {
 	Username             string
 	SubmittedAnswerIdx   int
 	AnswerSubmissionTime time.Time
-	Score                int64
-	NewPoints            int64
+	Score                int
+	NewPoints            int
 }
 
 // writeTemplate does tmpl.Execute(w, data) on websocket connection to the user
