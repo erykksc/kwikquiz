@@ -9,10 +9,7 @@ import (
 	"github.com/erykksc/kwikquiz/internal/common"
 )
 
-const (
-	PastGameTemplate = "templates/pastgames/pastgame.html"
-	BaseTemplate     = "templates/base.html"
-)
+var pastGameTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgame.html", common.BaseTmplPath))
 
 var pastGameRepo PastGameRepository = NewInMemoryPastGameRepository()
 
@@ -49,8 +46,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFiles(PastGameTemplate, BaseTemplate))
-	if err := tmpl.Execute(w, pastGame); err != nil {
+	if err := pastGameTmpl.Execute(w, pastGame); err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 		slog.Error("Error rendering template", "err", err)
 	}
