@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
@@ -162,7 +163,7 @@ func (l *lobby) showAnswer() error {
 				// Maximum points for answering in less than 500ms
 				player.NewPoints = 1000
 			} else {
-				player.NewPoints = int64((1 - (float64(timeToAnswer) / float64(l.TimePerQuestion) / 2.0)) * 1000)
+				player.NewPoints = int((1 - (float64(timeToAnswer) / float64(l.TimePerQuestion) / 2.0)) * 1000)
 			}
 			player.Score += player.NewPoints
 		}
@@ -199,16 +200,44 @@ func (l *lobby) endGame() error {
 		return err
 	}
 
-	// TODO: Save the game results (Eren's package)
+	scores := make([]pastgames.PlayerScore, 0, len(l.Players)+1)
+	for _, player := range l.Leaderboard {
+		scores = append(scores, pastgames.PlayerScore{
+			Username: player.Username,
+			Score:    player.Score,
+		})
+	}
+
+	pastGame := pastgames.PastGame{
+		StartedAt: l.StartedAt,
+		EndedAt:   time.Now(),
+		QuizTitle: l.Quiz.Title,
+		Scores:    scores,
+	}
+	id, err := pastgames.PastGamesRepo.AddPastGame(pastGame)
+	if err != nil {
+		return err
+	}
+
+	data := OnFinishData{
+		PastGameID: id,
+		viewData: viewData{
+			Lobby: l,
+			User:  l.Host,
+		},
+	}
 
 	// Close websocket connections
 	// The redirection to lobby results is handled by the view
-	l.Host.writeTemplate(onFinishView, nil)
+	l.Host.writeTemplate(onFinishView, data)
 	l.Host.Conn.Close()
 	for _, player := range l.Players {
-		player.writeTemplate(onFinishView, nil)
+		data.User = player
+		err = player.writeTemplate(onFinishView, data)
+		if err != nil {
+			slog.Error("Error sending OnFinishView to user", "error", err)
+		}
 		player.Conn.Close()
 	}
-
 	return nil
 }

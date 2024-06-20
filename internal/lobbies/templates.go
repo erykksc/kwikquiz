@@ -35,6 +35,11 @@ var questionView *template.Template
 var answerView *template.Template
 var onFinishView *template.Template
 
+type OnFinishData struct {
+	PastGameID int
+	viewData
+}
+
 // This template is used to render the lobby settings inside waitingRoomView
 var lobbySettingsTmpl *template.Template
 
