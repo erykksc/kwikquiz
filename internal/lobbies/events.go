@@ -57,7 +57,6 @@ func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 	default:
 		return nil, errors.New("unrecognized trigger name, cannot parse event: " + wsRequest.HEADERS.HxTriggerName)
 	}
-
 }
 
 // handleNewWebsocketConn handles a new websocket connection to the lobby
@@ -76,7 +75,6 @@ func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (
 	case l.Host == nil:
 		slog.Info("New Host for the Lobby", "Lobby-Pin", l.Pin, "Client-ID", connectedUser.ClientID)
 		l.Host = connectedUser
-		connectedUser.IsHost = true
 
 	// Check if host is trying to reconnect
 	case l.Host.ClientID == connectedUser.ClientID:

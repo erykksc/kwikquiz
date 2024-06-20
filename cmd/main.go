@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 	"log/slog"
 	"net/http"
 	"os"
-)
 
-var DEBUG = common.DebugOn()
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
+)
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 
 func main() {
 	var logLevel slog.Leveler = slog.LevelInfo
-	if DEBUG {
+	if common.DebugOn() {
 		slog.Info("Debug mode enabled")
 		logLevel = slog.LevelDebug
 	}
@@ -49,6 +49,7 @@ func main() {
 
 	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
+	router.Handle("/past-games/", pastgames.NewPastGamesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
 			slog.Error("Error rendering template", "error", err)

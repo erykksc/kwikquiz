@@ -1,75 +1,126 @@
-<div id="view">
+<div id="view" class="p-6 bg-baby-pink min-h-screen flex justify-center items-center">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+
+  <style>
+    .bg-baby-pink {
+      background-color: #fec6e2;
+    }
+    .bg-dark-green {
+      background-color: #123f16;
+    }
+    .text-baby-pink {
+      color: #fec6e2;
+    }
+    .text-dark-green {
+      color: #123f16;
+    }
+    .input-border-green {
+      border-color: #123f16;
+    }
+    h0 {
+      background-color: #123f16;
+      padding: 1px;
+      border-radius: 8px;
+    }
+  </style>
+
   <!-- View for Host -->
-  {{ if .User.IsHost }}
-  <h1>Pin: {{ .Lobby.Pin }}</h1>
-  <div
-    hx-get="/lobbies/{{ .Lobby.Pin }}/settings"
-    hx-swap="outerHTML"
-    hx-trigger="load"
-  >
-    <!-- Template lobby-settings should be returned here -->
-    Loading lobby settings...
+  {{ if eq .Lobby.Host .User }}
+  <div class="text-center">
+    <h0 class="text-3xl font-bold mb-4 text-white">GAME SETTINGS</h0>
+    <h1 class="text-xl font-bold mt-4 mb-4 text-dark-green">Your Lobby Pin: {{ .Lobby.Pin }}</h1>
+    <div
+      hx-get="/lobbies/{{ .Lobby.Pin }}/settings"
+      hx-swap="outerHTML"
+      hx-trigger="load"
+      class="p-4 bg-white shadow-md rounded-lg mb-4"
+    >
+      <!-- Template lobby-settings should be returned here -->
+      <p class="text-dark-green">Loading lobby settings...</p>
+    </div>
+    <h2 class="text-2xl font-semibold mt-6 mb-2 text-dark-green">Players</h2>
+    <ul class="list-disc pl-6 mb-4 text-dark-green">
+      {{ range $key, $value := .Lobby.Players }}
+      <li class="text-lg">{{ $value.Username }}</li>
+      {{ end }}
+    </ul>
+    <button
+      name="start-game-btn"
+      ws-send
+      class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Start Game
+    </button>
   </div>
-  <h2>Players</h2>
-  <ul>
-    {{ range $key, $value := .Lobby.Players }}
-    <li>{{ $value.Username }}</li>
-    {{ end }}
-  </ul>
-  <button name="start-game-btn" ws-send class="rounded bg-blue-200 p-1">
-    Start Game
-  </button>
   <!-- View for players -->
   {{ else }}
-  <p>Your username is: {{ .User.Username }}</p>
-  <button name="change-username-btn" class="rounded bg-blue-200 p-1" ws-send>
-    Change Username
-  </button>
-  <p>Wait for the host to start the game</p>
+  <div class="text-center">
+    <p class="text-3xl font-bold mb-4 text-dark-green">Welcome to this KWIKQUIZ, {{ .User.Username }}</p>
+    <button
+      name="change-username-btn"
+      class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed"
+      ws-send
+    >
+      Change Username
+    </button>
+    <p class="text-2xl font-semibold mt-4 mb-2 text-dark-green">Wait for the host to start the game</p>
+  </div>
   {{ end }}
 </div>
 
 {{ define "lobby-settings" }}
-<form
-  hx-put="/lobbies/{{ .Lobby.Pin }}/settings"
-  hx-trigger="change"
-  hx-swap="outerHTML"
->
-  <span for="time-per-question">Time per question in seconds:</span>
-  <input
-    name="time-per-question"
-    type="number"
-    min="1"
-    value="{{ .Lobby.TimePerQuestion.Seconds }}"
-    placeholder="seconds"
-  />
-  <br />
-  <span for="time-for-reading">Time for reading in seconds:</span>
-  <input
-    name="time-for-reading"
-    type="number"
-    min="0"
-    value="{{ .Lobby.TimeForReading.Seconds }}"
-    placeholder="seconds"
-  />
-  <br />
-  <span for="quiz">Quiz:</span>
-  <!-- Dropdown for quiz selection -->
-  <select name="quiz">
-    <!-- Check if no quiz is selected -->
-    {{ if eq .Lobby.Quiz.ID 0 }}
-    <option value="" selected>Select a quiz</option>
-    {{ end }}
-    <!-- Add quizzes options -->
-    {{ range .Quizzes }}
-    <!-- prettier-ignore -->
-    <option
-      value="{{ .ID }}"
-      {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID)}} selected {{end}}
+<form hx-put="/lobbies/{{ .Lobby.Pin }}/settings" hx-trigger="change" hx-swap="outerHTML" class="space-y-4 text-center">
+  <div class="flex flex-col">
+    <label for="time-per-question" class="mb-1 font-semibold text-dark-green">Time per question in seconds:</label>
+    <input
+      name="time-per-question"
+      type="number"
+      min="1"
+      value="{{ .Lobby.TimePerQuestion.Seconds }}"
+      placeholder="seconds"
+      class="p-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+    />
+  </div>
+  <div class="flex flex-col">
+    <label for="time-for-reading" class="mb-1 font-semibold text-dark-green">Time for reading in seconds:</label>
+    <input
+      name="time-for-reading"
+      type="number"
+      min="0"
+      value="{{ .Lobby.TimeForReading.Seconds }}"
+      placeholder="seconds"
+      class="p-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+    />
+  </div>
+  <div class="flex flex-col">
+    <label for="quiz" class="mb-1 font-semibold text-dark-green">Quiz:</label>
+    <select
+      name="quiz"
+      class="p-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
     >
-      {{ .Title }}
-    </option>
-    {{ end }}
-  </select>
+      <!-- Check if no quiz is selected -->
+      {{ if eq .Lobby.Quiz.ID 0 }}
+      <option value="" selected>Select a quiz</option>
+      {{ end }}
+      <!-- Add quizzes options -->
+      {{ range .Quizzes }}
+      <option
+        value="{{ .ID }}"
+        {{
+        if
+        and
+        $.Lobby.Quiz.ID
+        (eq
+        $.Lobby.Quiz.ID
+        .ID)}}
+        selected
+        {{end}}
+        class="text-dark-green"
+      >
+        {{ .Title }}
+      </option>
+      {{ end }}
+    </select>
+  </div>
 </form>
 {{ end }}

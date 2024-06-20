@@ -22,13 +22,15 @@ _The app will be available at `http://localhost:3000`_
 Requirements: Go 1.22, air installed
 
 Air is a tool that auto rebuilds and runs the application when changes are detected.
-DEBUG=1 flag is used to enable debug mode. Application will add:
-* Set log level to debug
-* Add example quizzes to the database
-* Add example lobby with pin: 1234
-
+DEBUG=1 flag is used to set log level to debug.
 ```bash
 DEBUG=1 air
+```
+
+## Running in production mode
+To run in production mode, set the environment variable `PROD` to `true` or `1`.
+```bash
+PROD=1 go run cmd/main.go
 ```
 
 ## Contributing
