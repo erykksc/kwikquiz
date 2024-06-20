@@ -32,7 +32,7 @@
     <h1 class="text-5xl mb-8">Answer view</h1>
     <h1 class="text-4xl md:text-5xl font-semibold text-dark-green mb-8">Your new points: {{.User.NewPoints}}</h1>
     <h1 class="text-4xl md:text-5xl font-semibold text-dark-green mb-8">Your score: {{.User.Score}}</h1>
-    {{ if eq.Lobby.Host.User }}
+    {{ if eq .Lobby.Host .User }}
     <button name="next-question-btn" ws-send class="rounded bg-blue-200 p-4 text-2xl">
       {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next Question
       {{ end }}
