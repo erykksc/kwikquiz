@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/quiz"
-	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 var DEBUG = common.DebugOn()
@@ -34,7 +35,7 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 
 func main() {
 	var logLevel slog.Leveler = slog.LevelInfo
-	if DEBUG {
+	if common.DebugOn() {
 		slog.Info("Debug mode enabled")
 		logLevel = slog.LevelDebug
 	}
