@@ -12,15 +12,9 @@ func tmplParseWithBase(path string) *template.Template {
 	return template.Must(template.ParseFiles(path, common.BaseTmplPath))
 }
 
-var lobbyErrorAlertTmpl *template.Template
-var lobbiesTmpl *template.Template
-var lobbyTmpl *template.Template
-
-func init() {
-	lobbiesTmpl = tmplParseWithBase("templates/lobbies/lobbies.html")
-	lobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
-	lobbyErrorAlertTmpl = lobbyTmpl.Lookup("error-alert")
-}
+var lobbiesTmpl = tmplParseWithBase("templates/lobbies/lobbies.html")
+var lobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
+var lobbyErrorAlertTmpl = lobbyTmpl.Lookup("error-alert")
 
 type viewData struct {
 	Lobby *lobby
@@ -29,11 +23,17 @@ type viewData struct {
 
 // Views are the templates that are rendered for the different states of the lobby
 // All of them require ViewData as the data to render
-var chooseUsernameView *template.Template
-var waitingRoomView *template.Template
-var questionView *template.Template
-var answerView *template.Template
-var onFinishView *template.Template
+var chooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
+var waitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
+var questionView = tmplParseWithBase("templates/views/question-view.html")
+
+// Decrement function used for checking if the current question is the last one
+var answerView = template.Must(template.New("answer-view.html").Funcs(template.FuncMap{
+	"decrement": func(i int) int {
+		return i - 1
+	},
+}).ParseFiles("templates/views/answer-view.html", common.BaseTmplPath))
+var onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
 
 type OnFinishData struct {
 	PastGameID int
@@ -41,25 +41,11 @@ type OnFinishData struct {
 }
 
 // This template is used to render the lobby settings inside waitingRoomView
-var lobbySettingsTmpl *template.Template
+var lobbySettingsTmpl = waitingRoomView.Lookup("lobby-settings")
 
 type lobbySettingsData struct {
 	Quizzes []quiz.QuizMetadata
 	Lobby   *lobby
-}
-
-func init() {
-	chooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
-	waitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
-	questionView = tmplParseWithBase("templates/views/question-view.html")
-	// Decrement function used for checking if the current question is the last one
-	answerView = template.Must(template.New("answer-view.html").Funcs(template.FuncMap{
-		"decrement": func(i int) int {
-			return i - 1
-		},
-	}).ParseFiles("templates/views/answer-view.html", common.BaseTmplPath))
-	onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
-	lobbySettingsTmpl = waitingRoomView.Lookup("lobby-settings")
 }
 
 type lobbyState int
