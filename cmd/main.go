@@ -2,20 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/config"
-	"github.com/erykksc/kwikquiz/internal/database"
-	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/models"
-	"github.com/erykksc/kwikquiz/internal/quiz"
-	"github.com/joho/godotenv"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
-)
 
-var DEBUG = common.DebugOn()
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
+)
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,36 +31,9 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 	return handler
 }
 
-func setUpDataBase() {
-	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	// Load config
-	cfg := config.LoadConfig()
-
-	// Connect to database
-	database.Connect(cfg)
-
-	// Migrate the schema
-	if err := database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{}); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
-	}
-}
-
-func testAddToDB() {
-	// Save the example quiz to the database
-	err := database.DB.Create(&quiz.ExampleQuizGeography).Error
-	if err != nil {
-		log.Fatalf("Failed to create example quiz: %v", err)
-	}
-}
-
 func main() {
 	var logLevel slog.Leveler = slog.LevelInfo
-	if DEBUG {
+	if common.DebugOn() {
 		slog.Info("Debug mode enabled")
 		logLevel = slog.LevelDebug
 	}
@@ -75,16 +43,13 @@ func main() {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
-	setUpDataBase()
-
-	testAddToDB()
-
 	fs := http.FileServer(http.Dir("static"))
 
 	router := http.NewServeMux()
 
 	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
+	router.Handle("/past-games/", pastgames.NewPastGamesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
 			slog.Error("Error rendering template", "error", err)
