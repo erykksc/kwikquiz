@@ -6,18 +6,17 @@ type Quiz struct {
 	Password      string
 	Description   string
 	QuestionOrder string
-	Questions     []Question
+	Questions     []Question `gorm:"foreignKey:QuizID"`
 }
 
 type Question struct {
 	Number        int
 	Text          string
-	Answers       []Answer
+	Answers       []Answer `gorm:"foreignKey:QuestionID"`
 	CorrectAnswer int
 }
 
 type Answer struct {
-	Number    int
 	IsCorrect bool
 	Text      string
 	// later we can add img, video etc. to allow multimodal questions

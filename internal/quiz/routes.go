@@ -80,13 +80,12 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type createQuizForm struct {
-	Qid           int
-	Title         string
-	Password      string
-	Description   string
-	QuestionOrder string
-	Questions     []Question
-	FormError     string
+	Qid         int
+	Title       string
+	Password    string
+	Description string
+	Questions   []Question
+	FormError   string
 }
 
 func postQuizHandler(w http.ResponseWriter, r *http.Request) {
@@ -151,7 +150,6 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
 			}
 			answers = append(answers, Answer{
-				Number:    answerIndex,
 				IsCorrect: answerIndex == correctAnswer,
 				Text:      answerText,
 			})
@@ -171,11 +169,10 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 
 func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
-		Title:         quiz.Title,
-		Description:   quiz.Description,
-		QuestionOrder: quiz.QuestionOrder,
-		Questions:     quiz.Questions,
-		FormError:     err.Error(),
+		Title:       quiz.Title,
+		Description: quiz.Description,
+		Questions:   quiz.Questions,
+		FormError:   err.Error(),
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)

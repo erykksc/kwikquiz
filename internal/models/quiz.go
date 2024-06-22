@@ -1,26 +1,28 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
-type Quiz struct {
+type QuizModel struct {
 	gorm.Model
-	ID          int
-	Title       string
-	Password    string
-	Description string
-	Questions   []Question `gorm:"foreignKey:QuizID"`
+	ID            int
+	Title         string
+	Password      string
+	Description   string
+	QuestionOrder string
+	Questions     []QuestionModel `gorm:"foreignKey:ID"`
 }
 
-type Question struct {
+type QuestionModel struct {
 	gorm.Model
 	Text          string
-	Answers       []Answer `gorm:"foreignKey:QuestionID"`
+	Answers       []AnswerModel `gorm:"foreignKey:Text"`
 	CorrectAnswer int
 }
 
-type Answer struct {
+type AnswerModel struct {
 	gorm.Model
 	IsCorrect bool
 	Text      string
-	// later we can add img, video etc. to allow multimodal questions
 }

@@ -2,14 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/config"
+	"github.com/erykksc/kwikquiz/internal/database"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/models"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/pastgames"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -31,6 +34,52 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 	return handler
 }
 
+func setUpDatabase() {
+	// Load config
+	cfg, _ := config.LoadConfig()
+
+	// Connect to the database
+	database.Connect(cfg)
+
+	// Migrate the schema
+	err := database.DB.AutoMigrate(&models.QuizModel{}, &models.QuestionModel{}, &models.AnswerModel{})
+	if err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+}
+
+func testInsertDataToDatabase() {
+	var ExampleQuizGeography = models.QuizModel{
+		ID:          1,
+		Title:       "Geography",
+		Description: "This is a quiz about capitals around the world",
+		Questions: []models.QuestionModel{
+			{
+				Text: "What is the capital of France?",
+				Answers: []models.AnswerModel{
+					{Text: "Paris", IsCorrect: true},
+					{Text: "Berlin", IsCorrect: false},
+					{Text: "Warsaw", IsCorrect: false},
+					{Text: "Barcelona", IsCorrect: false},
+				},
+			},
+			{
+				Text: "On which continent is Russia?",
+				Answers: []models.AnswerModel{
+					{Text: "Europe", IsCorrect: true},
+					{Text: "Asia", IsCorrect: true},
+					{Text: "North America", IsCorrect: false},
+					{Text: "South America", IsCorrect: false},
+				},
+			},
+		},
+	}
+	result := database.DB.Create(&ExampleQuizGeography)
+	fmt.Println(result.RowsAffected)
+	fmt.Println(result.Error)
+
+}
+
 func main() {
 	var logLevel slog.Leveler = slog.LevelInfo
 	if common.DebugOn() {
@@ -42,6 +91,9 @@ func main() {
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+
+	setUpDatabase()
+	testInsertDataToDatabase()
 
 	fs := http.FileServer(http.Dir("static"))
 
