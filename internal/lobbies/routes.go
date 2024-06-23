@@ -42,12 +42,12 @@ func NewLobbiesRouter() http.Handler {
 }
 
 // getClientIDFromRequest returns the clientID from the request cookie
-func getClientIDFromRequest(r *http.Request) (clientID, error) {
+func getClientIDFromRequest(r *http.Request) (ClientID, error) {
 	clientIDCookie, err := r.Cookie("client-id")
 	if err == http.ErrNoCookie {
 		return "", err
 	}
-	return clientID(clientIDCookie.Value), nil
+	return ClientID(clientIDCookie.Value), nil
 }
 
 // TODO: Make it only accessible by admin
@@ -109,7 +109,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	cID, err := getClientIDFromRequest(r)
 	if err == http.ErrNoCookie {
 		// Set new client id if not present
-		cID, err = newClientID()
+		cID, err = NewClientID()
 		if err != nil {
 			slog.Error("Error generating new client id", "err", err)
 			common.ErrorHandler(w, r, http.StatusInternalServerError)

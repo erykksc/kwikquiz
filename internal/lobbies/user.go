@@ -12,7 +12,7 @@ import (
 
 type User struct {
 	Conn                 *websocket.Conn
-	ClientID             clientID
+	ClientID             ClientID
 	Username             string
 	SubmittedAnswerIdx   int
 	AnswerSubmissionTime time.Time
@@ -48,9 +48,9 @@ func (client *User) writeNamedTemplate(tmpl *template.Template, name string, dat
 	return nil
 }
 
-type clientID string
+type ClientID string
 
-func newClientID() (clientID, error) {
+func NewClientID() (ClientID, error) {
 	// Generate 8 bytes from the timestamp (64 bits)
 	timestamp := time.Now().Unix()
 	timestampBytes := make([]byte, 8)
@@ -67,5 +67,5 @@ func newClientID() (clientID, error) {
 
 	// Encode the 128 bits into a base64 string
 	encoded := base64.StdEncoding.EncodeToString(combinedBytes)
-	return clientID(encoded), nil
+	return ClientID(encoded), nil
 }

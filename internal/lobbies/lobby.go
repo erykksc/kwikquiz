@@ -21,7 +21,7 @@ type Lobby struct {
 	Pin                      string
 	TimePerQuestion          time.Duration // Time for players to answer a question
 	TimeForReading           time.Duration // Time to read the question before answering is allowed
-	Players                  map[clientID]*User
+	Players                  map[ClientID]*User
 	State                    LobbyState
 	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time
@@ -61,7 +61,7 @@ func createLobby(options lobbyOptions) *Lobby {
 		TimePerQuestion: timePerQuestion,
 		TimeForReading:  timeForReading,
 		CreatedAt:       time.Now(),
-		Players:         make(map[clientID]*User),
+		Players:         make(map[ClientID]*User),
 		State:           LsWaitingForPlayers,
 		Quiz:            options.Quiz,
 	}

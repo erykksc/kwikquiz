@@ -23,7 +23,7 @@ type lobbyRepository interface {
 	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error
 	GetAllLobbies() ([]*Lobby, error)
-	GetLobbyByHost(clientID) (*Lobby, error)
+	GetLobbyByHost(ClientID) (*Lobby, error)
 }
 
 // In-memory store for games
@@ -97,7 +97,7 @@ func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
 	return lobbies, nil
 }
 
-func (s *inMemoryLobbyRepository) GetLobbyByHost(host clientID) (*Lobby, error) {
+func (s *inMemoryLobbyRepository) GetLobbyByHost(host ClientID) (*Lobby, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, l := range s.lobbies {

@@ -61,7 +61,7 @@ func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 
 // handleNewWebsocketConn handles a new websocket connection to the lobby
 // This function bridges routes and events
-func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID clientID) (*User, error) {
+func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID ClientID) (*User, error) {
 	connectedUser := &User{
 		Conn:     conn,
 		ClientID: clientID,
