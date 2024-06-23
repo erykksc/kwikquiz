@@ -8,11 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('title').value = quizData.Title;
     document.getElementById('password').value = quizData.Password;
     document.getElementById('description').value = quizData.Description;
-    if (quizData.QuestionOrder === 'fixed') {
-        document.getElementById('order-fixed').checked = true;
-    } else {
-        document.getElementById('order-random').checked = true;
-    }
 
     // Add existing questions
     quizData.Questions.forEach((question, index) => {
