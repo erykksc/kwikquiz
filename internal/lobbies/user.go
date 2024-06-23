@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type user struct {
+type User struct {
 	Conn                 *websocket.Conn
 	ClientID             clientID
 	Username             string
@@ -21,7 +21,7 @@ type user struct {
 }
 
 // writeTemplate does tmpl.Execute(w, data) on websocket connection to the user
-func (client *user) writeTemplate(tmpl *template.Template, data any) error {
+func (client *User) writeTemplate(tmpl *template.Template, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (client *user) writeTemplate(tmpl *template.Template, data any) error {
 }
 
 // writeNamedTemplate does tmpl.ExecuteTemplate(w, name, data) on websocket connection to the user
-func (client *user) writeNamedTemplate(tmpl *template.Template, name string, data any) error {
+func (client *User) writeNamedTemplate(tmpl *template.Template, name string, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err

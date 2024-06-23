@@ -19,29 +19,29 @@ func (errLobbyAlreadyExists) Error() string {
 }
 
 type lobbyRepository interface {
-	AddLobby(*lobby) error
-	GetLobby(pin string) (*lobby, error)
+	AddLobby(*Lobby) error
+	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error
-	GetAllLobbies() ([]*lobby, error)
-	GetLobbyByHost(clientID) (*lobby, error)
+	GetAllLobbies() ([]*Lobby, error)
+	GetLobbyByHost(clientID) (*Lobby, error)
 }
 
 // In-memory store for games
 type inMemoryLobbyRepository struct {
-	lobbies map[string]*lobby
+	lobbies map[string]*Lobby
 	mu      sync.RWMutex
 }
 
 func newInMemoryLobbyRepository() *inMemoryLobbyRepository {
 	return &inMemoryLobbyRepository{
-		lobbies: make(map[string]*lobby),
+		lobbies: make(map[string]*Lobby),
 	}
 }
 
 // AddLobby adds a new lobby to the in-memory store
 // If the lobby has a pin it tries to add it to the store
 // If the lobby doesn't have a pin, it updates the Pin field with a new pin
-func (s *inMemoryLobbyRepository) AddLobby(l *lobby) error {
+func (s *inMemoryLobbyRepository) AddLobby(l *Lobby) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	l.mu.Lock()
@@ -64,12 +64,12 @@ func (s *inMemoryLobbyRepository) AddLobby(l *lobby) error {
 	return nil
 }
 
-func (s *inMemoryLobbyRepository) GetLobby(pin string) (*lobby, error) {
+func (s *inMemoryLobbyRepository) GetLobby(pin string) (*Lobby, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	l, ok := s.lobbies[pin]
 	if !ok {
-		return &lobby{}, errLobbyNotFound{}
+		return &Lobby{}, errLobbyNotFound{}
 	}
 
 	return l, nil
@@ -86,10 +86,10 @@ func (s *inMemoryLobbyRepository) DeleteLobby(pin string) error {
 	return nil
 }
 
-func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*lobby, error) {
+func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	var lobbies []*lobby
+	var lobbies []*Lobby
 	for _, l := range s.lobbies {
 		lobbies = append(lobbies, l)
 	}
@@ -97,7 +97,7 @@ func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*lobby, error) {
 	return lobbies, nil
 }
 
-func (s *inMemoryLobbyRepository) GetLobbyByHost(host clientID) (*lobby, error) {
+func (s *inMemoryLobbyRepository) GetLobbyByHost(host clientID) (*Lobby, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, l := range s.lobbies {

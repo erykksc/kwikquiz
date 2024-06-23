@@ -13,7 +13,7 @@ import (
 
 type lobbyEvent interface {
 	String() string
-	Handle(lobby *lobby, initiator *user) error // Handles the event, is executed with the lobby's mutex locked
+	Handle(lobby *Lobby, initiator *User) error // Handles the event, is executed with the lobby's mutex locked
 }
 
 // parseLobbyEvent parses a [lobbyEvent] from a JSON in a byte slice
@@ -61,8 +61,8 @@ func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 
 // handleNewWebsocketConn handles a new websocket connection to the lobby
 // This function bridges routes and events
-func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (*user, error) {
-	connectedUser := &user{
+func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID clientID) (*User, error) {
+	connectedUser := &User{
 		Conn:     conn,
 		ClientID: clientID,
 	}
@@ -116,7 +116,7 @@ func (e leNewUsernameSubmitted) String() string {
 	return "GEUserSubmittedUsername: " + e.Username
 }
 
-func (event leNewUsernameSubmitted) Handle(l *lobby, initiator *user) error {
+func (event leNewUsernameSubmitted) Handle(l *Lobby, initiator *User) error {
 	// Check if the username is empty
 	if event.Username == "" {
 		initiator.writeTemplate(LobbyErrorAlertTmpl, "Username cannot be empty")
@@ -191,7 +191,7 @@ func (e leUsernameChangeRequested) String() string {
 	return "GEChangeUsernameRequest"
 }
 
-func (event leUsernameChangeRequested) Handle(l *lobby, initiator *user) error {
+func (event leUsernameChangeRequested) Handle(l *Lobby, initiator *User) error {
 	// Check if the game has already started
 	if l.State != LsWaitingForPlayers {
 		initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
@@ -217,7 +217,7 @@ func (e leGameStartRequested) String() string {
 	return "LEGameStartRequest"
 }
 
-func (event leGameStartRequested) Handle(l *lobby, initiator *user) error {
+func (event leGameStartRequested) Handle(l *Lobby, initiator *User) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
 		initiator.writeTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
@@ -266,7 +266,7 @@ func (e leSkipToAnswerRequested) String() string {
 	return "LESkipToAnswerRequest"
 }
 
-func (event leSkipToAnswerRequested) Handle(l *lobby, initiator *user) error {
+func (event leSkipToAnswerRequested) Handle(l *Lobby, initiator *User) error {
 	l.questionTimer.Cancel()
 	return nil
 }
@@ -278,7 +278,7 @@ func (e leNextQuestionRequested) String() string {
 	return "LENextQuestionRequest"
 }
 
-func (event leNextQuestionRequested) Handle(l *lobby, initiator *user) error {
+func (event leNextQuestionRequested) Handle(l *Lobby, initiator *User) error {
 	if err := l.startNextQuestion(); err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func (e leAnswerSubmitted) String() string {
 	return "LEAnswerSubmitted: " + fmt.Sprint(e.AnswerIdx)
 }
 
-func (e leAnswerSubmitted) Handle(l *lobby, initiator *user) error {
+func (e leAnswerSubmitted) Handle(l *Lobby, initiator *User) error {
 	// Check if the answer index is valid
 	if e.AnswerIdx < 0 || e.AnswerIdx >= len(l.CurrentQuestion.Answers) {
 		initiator.writeTemplate(LobbyErrorAlertTmpl, "Invalid answer index")

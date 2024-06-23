@@ -17,8 +17,8 @@ var LobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
 var LobbyErrorAlertTmpl = LobbyTmpl.Lookup("error-alert")
 
 type ViewData struct {
-	Lobby *lobby
-	User  *user
+	Lobby *Lobby
+	User  *User
 }
 
 // Views are the templates that are rendered for the different states of the lobby
@@ -45,7 +45,7 @@ var LobbySettingsTmpl = WaitingRoomView.Lookup("lobby-settings")
 
 type LobbySettingsData struct {
 	Quizzes []quiz.QuizMetadata
-	Lobby   *lobby
+	Lobby   *Lobby
 }
 
 type LobbyState int
