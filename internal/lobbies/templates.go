@@ -12,23 +12,23 @@ func tmplParseWithBase(path string) *template.Template {
 	return template.Must(template.ParseFiles(path, common.BaseTmplPath))
 }
 
-var lobbiesTmpl = tmplParseWithBase("templates/lobbies/lobbies.html")
-var lobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
-var lobbyErrorAlertTmpl = lobbyTmpl.Lookup("error-alert")
+var LobbiesTmpl = tmplParseWithBase("templates/lobbies/lobbies.html")
+var LobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
+var LobbyErrorAlertTmpl = LobbyTmpl.Lookup("error-alert")
 
-type viewData struct {
+type ViewData struct {
 	Lobby *lobby
 	User  *user
 }
 
 // Views are the templates that are rendered for the different states of the lobby
 // All of them require ViewData as the data to render
-var chooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
-var waitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
-var questionView = tmplParseWithBase("templates/views/question-view.html")
+var ChooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
+var WaitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
+var QuestionView = tmplParseWithBase("templates/views/question-view.html")
 
 // Decrement function used for checking if the current question is the last one
-var answerView = template.Must(template.New("answer-view.html").Funcs(template.FuncMap{
+var AnswerView = template.Must(template.New("answer-view.html").Funcs(template.FuncMap{
 	"decrement": func(i int) int {
 		return i - 1
 	},
@@ -37,34 +37,34 @@ var onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
 
 type OnFinishData struct {
 	PastGameID int
-	viewData
+	ViewData
 }
 
 // This template is used to render the lobby settings inside waitingRoomView
-var lobbySettingsTmpl = waitingRoomView.Lookup("lobby-settings")
+var LobbySettingsTmpl = WaitingRoomView.Lookup("lobby-settings")
 
-type lobbySettingsData struct {
+type LobbySettingsData struct {
 	Quizzes []quiz.QuizMetadata
 	Lobby   *lobby
 }
 
-type lobbyState int
+type LobbyState int
 
 const (
-	lsWaitingForPlayers lobbyState = iota
-	lsQuestion
-	lsAnswer
+	LsWaitingForPlayers LobbyState = iota
+	LsQuestion
+	LsAnswer
 )
 
 // View returns the view template for the given state
-func (state lobbyState) View() *template.Template {
+func (state LobbyState) View() *template.Template {
 	switch state {
-	case lsWaitingForPlayers:
-		return waitingRoomView
-	case lsQuestion:
-		return questionView
-	case lsAnswer:
-		return answerView
+	case LsWaitingForPlayers:
+		return WaitingRoomView
+	case LsQuestion:
+		return QuestionView
+	case LsAnswer:
+		return AnswerView
 	default:
 		panic("Undefined ViewName for state:" + fmt.Sprint(state))
 	}

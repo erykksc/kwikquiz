@@ -22,7 +22,7 @@ type lobby struct {
 	TimePerQuestion          time.Duration // Time for players to answer a question
 	TimeForReading           time.Duration // Time to read the question before answering is allowed
 	Players                  map[clientID]*user
-	State                    lobbyState
+	State                    LobbyState
 	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time
 	CurrentQuestionTimeout   string // ISO 8601 String
@@ -62,7 +62,7 @@ func createLobby(options lobbyOptions) *lobby {
 		TimeForReading:  timeForReading,
 		CreatedAt:       time.Now(),
 		Players:         make(map[clientID]*user),
-		State:           lsWaitingForPlayers,
+		State:           LsWaitingForPlayers,
 		Quiz:            options.Quiz,
 	}
 }
@@ -76,7 +76,7 @@ func (l *lobby) startGame() error {
 }
 
 func (l *lobby) startNextQuestion() error {
-	l.State = lsQuestion
+	l.State = LsQuestion
 	l.CurrentQuestionIdx++
 	l.CurrentQuestionStartTime = time.Now()
 	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
@@ -120,16 +120,16 @@ func (l *lobby) startNextQuestion() error {
 	}()
 
 	// Send question view to all
-	vData := viewData{
+	vData := ViewData{
 		Lobby: l,
 		User:  l.Host,
 	}
-	if err := l.Host.writeTemplate(questionView, vData); err != nil {
+	if err := l.Host.writeTemplate(QuestionView, vData); err != nil {
 		slog.Error("Error sending QuestionView to host", "error", err)
 	}
 	for _, player := range l.Players {
 		vData.User = player
-		err := player.writeTemplate(questionView, vData)
+		err := player.writeTemplate(QuestionView, vData)
 		if err != nil {
 			slog.Error("Error sending QuestionView to user", "error", err)
 		}
@@ -146,7 +146,7 @@ func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
 func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func (l *lobby) showAnswer() error {
-	l.State = lsAnswer
+	l.State = LsAnswer
 
 	// Add points to players
 	for _, player := range l.Players {
@@ -177,17 +177,17 @@ func (l *lobby) showAnswer() error {
 	sort.Sort(sort.Reverse(ByScore(l.Leaderboard)))
 
 	// Send answer view to all
-	vData := viewData{
+	vData := ViewData{
 		Lobby: l,
 		User:  l.Host,
 	}
-	if err := l.Host.writeTemplate(answerView, vData); err != nil {
+	if err := l.Host.writeTemplate(AnswerView, vData); err != nil {
 		slog.Error("Error sending AnswerView to host", "error", err)
 	}
 
 	for _, player := range l.Players {
 		vData.User = player
-		if err := player.writeTemplate(answerView, vData); err != nil {
+		if err := player.writeTemplate(AnswerView, vData); err != nil {
 			slog.Error("Error sending AnswerView to user", "error", err)
 		}
 	}
@@ -221,7 +221,7 @@ func (l *lobby) endGame() error {
 
 	data := OnFinishData{
 		PastGameID: id,
-		viewData: viewData{
+		ViewData: ViewData{
 			Lobby: l,
 			User:  l.Host,
 		},

@@ -93,10 +93,10 @@ func handleNewWebsocketConn(l *lobby, conn *websocket.Conn, clientID clientID) (
 	// New User connecting
 	default:
 		slog.Info("New Player for Lobby", "Lobby-Pin", l.Pin, "Client-ID", connectedUser.ClientID)
-		view = chooseUsernameView
+		view = ChooseUsernameView
 	}
 
-	vData := viewData{
+	vData := ViewData{
 		Lobby: l,
 		User:  connectedUser,
 	}
@@ -119,24 +119,24 @@ func (e leNewUsernameSubmitted) String() string {
 func (event leNewUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 	// Check if the username is empty
 	if event.Username == "" {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Username cannot be empty")
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Username cannot be empty")
 		return errors.New("new username is empty")
 	}
 
 	// Check if game hasn't started yet
-	if l.State != lsWaitingForPlayers {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Game already started")
+	if l.State != LsWaitingForPlayers {
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
 		return errors.New("game already started")
 	}
 
 	// Check if new username isn't the same as the old one
 	if initiator.Username == event.Username {
 		slog.Info("Username is the same as the old one", "Username", event.Username)
-		vData := viewData{
+		vData := ViewData{
 			Lobby: l,
 			User:  initiator,
 		}
-		if err := initiator.writeTemplate(waitingRoomView, vData); err != nil {
+		if err := initiator.writeTemplate(WaitingRoomView, vData); err != nil {
 			return err
 		}
 		return nil
@@ -150,7 +150,7 @@ func (event leNewUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 
 	// Check if the username is already in the lobby
 	if _, ok := usernames[event.Username]; ok {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Username already in the lobby")
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Username already in the lobby")
 		return errors.New("username already in the lobby")
 	}
 
@@ -167,17 +167,17 @@ func (event leNewUsernameSubmitted) Handle(l *lobby, initiator *user) error {
 	}
 
 	// Send the lobby screen to all players
-	vData := viewData{
+	vData := ViewData{
 		Lobby: l,
 		User:  l.Host,
 	}
-	if err := l.Host.writeTemplate(waitingRoomView, vData); err != nil {
+	if err := l.Host.writeTemplate(WaitingRoomView, vData); err != nil {
 		slog.Error("Error writing view to host", "error", err, "host", l.Host)
 	}
 
 	for _, player := range l.Players {
 		vData.User = player
-		if err := player.writeTemplate(waitingRoomView, vData); err != nil {
+		if err := player.writeTemplate(WaitingRoomView, vData); err != nil {
 			slog.Error("Error writing view to user", "error", err, "user", player)
 		}
 	}
@@ -193,17 +193,17 @@ func (e leUsernameChangeRequested) String() string {
 
 func (event leUsernameChangeRequested) Handle(l *lobby, initiator *user) error {
 	// Check if the game has already started
-	if l.State != lsWaitingForPlayers {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Game already started")
+	if l.State != LsWaitingForPlayers {
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
 		return errors.New("Game already started")
 	}
 
 	// Send the choose username screen to the player
-	vData := viewData{
+	vData := ViewData{
 		Lobby: l,
 		User:  initiator,
 	}
-	if err := initiator.writeTemplate(chooseUsernameView, vData); err != nil {
+	if err := initiator.writeTemplate(ChooseUsernameView, vData); err != nil {
 		return err
 	}
 
@@ -220,19 +220,19 @@ func (e leGameStartRequested) String() string {
 func (event leGameStartRequested) Handle(l *lobby, initiator *user) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Only the host can start the game")
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
 		return errors.New("Non-host tried to start the game")
 	}
 
 	// Check if there are enough players
 	if len(l.Players) == 0 {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Not enough players")
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Not enough players")
 		return errors.New("Can't start the game: not enough players")
 	}
 
 	// Check if the game has already started
-	if l.State != lsWaitingForPlayers {
-		vData := viewData{
+	if l.State != LsWaitingForPlayers {
+		vData := ViewData{
 			Lobby: l,
 			User:  initiator,
 		}
@@ -244,7 +244,7 @@ func (event leGameStartRequested) Handle(l *lobby, initiator *user) error {
 
 	// Check if the quiz has at least one question
 	if len(l.Quiz.Questions) == 0 {
-		err := initiator.writeTemplate(lobbyErrorAlertTmpl, "Quiz has no questions")
+		err := initiator.writeTemplate(LobbyErrorAlertTmpl, "Quiz has no questions")
 		if err != nil {
 			return err
 		}
@@ -298,7 +298,7 @@ func (e leAnswerSubmitted) String() string {
 func (e leAnswerSubmitted) Handle(l *lobby, initiator *user) error {
 	// Check if the answer index is valid
 	if e.AnswerIdx < 0 || e.AnswerIdx >= len(l.CurrentQuestion.Answers) {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Invalid answer index")
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Invalid answer index")
 		return errors.New("Invalid answer index")
 	}
 
@@ -315,8 +315,8 @@ func (e leAnswerSubmitted) Handle(l *lobby, initiator *user) error {
 	}
 
 	// Check if the game is in the question state
-	if l.State != lsQuestion {
-		initiator.writeTemplate(lobbyErrorAlertTmpl, "Submitted after question timeout")
+	if l.State != LsQuestion {
+		initiator.writeTemplate(LobbyErrorAlertTmpl, "Submitted after question timeout")
 		return errors.New("Submitted after question timeout")
 	}
 
@@ -331,11 +331,11 @@ func (e leAnswerSubmitted) Handle(l *lobby, initiator *user) error {
 	initiator.AnswerSubmissionTime = time.Now()
 
 	// Write updated view to the initiator
-	vData := viewData{
+	vData := ViewData{
 		Lobby: l,
 		User:  initiator,
 	}
-	if err := initiator.writeNamedTemplate(questionView, "answer-options", vData); err != nil {
+	if err := initiator.writeNamedTemplate(QuestionView, "answer-options", vData); err != nil {
 		return err
 	}
 
@@ -350,7 +350,7 @@ func (e leAnswerSubmitted) Handle(l *lobby, initiator *user) error {
 	// Send template for how many people are left to answer
 	for _, player := range l.Players {
 		vData.User = player
-		if err := player.writeNamedTemplate(questionView, "player-count", vData); err != nil {
+		if err := player.writeNamedTemplate(QuestionView, "player-count", vData); err != nil {
 			return err
 		}
 	}
