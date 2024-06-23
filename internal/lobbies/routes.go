@@ -59,7 +59,7 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := lobbiesTmpl.Execute(w, lobbies); err != nil {
+	if err := LobbiesTmpl.Execute(w, lobbies); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -123,7 +123,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 		Value: string(cID),
 	})
 
-	if err := lobbyTmpl.Execute(w, &lobby); err != nil {
+	if err := LobbyTmpl.Execute(w, &lobby); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -318,7 +318,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
+	err = LobbySettingsTmpl.Execute(w, LobbySettingsData{
 		Quizzes: quizzesMeta,
 		Lobby:   lobby,
 	})
