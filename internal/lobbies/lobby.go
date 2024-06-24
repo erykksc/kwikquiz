@@ -2,13 +2,11 @@ package lobbies
 
 import (
 	"github.com/erykksc/kwikquiz/internal/models"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"log/slog"
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/erykksc/kwikquiz/internal/pastgames"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 // Lobby is a actively running game session
