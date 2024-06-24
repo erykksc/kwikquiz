@@ -68,7 +68,7 @@ var ExampleQuizMath = models.Quiz{
 		},
 		{
 			Text: "What is 3 * 3?",
-			Answers: []Answer{
+			Answers: []models.Answer{
 				{Text: "9", IsCorrect: true},
 				{Text: "6", IsCorrect: false},
 			},

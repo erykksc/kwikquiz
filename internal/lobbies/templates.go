@@ -6,7 +6,6 @@ import (
 	"html/template"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func tmplParseWithBase(path string) *template.Template {
