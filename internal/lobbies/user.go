@@ -48,6 +48,14 @@ func (client *User) writeNamedTemplate(tmpl *template.Template, name string, dat
 	return nil
 }
 
+// ByScore implements sort.Interface for []*user based on the Score field
+// User for calculating leaderboard
+type ByScore []*User
+
+func (a ByScore) Len() int           { return len(a) }
+func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
+func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 type ClientID string
 
 func NewClientID() (ClientID, error) {

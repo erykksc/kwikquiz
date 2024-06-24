@@ -3,6 +3,8 @@ package lobbies
 import (
 	"fmt"
 	"html/template"
+	"path/filepath"
+	"time"
 
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -21,18 +23,28 @@ type ViewData struct {
 	User  *User
 }
 
+func ParseViewWithFuncs(path string) *template.Template {
+	// get base name of the path
+	baseName := filepath.Base(path)
+	viewTmpl := template.Must(template.New(baseName).Funcs(template.FuncMap{
+		"formatAsISO": func(t time.Time) string {
+			return t.Format(time.RFC3339)
+		},
+		// Decrement function used for checking if the current question is the last one
+		"decrement": func(i int) int {
+			return i - 1
+		},
+	}).ParseFiles(path, common.BaseTmplPath))
+
+	return viewTmpl
+}
+
 // Views are the templates that are rendered for the different states of the lobby
 // All of them require ViewData as the data to render
-var ChooseUsernameView = tmplParseWithBase("templates/views/choose-username-view.html")
-var WaitingRoomView = tmplParseWithBase("templates/views/waiting-room-view.html")
-var QuestionView = tmplParseWithBase("templates/views/question-view.html")
-
-// Decrement function used for checking if the current question is the last one
-var AnswerView = template.Must(template.New("answer-view.html").Funcs(template.FuncMap{
-	"decrement": func(i int) int {
-		return i - 1
-	},
-}).ParseFiles("templates/views/answer-view.html", common.BaseTmplPath))
+var ChooseUsernameView = ParseViewWithFuncs("templates/views/choose-username-view.html")
+var WaitingRoomView = ParseViewWithFuncs("templates/views/waiting-room-view.html")
+var QuestionView = ParseViewWithFuncs("templates/views/question-view.html")
+var AnswerView = ParseViewWithFuncs("templates/views/answer-view.html")
 var onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
 
 type OnFinishData struct {
