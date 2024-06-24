@@ -26,6 +26,7 @@ type Lobby struct {
 	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time
 	CurrentQuestionTimeout   string // ISO 8601 String
+	ReadingTimeout           time.Time
 	CurrentQuestionIdx       int
 	CurrentQuestion          *quiz.Question
 	PlayersAnswering         int     // Number of players who haven't submitted an answer
@@ -80,6 +81,7 @@ func (l *Lobby) startNextQuestion() error {
 	l.CurrentQuestionIdx++
 	l.CurrentQuestionStartTime = time.Now()
 	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
+	l.ReadingTimeout = l.CurrentQuestionStartTime.Add(l.TimeForReading)
 	l.PlayersAnswering = len(l.Players)
 
 	// Reset Player answers
@@ -136,14 +138,6 @@ func (l *Lobby) startNextQuestion() error {
 	}
 	return nil
 }
-
-// ByScore implements sort.Interface for []*user based on the Score field
-// User for calculating leaderboard
-type ByScore []*User
-
-func (a ByScore) Len() int           { return len(a) }
-func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
-func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func (l *Lobby) showAnswer() error {
 	l.State = LsAnswer

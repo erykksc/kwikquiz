@@ -35,7 +35,22 @@ func NewLobbiesRouter() http.Handler {
 		}
 		testLobby := createLobby(lOptions)
 		lobbiesRepo.AddLobby(testLobby)
-		slog.Info("Added test lobby", "lobby", testLobby)
+		slog.Info("Added test lobby", "lobby-pin", testLobby.Pin)
+
+		// Question View Lobby
+		// a lobby with fixed question-view, for design purposes
+		lOptions.Pin = "0001"
+		qwLobby := createLobby(lOptions)
+		qwLobby.StartedAt = time.Now()
+		qwLobby.CurrentQuestionStartTime = time.Now()
+		qwLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
+		qwLobby.CurrentQuestionIdx = 0
+		qwLobby.CurrentQuestionTimeout = time.Now().Add(30 * time.Second).Format(time.RFC3339) // ISO 8601 String
+		qwLobby.ReadingTimeout = time.Now().Add(5 * time.Second)
+		qwLobby.State = LsQuestion
+		qwLobby.PlayersAnswering = 3
+		lobbiesRepo.AddLobby(qwLobby)
+		slog.Info("Added question view lobby", "lobby-pin", qwLobby.Pin)
 	}
 
 	return mux

@@ -43,9 +43,7 @@
       <script>
         (function () {
           const timerElement = document.getElementById("timer");
-          console.log(timerElement.dataset.finishTime);
           const finishTime = new Date(timerElement.dataset.finishTime);
-          console.log(finishTime);
 
           function updateCountdown() {
             const now = new Date();
@@ -53,7 +51,6 @@
 
             if (diff <= 0) {
               document.getElementById("timer").innerHTML = "Time's up!";
-              clearInterval(intervalId); // Stop the interval when the countdown is complete
               return;
             }
 
@@ -73,6 +70,35 @@
           requestAnimationFrame(updateCountdown);
         })();
       </script>
+      <!-- Script to show the answers after reading time -->
+      <script>
+        (function () {
+          const readingElement = document.getElementById("reading-time-elem");
+          const progressBar = document.getElementById("reading-progress");
+
+          const startTime = new Date(readingElement.dataset.questionStartTime);
+          const finishTime = new Date(readingElement.dataset.readingTimeout);
+
+          const totalTime = finishTime - startTime;
+
+          function waitForAnsweringAllowed() {
+            const now = new Date();
+            const diff = finishTime - now;
+
+            if (diff <= 0) {
+              document.getElementById("reading-time-elem").classList.add("hidden");
+              document.getElementById("answer-options").classList.remove("hidden");
+              return;
+            }
+            const percentage = ((totalTime - diff) / totalTime) * 100;
+            progressBar.style.width = `${percentage}%`;
+
+            requestAnimationFrame(waitForAnsweringAllowed);
+          }
+
+          requestAnimationFrame(waitForAnsweringAllowed);
+        })();
+      </script>
 
       <!-- KWIKQUIZ Title -->
       <h1 class="text-2xl md:text-4xl font-bold text-dark-green my-4 text-center">KWIKQUIZ</h1>
@@ -84,9 +110,21 @@
           {{ .Lobby.CurrentQuestion.Text }}
         </h2>
 
+        <!-- Show loading bar, while reading time is not over -->
+        <div
+          id="reading-time-elem"
+          data-reading-timeout="{{ .Lobby.ReadingTimeout | formatAsISO }}"
+          data-question-start-time="{{ .Lobby.CurrentQuestionStartTime | formatAsISO }}"
+        >
+          <div id="reading-loading-bar" class="w-full h-4 bg-gray-200">
+            <div id="reading-progress" class="h-full bg-blue-500"></div>
+          </div>
+          <div class="flex items-center justify-centern text-center">Look at the host screen</div>
+        </div>
+
         <!-- Answer Options -->
         {{ block "answer-options" . }}
-        <div id="answer-options" class="flex flex-col gap-4">
+        <div id="answer-options" class="flex flex-col gap-4 hidden">
           {{ range $index, $answer:= .Lobby.CurrentQuestion.Answers }}
           <!---->
           <button
