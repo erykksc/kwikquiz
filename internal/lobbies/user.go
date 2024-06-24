@@ -10,18 +10,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type user struct {
+type User struct {
 	Conn                 *websocket.Conn
-	ClientID             clientID
+	ClientID             ClientID
 	Username             string
 	SubmittedAnswerIdx   int
 	AnswerSubmissionTime time.Time
-	Score                int64
-	NewPoints            int64
+	Score                int
+	NewPoints            int
 }
 
 // writeTemplate does tmpl.Execute(w, data) on websocket connection to the user
-func (client *user) writeTemplate(tmpl *template.Template, data any) error {
+func (client *User) writeTemplate(tmpl *template.Template, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (client *user) writeTemplate(tmpl *template.Template, data any) error {
 }
 
 // writeNamedTemplate does tmpl.ExecuteTemplate(w, name, data) on websocket connection to the user
-func (client *user) writeNamedTemplate(tmpl *template.Template, name string, data any) error {
+func (client *User) writeNamedTemplate(tmpl *template.Template, name string, data any) error {
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -48,9 +48,17 @@ func (client *user) writeNamedTemplate(tmpl *template.Template, name string, dat
 	return nil
 }
 
-type clientID string
+// ByScore implements sort.Interface for []*user based on the Score field
+// User for calculating leaderboard
+type ByScore []*User
 
-func newClientID() (clientID, error) {
+func (a ByScore) Len() int           { return len(a) }
+func (a ByScore) Less(i, j int) bool { return a[i].Score < a[j].Score }
+func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
+type ClientID string
+
+func NewClientID() (ClientID, error) {
 	// Generate 8 bytes from the timestamp (64 bits)
 	timestamp := time.Now().Unix()
 	timestampBytes := make([]byte, 8)
@@ -67,5 +75,5 @@ func newClientID() (clientID, error) {
 
 	// Encode the 128 bits into a base64 string
 	encoded := base64.StdEncoding.EncodeToString(combinedBytes)
-	return clientID(encoded), nil
+	return ClientID(encoded), nil
 }

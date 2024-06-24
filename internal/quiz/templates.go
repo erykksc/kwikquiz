@@ -11,14 +11,7 @@ func tmplParseWithBase(path string) *template.Template {
 }
 
 // Templates used to render the different pages of the quiz
-var QuizzesTemplate *template.Template
-var QuizPreviewTemplate *template.Template
-var QuizCreateTemplate *template.Template
-var QuizUpdateTemplate *template.Template
-
-func init() {
-	QuizzesTemplate = tmplParseWithBase("templates/quizzes/quizzes.html")
-	QuizPreviewTemplate = tmplParseWithBase("templates/quizzes/quiz-preview.html")
-	QuizCreateTemplate = tmplParseWithBase("templates/quizzes/quiz-create.html")
-	QuizUpdateTemplate = tmplParseWithBase("templates/quizzes/quiz-update.html")
-}
+var QuizzesTemplate = tmplParseWithBase("templates/quizzes/quizzes.html")
+var QuizPreviewTemplate = tmplParseWithBase("templates/quizzes/quiz-preview.html")
+var QuizCreateTemplate = tmplParseWithBase("templates/quizzes/quiz-create.html")
+var QuizUpdateTemplate = tmplParseWithBase("templates/quizzes/quiz-update.html")
