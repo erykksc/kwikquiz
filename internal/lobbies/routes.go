@@ -300,7 +300,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			quiz, err := quiz.QuizzesRepo.GetQuiz(quizID)
+			quiz, err := quiz.QuizzesRepo.GetQuiz(uint(quizID))
 			if err != nil {
 				slog.Error("Error getting quiz", "err", err)
 				common.ErrorHandler(w, r, http.StatusBadRequest)

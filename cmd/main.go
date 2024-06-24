@@ -42,46 +42,16 @@ func setUpDatabase() {
 	database.Connect(cfg)
 
 	// Migrate the schema
-	err := database.DB.AutoMigrate(&models.QuizModel{}, &models.QuestionModel{}, &models.AnswerModel{})
+	err := database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
 	if err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 }
 
-func testInsertDataToDatabase() {
-	var ExampleQuizGeography = models.QuizModel{
-		ID:          1,
-		Title:       "Geography",
-		Description: "This is a quiz about capitals around the world",
-		Questions: []models.QuestionModel{
-			{
-				Text: "What is the capital of France?",
-				Answers: []models.AnswerModel{
-					{Text: "Paris", IsCorrect: true},
-					{Text: "Berlin", IsCorrect: false},
-					{Text: "Warsaw", IsCorrect: false},
-					{Text: "Barcelona", IsCorrect: false},
-				},
-			},
-			{
-				Text: "On which continent is Russia?",
-				Answers: []models.AnswerModel{
-					{Text: "Europe", IsCorrect: true},
-					{Text: "Asia", IsCorrect: true},
-					{Text: "North America", IsCorrect: false},
-					{Text: "South America", IsCorrect: false},
-				},
-			},
-		},
-	}
-	result := database.DB.Create(&ExampleQuizGeography)
-	fmt.Println(result.RowsAffected)
-	fmt.Println(result.Error)
-
-}
-
 func main() {
 	var logLevel slog.Leveler = slog.LevelInfo
+	setUpDatabase()
+
 	if common.DebugOn() {
 		slog.Info("Debug mode enabled")
 		logLevel = slog.LevelDebug
@@ -91,9 +61,6 @@ func main() {
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
-
-	setUpDatabase()
-	testInsertDataToDatabase()
 
 	fs := http.FileServer(http.Dir("static"))
 

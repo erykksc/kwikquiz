@@ -2,6 +2,7 @@ package lobbies
 
 import (
 	"fmt"
+	"github.com/erykksc/kwikquiz/internal/models"
 	"html/template"
 
 	"github.com/erykksc/kwikquiz/internal/common"
@@ -39,7 +40,7 @@ var onFinishView *template.Template
 var lobbySettingsTmpl *template.Template
 
 type lobbySettingsData struct {
-	Quizzes []quiz.QuizMetadata
+	Quizzes []models.QuizMetadata
 	Lobby   *lobby
 }
 

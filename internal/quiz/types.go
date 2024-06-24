@@ -1,5 +1,7 @@
 package quiz
 
+import "github.com/erykksc/kwikquiz/internal/models"
+
 type Quiz struct {
 	ID            int
 	Title         string
@@ -28,14 +30,13 @@ type QuizMetadata struct {
 	Title string
 }
 
-var ExampleQuizGeography = Quiz{
-	ID:          1,
+var ExampleQuizGeography = models.Quiz{
 	Title:       "Geography",
 	Description: "This is a quiz about capitals around the world",
-	Questions: []Question{
+	Questions: []models.Question{
 		{
 			Text: "What is the capital of France?",
-			Answers: []Answer{
+			Answers: []models.Answer{
 				{Text: "Paris", IsCorrect: true},
 				{Text: "Berlin", IsCorrect: false},
 				{Text: "Warsaw", IsCorrect: false},
@@ -44,7 +45,7 @@ var ExampleQuizGeography = Quiz{
 		},
 		{
 			Text: "On which continent is Russia?",
-			Answers: []Answer{
+			Answers: []models.Answer{
 				{Text: "Europe", IsCorrect: true},
 				{Text: "Asia", IsCorrect: true},
 				{Text: "North America", IsCorrect: false},
@@ -54,14 +55,13 @@ var ExampleQuizGeography = Quiz{
 	},
 }
 
-var ExampleQuizMath = Quiz{
-	ID:          2,
+var ExampleQuizMath = models.Quiz{
 	Title:       "Math",
 	Description: "This is a quiz about math",
-	Questions: []Question{
+	Questions: []models.Question{
 		{
 			Text: "What is 2 + 2?",
-			Answers: []Answer{
+			Answers: []models.Answer{
 				{Text: "4", IsCorrect: true},
 				{Text: "5", IsCorrect: false},
 			},

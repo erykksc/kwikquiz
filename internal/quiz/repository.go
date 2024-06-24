@@ -1,7 +1,9 @@
 package quiz
 
 import (
-	"sync"
+	"errors"
+	"github.com/erykksc/kwikquiz/internal/models"
+	"gorm.io/gorm"
 )
 
 type ErrQuizNotFound struct{}
@@ -13,105 +15,84 @@ type ErrQuizAlreadyExists struct{}
 func (ErrQuizAlreadyExists) Error() string { return "Quiz already exists" }
 
 type QuizRepository interface {
-	AddQuiz(Quiz) (int, error)
-	UpdateQuiz(Quiz) (int, error)
-	GetQuiz(id int) (Quiz, error)
-	DeleteQuiz(id int) error
-	GetAllQuizzes() ([]Quiz, error)
-	GetAllQuizzesMetadata() ([]QuizMetadata, error)
+	AddQuiz(models.Quiz) (uint, error)
+	UpdateQuiz(models.Quiz) (uint, error)
+	GetQuiz(id uint) (models.Quiz, error)
+	DeleteQuiz(id uint) error
+	GetAllQuizzes() ([]models.Quiz, error)
+	GetAllQuizzesMetadata() ([]models.QuizMetadata, error)
 }
 
-// InMemoryQuizRepository In-mem store for quizzes
-type InMemoryQuizRepository struct {
-	quizzes   map[int]Quiz
-	mutex     sync.RWMutex
-	highestID int
+// DB for quizzes
+type GormQuizRepository struct {
+	DB *gorm.DB
 }
 
-func NewInMemoryQuizRepository() *InMemoryQuizRepository {
-	return &InMemoryQuizRepository{
-		quizzes:   make(map[int]Quiz),
-		highestID: 0,
-	}
+func NewGormQuizRepository(db *gorm.DB) *GormQuizRepository {
+	return &GormQuizRepository{DB: db}
 }
 
-func (s *InMemoryQuizRepository) AddQuiz(q Quiz) (int, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if q.ID == 0 {
-		// Assign a unique ID
-		s.highestID++
-		q.ID = s.highestID
-	} else if q.ID > s.highestID {
-		s.highestID = q.ID
+func (r *GormQuizRepository) AddQuiz(q models.Quiz) (uint, error) {
+	result := r.DB.Create(&q)
+	if result.Error != nil {
+		return 0, result.Error
 	}
-
-	if _, ok := s.quizzes[q.ID]; ok {
-		return 0, ErrQuizAlreadyExists{}
-	}
-
-	s.quizzes[q.ID] = q
 	return q.ID, nil
 }
 
-func (s *InMemoryQuizRepository) UpdateQuiz(q Quiz) (int, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if _, ok := s.quizzes[q.ID]; !ok {
-		return 0, ErrQuizNotFound{}
+func (r *GormQuizRepository) UpdateQuiz(q models.Quiz) (uint, error) {
+	result := r.DB.Save(&q)
+	if result.Error != nil {
+		return 0, result.Error
 	}
-
-	s.quizzes[q.ID] = q
 	return q.ID, nil
 }
 
-func (s *InMemoryQuizRepository) GetQuiz(id int) (Quiz, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	quiz, ok := s.quizzes[id]
-	if !ok {
-		return Quiz{}, ErrQuizNotFound{}
+func (r *GormQuizRepository) GetQuiz(id uint) (models.Quiz, error) {
+	var quiz models.Quiz
+	result := r.DB.Preload("Questions.Answers").First(&quiz, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return models.Quiz{}, ErrQuizNotFound{}
+		}
+		return models.Quiz{}, result.Error
 	}
-
 	return quiz, nil
 }
 
-func (s *InMemoryQuizRepository) DeleteQuiz(id int) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if _, ok := s.quizzes[id]; !ok {
-		return ErrQuizNotFound{}
+func (r *GormQuizRepository) DeleteQuiz(id uint) error {
+	result := r.DB.Delete(&models.Quiz{}, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return ErrQuizNotFound{}
+		}
+		return result.Error
 	}
-
-	delete(s.quizzes, id)
 	return nil
 }
 
-func (s *InMemoryQuizRepository) GetAllQuizzes() ([]Quiz, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	var quizzes []Quiz
-	for _, quiz := range s.quizzes {
-		quizzes = append(quizzes, quiz)
+func (r *GormQuizRepository) GetAllQuizzes() ([]models.Quiz, error) {
+	var quizzes []models.Quiz
+	result := r.DB.Preload("Questions.Answers").Find(&quizzes)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 	return quizzes, nil
 }
 
-func (s *InMemoryQuizRepository) GetAllQuizzesMetadata() ([]QuizMetadata, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+func (r *GormQuizRepository) GetAllQuizzesMetadata() ([]models.QuizMetadata, error) {
+	var quizzes []models.Quiz
+	result := r.DB.Find(&quizzes)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 
-	var quizzes []QuizMetadata
-	for _, quiz := range s.quizzes {
-		quizzes = append(quizzes, QuizMetadata{
+	var metadata []models.QuizMetadata
+	for _, quiz := range quizzes {
+		metadata = append(metadata, models.QuizMetadata{
 			ID:    quiz.ID,
 			Title: quiz.Title,
 		})
 	}
-	return quizzes, nil
+	return metadata, nil
 }

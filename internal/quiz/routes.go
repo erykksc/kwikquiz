@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/database"
+	"github.com/erykksc/kwikquiz/internal/models"
 	"log/slog"
 	"net/http"
 	"strconv"
 )
 
-var QuizzesRepo QuizRepository = NewInMemoryQuizRepository()
+var QuizzesRepo *GormQuizRepository
 
 func NewQuizzesRouter() http.Handler {
 	mux := http.NewServeMux()
@@ -23,6 +25,9 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("PUT /quizzes/update/{qid}", updateQuizHandler)
 	mux.HandleFunc("DELETE /quizzes/delete/{qid}", deleteQuizHandler)
 
+	// init database instance
+	QuizzesRepo = NewGormQuizRepository(database.DB)
+
 	// Add quiz if in debug mode
 	if common.DevMode() {
 		QuizzesRepo.AddQuiz(ExampleQuizGeography)
@@ -34,7 +39,6 @@ func NewQuizzesRouter() http.Handler {
 	return mux
 }
 
-// TODO: Make it only accessible by admin
 func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	quizzes, err := QuizzesRepo.GetAllQuizzes()
@@ -61,7 +65,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := QuizzesRepo.GetQuiz(qid)
+	quiz, err := QuizzesRepo.GetQuiz(uint(qid))
 	if err != nil {
 		var errQuizNotFound ErrQuizNotFound
 		switch {
@@ -84,7 +88,7 @@ type createQuizForm struct {
 	Title       string
 	Password    string
 	Description string
-	Questions   []Question
+	Questions   []models.Question
 	FormError   string
 }
 
@@ -107,7 +111,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	redirectToQuiz(w, quizID)
 }
 
-func parseQuizForm(r *http.Request) (Quiz, error) {
+func parseQuizForm(r *http.Request) (models.Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
@@ -115,10 +119,10 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 
 	questions, err := parseQuestions(r)
 	if err != nil {
-		return Quiz{}, err
+		return models.Quiz{}, err
 	}
 
-	return Quiz{
+	return models.Quiz{
 		Title:         title,
 		Password:      password,
 		Description:   description,
@@ -127,8 +131,8 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	}, nil
 }
 
-func parseQuestions(r *http.Request) ([]Question, error) {
-	var questions []Question
+func parseQuestions(r *http.Request) ([]models.Question, error) {
+	var questions []models.Question
 	questionIndex := 1
 
 	for {
@@ -143,21 +147,20 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 			return nil, fmt.Errorf("invalid answer option value")
 		}
 		// Append answers to a slice
-		var answers []Answer
+		var answers []models.Answer
 		for answerIndex := 1; answerIndex <= 4; answerIndex++ {
 			answerText := r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
 			if answerText == "" {
 				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
 			}
-			answers = append(answers, Answer{
+			answers = append(answers, models.Answer{
 				IsCorrect: answerIndex == correctAnswer,
 				Text:      answerText,
 			})
 
 		}
 		// Append questions to a slice
-		questions = append(questions, Question{
-			Number:        questionIndex,
+		questions = append(questions, models.Question{
 			Text:          questionText,
 			Answers:       answers,
 			CorrectAnswer: correctAnswer,
@@ -167,7 +170,7 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 	return questions, nil
 }
 
-func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
+func renderQuizCreateForm(w http.ResponseWriter, quiz models.Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
 		Title:       quiz.Title,
 		Description: quiz.Description,
@@ -180,7 +183,7 @@ func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	}
 }
 
-func redirectToQuiz(w http.ResponseWriter, quizID int) {
+func redirectToQuiz(w http.ResponseWriter, quizID uint) {
 	w.Header().Add("HX-Redirect", fmt.Sprintf("/quizzes/%d", quizID))
 	w.WriteHeader(http.StatusCreated)
 }
@@ -207,7 +210,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := QuizzesRepo.GetQuiz(qid)
+	quiz, err := QuizzesRepo.GetQuiz(uint(qid))
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:
@@ -270,7 +273,7 @@ func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = QuizzesRepo.DeleteQuiz(qid)
+	err = QuizzesRepo.DeleteQuiz(uint(qid))
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:

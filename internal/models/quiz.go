@@ -4,25 +4,31 @@ import (
 	"gorm.io/gorm"
 )
 
-type QuizModel struct {
+type Quiz struct {
 	gorm.Model
-	ID            int
+	ID            uint
 	Title         string
 	Password      string
 	Description   string
 	QuestionOrder string
-	Questions     []QuestionModel `gorm:"foreignKey:ID"`
+	Questions     []Question `gorm:"foreignKey:ID"`
 }
 
-type QuestionModel struct {
+type Question struct {
 	gorm.Model
 	Text          string
-	Answers       []AnswerModel `gorm:"foreignKey:Text"`
+	Answers       []Answer `gorm:"foreignKey:Text"`
 	CorrectAnswer int
 }
 
-type AnswerModel struct {
+type Answer struct {
 	gorm.Model
 	IsCorrect bool
 	Text      string
+}
+
+// It is used for faster lookups if only limited data is needed
+type QuizMetadata struct {
+	ID    uint
+	Title string
 }

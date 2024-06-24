@@ -1,12 +1,11 @@
 package lobbies
 
 import (
+	"github.com/erykksc/kwikquiz/internal/models"
 	"log/slog"
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 // lobby is a actively running game session
@@ -15,7 +14,7 @@ type lobby struct {
 	CreatedAt                time.Time
 	StartedAt                time.Time
 	FinishedAt               time.Time
-	Quiz                     quiz.Quiz
+	Quiz                     models.Quiz
 	Host                     *user
 	Pin                      string
 	TimePerQuestion          time.Duration // Time for players to answer a question
@@ -26,7 +25,7 @@ type lobby struct {
 	CurrentQuestionStartTime time.Time
 	CurrentQuestionTimeout   string // ISO 8601 String
 	CurrentQuestionIdx       int
-	CurrentQuestion          *quiz.Question
+	CurrentQuestion          *models.Question
 	PlayersAnswering         int     // Number of players who haven't submitted an answer
 	Leaderboard              []*user // Players sorted by score
 }
@@ -35,7 +34,7 @@ type lobbyOptions struct {
 	TimePerQuestion time.Duration
 	TimeForReading  time.Duration
 	Pin             string
-	Quiz            quiz.Quiz
+	Quiz            models.Quiz
 }
 
 func createLobby(options lobbyOptions) *lobby {
