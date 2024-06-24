@@ -84,7 +84,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type createQuizForm struct {
-	Qid         int
+	Qid         uint
 	Title       string
 	Password    string
 	Description string
@@ -112,22 +112,28 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseQuizForm(r *http.Request) (models.Quiz, error) {
+	qidStr := r.PathValue("qid")
+
+	// Convert the string to an integer
+	qid, err := strconv.Atoi(qidStr)
+	if err != nil {
+		// Handle the error if conversion fails
+		slog.Error("Error converting qid", "error", err)
+	}
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
-	questionOrder := r.FormValue("question-order")
-
 	questions, err := parseQuestions(r)
 	if err != nil {
 		return models.Quiz{}, err
 	}
 
 	return models.Quiz{
-		Title:         title,
-		Password:      password,
-		Description:   description,
-		QuestionOrder: questionOrder,
-		Questions:     questions,
+		ID:          uint(qid),
+		Title:       title,
+		Password:    password,
+		Description: description,
+		Questions:   questions,
 	}, nil
 }
 
@@ -232,6 +238,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
+		"Quiz":     quiz,
 		"QuizJSON": string(quizJSON),
 	})
 	if err != nil {

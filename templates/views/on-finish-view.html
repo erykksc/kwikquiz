@@ -1,13 +1,13 @@
 <div id="view">
   {{ if eq .Lobby.Host .User }}
   <script>
-    // TODO: Sends Host to the lobby results view
-    window.location.href = "/";
+    // Sends Host to the lobby results view
+    window.location.href = "/past-games/{{ .PastGameID }}";
   </script>
   {{ else }}
   <script>
-    // TODO: Sends Player to the lobby results view for him
-    window.location.href = "/";
+    // Sends Player to the lobby results view for him
+    window.location.href = "/past-games/{{ .PastGameID }}";
   </script>
   {{ end }}
 </div>

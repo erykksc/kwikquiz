@@ -11,7 +11,7 @@ import (
 
 var pastGameTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgame.html", common.BaseTmplPath))
 
-var pastGameRepo PastGameRepository = NewInMemoryPastGameRepository()
+var PastGamesRepo PastGameRepository = NewInMemoryPastGameRepository()
 
 // NewPastGamesRouter sets up the routes for the pastgames package.
 func NewPastGamesRouter() http.Handler {
@@ -20,7 +20,7 @@ func NewPastGamesRouter() http.Handler {
 
 	if common.DevMode() {
 		// Add test past game
-		pastGameRepo.AddPastGame(ExamplePastGame1)
+		PastGamesRepo.AddPastGame(ExamplePastGame1)
 	}
 
 	return mux
@@ -36,7 +36,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pastGame, err := pastGameRepo.GetPastGameByID(id)
+	pastGame, err := PastGamesRepo.GetPastGameByID(id)
 	if err != nil {
 		if _, ok := err.(ErrPastGameNotFound); ok {
 			http.Error(w, "Past game not found", http.StatusNotFound)

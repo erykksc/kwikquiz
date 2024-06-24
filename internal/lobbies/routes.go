@@ -35,19 +35,49 @@ func NewLobbiesRouter() http.Handler {
 		}
 		testLobby := createLobby(lOptions)
 		lobbiesRepo.AddLobby(testLobby)
-		slog.Info("Added test lobby", "lobby", testLobby)
+		slog.Info("Added test lobby", "lobby-pin", testLobby.Pin)
+
+		// Question View Lobby
+		// a lobby with fixed question-view, for design purposes
+		lOptions.Pin = "0001"
+		qwLobby := createLobby(lOptions)
+		qwLobby.StartedAt = time.Now()
+		qwLobby.CurrentQuestionStartTime = time.Now()
+		qwLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
+		qwLobby.CurrentQuestionIdx = 0
+		qwLobby.CurrentQuestionTimeout = time.Now().Add(30 * time.Second)
+		qwLobby.ReadingTimeout = time.Now()
+		qwLobby.State = LsQuestion
+		qwLobby.PlayersAnswering = 3
+		lobbiesRepo.AddLobby(qwLobby)
+		slog.Info("Added question view lobby", "lobby-pin", qwLobby.Pin)
+
+		// Question View Reading Lobby
+		// a lobby with fixed question-view, for design purposes
+		lOptions.Pin = "0002"
+		qwrLobby := createLobby(lOptions)
+		qwrLobby.StartedAt = time.Now()
+		qwrLobby.CurrentQuestionStartTime = time.Now()
+		qwrLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
+		qwrLobby.CurrentQuestionIdx = 0
+		qwrLobby.CurrentQuestionTimeout = time.Now().Add(300 * time.Second)
+		qwrLobby.ReadingTimeout = time.Now().Add(100 * time.Second)
+		qwrLobby.State = LsQuestion
+		qwrLobby.PlayersAnswering = 3
+		lobbiesRepo.AddLobby(qwrLobby)
+		slog.Info("Added question view lobby during reading", "lobby-pin", qwrLobby.Pin)
 	}
 
 	return mux
 }
 
 // getClientIDFromRequest returns the clientID from the request cookie
-func getClientIDFromRequest(r *http.Request) (clientID, error) {
+func getClientIDFromRequest(r *http.Request) (ClientID, error) {
 	clientIDCookie, err := r.Cookie("client-id")
 	if err == http.ErrNoCookie {
 		return "", err
 	}
-	return clientID(clientIDCookie.Value), nil
+	return ClientID(clientIDCookie.Value), nil
 }
 
 // TODO: Make it only accessible by admin
@@ -59,7 +89,7 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := lobbiesTmpl.Execute(w, lobbies); err != nil {
+	if err := LobbiesTmpl.Execute(w, lobbies); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -109,7 +139,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	cID, err := getClientIDFromRequest(r)
 	if err == http.ErrNoCookie {
 		// Set new client id if not present
-		cID, err = newClientID()
+		cID, err = NewClientID()
 		if err != nil {
 			slog.Error("Error generating new client id", "err", err)
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
@@ -123,7 +153,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 		Value: string(cID),
 	})
 
-	if err := lobbyTmpl.Execute(w, &lobby); err != nil {
+	if err := LobbyTmpl.Execute(w, &lobby); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
 }
@@ -261,7 +291,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Check if the client is the host
-	if lobby.Host.ClientID != clientID {
+	if lobby.Host == nil || lobby.Host.ClientID != clientID {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -318,7 +348,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = lobbySettingsTmpl.Execute(w, lobbySettingsData{
+	err = LobbySettingsTmpl.Execute(w, LobbySettingsData{
 		Quizzes: quizzesMeta,
 		Lobby:   lobby,
 	})

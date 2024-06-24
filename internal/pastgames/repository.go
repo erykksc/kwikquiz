@@ -11,7 +11,7 @@ func (ErrPastGameNotFound) Error() string {
 }
 
 type PastGameRepository interface {
-	AddPastGame(game PastGame) error
+	AddPastGame(game PastGame) (int, error)
 	GetPastGameByID(id int) (PastGame, error)
 	GetAllPastGames() ([]PastGame, error)
 }
@@ -30,7 +30,7 @@ func NewInMemoryPastGameRepository() *InMemoryPastGameRepository {
 	}
 }
 
-func (repo *InMemoryPastGameRepository) AddPastGame(game PastGame) error {
+func (repo *InMemoryPastGameRepository) AddPastGame(game PastGame) (int, error) {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
@@ -43,7 +43,7 @@ func (repo *InMemoryPastGameRepository) AddPastGame(game PastGame) error {
 	}
 
 	repo.pastGames[game.ID] = game
-	return nil
+	return game.ID, nil
 }
 
 func (repo *InMemoryPastGameRepository) GetPastGameByID(id int) (PastGame, error) {
