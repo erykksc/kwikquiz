@@ -25,7 +25,7 @@ type Lobby struct {
 	State                    LobbyState
 	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time
-	CurrentQuestionTimeout   string // ISO 8601 String
+	CurrentQuestionTimeout   time.Time
 	ReadingTimeout           time.Time
 	CurrentQuestionIdx       int
 	CurrentQuestion          *quiz.Question
@@ -77,13 +77,6 @@ func (l *Lobby) startGame() error {
 }
 
 func (l *Lobby) startNextQuestion() error {
-	l.State = LsQuestion
-	l.CurrentQuestionIdx++
-	l.CurrentQuestionStartTime = time.Now()
-	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion).Format(time.RFC3339)
-	l.ReadingTimeout = l.CurrentQuestionStartTime.Add(l.TimeForReading)
-	l.PlayersAnswering = len(l.Players)
-
 	// Reset Player answers
 	l.Host.SubmittedAnswerIdx = -1
 	l.Host.AnswerSubmissionTime = time.Time{}
@@ -91,6 +84,13 @@ func (l *Lobby) startNextQuestion() error {
 		player.SubmittedAnswerIdx = -1
 		player.AnswerSubmissionTime = time.Time{}
 	}
+
+	l.State = LsQuestion
+	l.CurrentQuestionIdx++
+	l.CurrentQuestionStartTime = time.Now()
+	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion)
+	l.ReadingTimeout = l.CurrentQuestionStartTime.Add(l.TimeForReading)
+	l.PlayersAnswering = len(l.Players)
 
 	// Check if the game has finished
 	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {

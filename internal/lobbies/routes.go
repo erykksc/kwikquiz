@@ -45,12 +45,27 @@ func NewLobbiesRouter() http.Handler {
 		qwLobby.CurrentQuestionStartTime = time.Now()
 		qwLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
 		qwLobby.CurrentQuestionIdx = 0
-		qwLobby.CurrentQuestionTimeout = time.Now().Add(30 * time.Second).Format(time.RFC3339) // ISO 8601 String
-		qwLobby.ReadingTimeout = time.Now().Add(5 * time.Second)
+		qwLobby.CurrentQuestionTimeout = time.Now().Add(30 * time.Second)
+		qwLobby.ReadingTimeout = time.Now()
 		qwLobby.State = LsQuestion
 		qwLobby.PlayersAnswering = 3
 		lobbiesRepo.AddLobby(qwLobby)
 		slog.Info("Added question view lobby", "lobby-pin", qwLobby.Pin)
+
+		// Question View Reading Lobby
+		// a lobby with fixed question-view, for design purposes
+		lOptions.Pin = "0002"
+		qwrLobby := createLobby(lOptions)
+		qwrLobby.StartedAt = time.Now()
+		qwrLobby.CurrentQuestionStartTime = time.Now()
+		qwrLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
+		qwrLobby.CurrentQuestionIdx = 0
+		qwrLobby.CurrentQuestionTimeout = time.Now().Add(300 * time.Second)
+		qwrLobby.ReadingTimeout = time.Now().Add(100 * time.Second)
+		qwrLobby.State = LsQuestion
+		qwrLobby.PlayersAnswering = 3
+		lobbiesRepo.AddLobby(qwrLobby)
+		slog.Info("Added question view lobby during reading", "lobby-pin", qwrLobby.Pin)
 	}
 
 	return mux
@@ -276,7 +291,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Check if the client is the host
-	if lobby.Host.ClientID != clientID {
+	if lobby.Host == nil || lobby.Host.ClientID != clientID {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

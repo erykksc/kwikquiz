@@ -33,7 +33,7 @@
           <span
             class="text-2xl font-bold font-mono text-dark-green"
             id="timer"
-            data-finish-time="{{.Lobby.CurrentQuestionTimeout}}"
+            data-finish-time="{{.Lobby.CurrentQuestionTimeout | formatAsISO}}"
           >
             <!-- Countdown of current question will be displayed here using JS -->
           </span>
@@ -115,11 +115,14 @@
           id="reading-time-elem"
           data-reading-timeout="{{ .Lobby.ReadingTimeout | formatAsISO }}"
           data-question-start-time="{{ .Lobby.CurrentQuestionStartTime | formatAsISO }}"
+          class="w-full pt-4"
         >
           <div id="reading-loading-bar" class="w-full h-4 bg-gray-200">
-            <div id="reading-progress" class="h-full bg-blue-500"></div>
+            <div id="reading-progress" class="h-full bg-blue-500" style="width: 0%"></div>
           </div>
-          <div class="flex items-center justify-centern text-center">Look at the host screen</div>
+          <div class="text-lg text-center pt-3">
+            {{ if eq .Lobby.Host .User }} Reading time! {{else}} Look at the host screen {{ end }}
+          </div>
         </div>
 
         <!-- Answer Options -->
