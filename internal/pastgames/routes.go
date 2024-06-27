@@ -1,6 +1,7 @@
 package pastgames
 
 import (
+	"github.com/erykksc/kwikquiz/internal/database"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -11,12 +12,14 @@ import (
 
 var pastGameTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgame.html", common.BaseTmplPath))
 
-var PastGamesRepo PastGameRepository = NewInMemoryPastGameRepository()
+var PastGamesRepo *GormPastGameRepository
 
 // NewPastGamesRouter sets up the routes for the pastgames package.
 func NewPastGamesRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/past-games/{gameID}", getPastGameHandler)
+
+	PastGamesRepo = NewGormPastGameRepository(database.DB)
 
 	if common.DevMode() {
 		// Add test past game
@@ -36,7 +39,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pastGame, err := PastGamesRepo.GetPastGameByID(id)
+	pastGame, err := PastGamesRepo.GetPastGameByID(uint(id))
 	if err != nil {
 		if _, ok := err.(ErrPastGameNotFound); ok {
 			http.Error(w, "Past game not found", http.StatusNotFound)

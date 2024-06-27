@@ -46,6 +46,11 @@ func setUpDatabase() {
 	if err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
+	// Migrate the schema
+	err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
+	if err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
 }
 
 func main() {

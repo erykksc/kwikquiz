@@ -48,7 +48,7 @@ var AnswerView = ParseViewWithFuncs("templates/views/answer-view.html")
 var onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
 
 type OnFinishData struct {
-	PastGameID int
+	PastGameID uint
 	ViewData
 }
 

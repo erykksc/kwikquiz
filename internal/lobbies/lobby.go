@@ -193,15 +193,15 @@ func (l *Lobby) endGame() error {
 		return err
 	}
 
-	scores := make([]pastgames.PlayerScore, 0, len(l.Players)+1)
+	scores := make([]models.PlayerScore, 0, len(l.Players)+1)
 	for _, player := range l.Leaderboard {
-		scores = append(scores, pastgames.PlayerScore{
+		scores = append(scores, models.PlayerScore{
 			Username: player.Username,
 			Score:    player.Score,
 		})
 	}
 
-	pastGame := pastgames.PastGame{
+	pastGame := models.PastGame{
 		StartedAt: l.StartedAt,
 		EndedAt:   time.Now(),
 		QuizTitle: l.Quiz.Title,

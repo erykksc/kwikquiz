@@ -1,7 +1,9 @@
 package pastgames
 
 import (
-	"sync"
+	"errors"
+	"github.com/erykksc/kwikquiz/internal/models"
+	"gorm.io/gorm"
 )
 
 type ErrPastGameNotFound struct{}
@@ -11,59 +13,39 @@ func (ErrPastGameNotFound) Error() string {
 }
 
 type PastGameRepository interface {
-	AddPastGame(game PastGame) (int, error)
+	AddPastGame(game models.PastGame) (uint, error)
 	GetPastGameByID(id int) (PastGame, error)
-	GetAllPastGames() ([]PastGame, error)
+	GetAllPastGames() ([]models.PastGame, error)
 }
 
 // InMemoryPastGameRepository In-mem store for past games
-type InMemoryPastGameRepository struct {
-	pastGames map[int]PastGame
-	mutex     sync.RWMutex
-	highestID int
+type GormPastGameRepository struct {
+	DB *gorm.DB
 }
 
-func NewInMemoryPastGameRepository() *InMemoryPastGameRepository {
-	return &InMemoryPastGameRepository{
-		pastGames: make(map[int]PastGame),
-		highestID: 0,
-	}
+func NewGormPastGameRepository(db *gorm.DB) *GormPastGameRepository {
+	return &GormPastGameRepository{DB: db}
 }
 
-func (repo *InMemoryPastGameRepository) AddPastGame(game PastGame) (int, error) {
-	repo.mutex.Lock()
-	defer repo.mutex.Unlock()
-
-	if game.ID == 0 {
-		// Assign a unique ID
-		repo.highestID++
-		game.ID = repo.highestID
-	} else if game.ID > repo.highestID {
-		repo.highestID = game.ID
+func (repo *GormPastGameRepository) AddPastGame(game models.PastGame) (uint, error) {
+	result := repo.DB.Create(&game)
+	if result.Error != nil {
+		return 0, result.Error
 	}
-
-	repo.pastGames[game.ID] = game
 	return game.ID, nil
 }
 
-func (repo *InMemoryPastGameRepository) GetPastGameByID(id int) (PastGame, error) {
-	repo.mutex.RLock()
-	defer repo.mutex.RUnlock()
-
-	game, ok := repo.pastGames[id]
-	if !ok {
-		return PastGame{}, ErrPastGameNotFound{}
+func (repo *GormPastGameRepository) GetPastGameByID(id uint) (models.PastGame, error) {
+	var game models.PastGame
+	result := repo.DB.Preload("Scores").First(&game, id)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return models.PastGame{}, ErrPastGameNotFound{}
 	}
-	return game, nil
+	return game, result.Error
 }
 
-func (repo *InMemoryPastGameRepository) GetAllPastGames() ([]PastGame, error) {
-	repo.mutex.RLock()
-	defer repo.mutex.RUnlock()
-
-	var games []PastGame
-	for _, game := range repo.pastGames {
-		games = append(games, game)
-	}
-	return games, nil
+func (repo *GormPastGameRepository) GetAllPastGames() ([]models.PastGame, error) {
+	var games []models.PastGame
+	result := repo.DB.Preload("Scores").Find(&games)
+	return games, result.Error
 }
