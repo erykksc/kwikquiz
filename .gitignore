@@ -19,3 +19,6 @@ tmp/
 
 # Go workspace file
 go.work
+
+# config file
+de_local.properties

@@ -1,6 +1,9 @@
 package pastgames
 
-import "time"
+import (
+	"github.com/erykksc/kwikquiz/internal/models"
+	"time"
+)
 
 type PlayerScore struct {
 	Username string
@@ -15,12 +18,12 @@ type PastGame struct {
 	Scores    []PlayerScore // sorted by score, descending
 }
 
-var ExamplePastGame1 = PastGame{
+var ExamplePastGame1 = models.PastGame{
 	ID:        1,
 	StartedAt: time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	EndedAt:   time.Date(2020, 1, 1, 12, 30, 0, 0, time.UTC),
 	QuizTitle: "Geography",
-	Scores: []PlayerScore{
+	Scores: []models.PlayerScore{
 		{
 			Username: "Alice",
 			Score:    12100,

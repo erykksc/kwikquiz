@@ -2,12 +2,12 @@ package lobbies
 
 import (
 	"fmt"
+	"github.com/erykksc/kwikquiz/internal/models"
 	"html/template"
 	"path/filepath"
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func tmplParseWithBase(path string) *template.Template {
@@ -48,7 +48,7 @@ var AnswerView = ParseViewWithFuncs("templates/views/answer-view.html")
 var onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
 
 type OnFinishData struct {
-	PastGameID int
+	PastGameID uint
 	ViewData
 }
 
@@ -56,7 +56,7 @@ type OnFinishData struct {
 var LobbySettingsTmpl = WaitingRoomView.Lookup("lobby-settings")
 
 type LobbySettingsData struct {
-	Quizzes []quiz.QuizMetadata
+	Quizzes []models.QuizMetadata
 	Lobby   *Lobby
 }
 

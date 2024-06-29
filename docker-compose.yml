@@ -3,3 +3,17 @@ services:
     build: .
     ports:
       - "3000:3000"
+
+  postgres:
+    image: postgres
+    container_name: kwikquiz-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=verysecret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
