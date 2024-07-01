@@ -1,20 +1,23 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Quiz struct {
 	gorm.Model
-	ID          int
-	Title       string
-	Password    string
-	Description string
-	Questions   []Question `gorm:"foreignKey:QuizID"`
+	ID            uint
+	Title         string
+	Password      string
+	Description   string
+	QuestionOrder string
+	Questions     []Question `gorm:"foreignKey:ID"`
 }
 
 type Question struct {
 	gorm.Model
 	Text          string
-	Answers       []Answer `gorm:"foreignKey:QuestionID"`
+	Answers       []Answer `gorm:"foreignKey:Text"`
 	CorrectAnswer int
 }
 
@@ -22,5 +25,10 @@ type Answer struct {
 	gorm.Model
 	IsCorrect bool
 	Text      string
-	// later we can add img, video etc. to allow multimodal questions
+}
+
+// It is used for faster lookups if only limited data is needed
+type QuizMetadata struct {
+	ID    uint
+	Title string
 }

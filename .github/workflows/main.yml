@@ -1,0 +1,3 @@
+- name: Test Google Cloud Authentication
+  run: |
+    gcloud auth list

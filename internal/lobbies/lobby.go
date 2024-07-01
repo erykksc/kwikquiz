@@ -1,13 +1,12 @@
 package lobbies
 
 import (
+	"github.com/erykksc/kwikquiz/internal/models"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"log/slog"
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/erykksc/kwikquiz/internal/pastgames"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 // Lobby is a actively running game session
@@ -16,7 +15,7 @@ type Lobby struct {
 	CreatedAt                time.Time
 	StartedAt                time.Time
 	FinishedAt               time.Time
-	Quiz                     quiz.Quiz
+	Quiz                     models.Quiz
 	Host                     *User
 	Pin                      string
 	TimePerQuestion          time.Duration // Time for players to answer a question
@@ -28,7 +27,7 @@ type Lobby struct {
 	CurrentQuestionTimeout   time.Time
 	ReadingTimeout           time.Time
 	CurrentQuestionIdx       int
-	CurrentQuestion          *quiz.Question
+	CurrentQuestion          *models.Question
 	PlayersAnswering         int     // Number of players who haven't submitted an answer
 	Leaderboard              []*User // Players sorted by score
 }
@@ -37,7 +36,7 @@ type lobbyOptions struct {
 	TimePerQuestion time.Duration
 	TimeForReading  time.Duration
 	Pin             string
-	Quiz            quiz.Quiz
+	Quiz            models.Quiz
 }
 
 func createLobby(options lobbyOptions) *Lobby {
@@ -194,15 +193,15 @@ func (l *Lobby) endGame() error {
 		return err
 	}
 
-	scores := make([]pastgames.PlayerScore, 0, len(l.Players)+1)
+	scores := make([]models.PlayerScore, 0, len(l.Players)+1)
 	for _, player := range l.Leaderboard {
-		scores = append(scores, pastgames.PlayerScore{
+		scores = append(scores, models.PlayerScore{
 			Username: player.Username,
 			Score:    player.Score,
 		})
 	}
 
-	pastGame := pastgames.PastGame{
+	pastGame := models.PastGame{
 		StartedAt: l.StartedAt,
 		EndedAt:   time.Now(),
 		QuizTitle: l.Quiz.Title,

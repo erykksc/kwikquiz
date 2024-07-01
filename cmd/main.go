@@ -2,14 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/config"
+	"github.com/erykksc/kwikquiz/internal/database"
+	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/models"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/pastgames"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -31,8 +34,29 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 	return handler
 }
 
+func setUpDatabase() {
+	// Load config
+	cfg, _ := config.LoadConfig()
+
+	// Connect to the database
+	database.Connect(cfg)
+
+	// Migrate the schema
+	err := database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
+	if err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+	// Migrate the schema
+	err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
+	if err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+}
+
 func main() {
 	var logLevel slog.Leveler = slog.LevelInfo
+	setUpDatabase()
+
 	if common.DebugOn() {
 		slog.Info("Debug mode enabled")
 		logLevel = slog.LevelDebug
