@@ -1,6 +1,8 @@
 services:
   app:
     build: .
+    environment:
+      - PROD=1
     ports:
       - "3000:3000"
 
@@ -8,8 +10,8 @@ services:
     image: postgres
     container_name: kwikquiz-db
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=verysecret
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
