@@ -42,14 +42,22 @@ func setUpDatabase() {
 	database.Connect(cfg)
 
 	// Migrate the schema
-	err := database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
+	migrateDatabase()
+}
+
+func migrateDatabase() {
+	modelsToMigrate := []interface{}{
+		&models.Quiz{},
+		&models.Question{},
+		&models.Answer{},
+		&models.PastGame{},
+		&models.PlayerScore{},
 	}
-	// Migrate the schema
-	err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
+
+	for _, model := range modelsToMigrate {
+		if err := database.DB.AutoMigrate(model); err != nil {
+			log.Fatalf("failed to migrate model %T: %v", model, err)
+		}
 	}
 }
 

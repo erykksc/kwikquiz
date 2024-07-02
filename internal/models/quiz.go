@@ -16,15 +16,16 @@ type Quiz struct {
 
 type Question struct {
 	gorm.Model
-	Text          string
-	Answers       []Answer `gorm:"foreignKey:Text"`
-	CorrectAnswer int
+	Text    string
+	Answers []Answer `gorm:"foreignKey:Text"`
 }
 
 type Answer struct {
 	gorm.Model
 	IsCorrect bool
 	Text      string
+	LaTeX     string
+	Image     []byte
 }
 
 // It is used for faster lookups if only limited data is needed
