@@ -69,8 +69,8 @@ jobs:
 
       - name: Log partial environment info
         run: |
-          echo "Provider: ${{ WIF_PROVIDER:0:5 }}"
-          echo "Service Account: ${{ WIF_SERVICE_ACCOUNT:0:5 }}"
+          echo "Provider: ${{ secrets.WIF_PROVIDER:0:5 }}"
+          echo "Service Account: ${{ secrets.WIF_SERVICE_ACCOUNT:0:5 }}"
 
       - name: Google Auth
         id: auth
