@@ -1,12 +1,14 @@
 package quiz
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/database"
 	"github.com/erykksc/kwikquiz/internal/models"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -29,12 +31,12 @@ func NewQuizzesRouter() http.Handler {
 	QuizzesRepo = NewGormQuizRepository(database.DB)
 
 	// Add quiz if in debug mode
-	if common.DevMode() {
-		QuizzesRepo.AddQuiz(ExampleQuizGeography)
-		slog.Info("Added example geography quiz")
-		QuizzesRepo.AddQuiz(ExampleQuizMath)
-		slog.Info("Added example math quiz")
-	}
+	//if common.DevMode() {
+	//	QuizzesRepo.AddQuiz(ExampleQuizGeography)
+	//	slog.Info("Added example geography quiz")
+	//	QuizzesRepo.AddQuiz(ExampleQuizMath)
+	//	slog.Info("Added example math quiz")
+	//}
 
 	return mux
 }
@@ -113,12 +115,18 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 
 func parseQuizForm(r *http.Request) (models.Quiz, error) {
 	qidStr := r.PathValue("qid")
+	var qid uint
 
 	// Convert the string to an integer
-	qid, err := strconv.Atoi(qidStr)
-	if err != nil {
-		// Handle the error if conversion fails
-		slog.Error("Error converting qid", "error", err)
+
+	// Convert the string to an integer if qidStr is not empty
+	if qidStr != "" {
+		qidInt, convErr := strconv.Atoi(qidStr)
+		if convErr != nil {
+			slog.Error("Error converting qid", "error", convErr)
+			return models.Quiz{}, fmt.Errorf("invalid quiz ID")
+		}
+		qid = uint(qidInt)
 	}
 	title := r.FormValue("title")
 	password := r.FormValue("password")
@@ -128,8 +136,15 @@ func parseQuizForm(r *http.Request) (models.Quiz, error) {
 		return models.Quiz{}, err
 	}
 
+	// Parse questions
+	questions, parseErr := parseQuestions(r)
+	if parseErr != nil {
+		return models.Quiz{}, parseErr
+	}
+
+	// Return the Quiz model based on whether qid is provided or not
 	return models.Quiz{
-		ID:          uint(qid),
+		ID:          qid,
 		Title:       title,
 		Password:    password,
 		Description: description,
@@ -146,30 +161,59 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 		if questionText == "" {
 			break
 		}
-		// Get the correct answer string
-		correctAnswerStr := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex))
-		correctAnswer, err := strconv.Atoi(correctAnswerStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid answer option value")
-		}
-		// Append answers to a slice
-		var answers []models.Answer
-		for answerIndex := 1; answerIndex <= 4; answerIndex++ {
-			answerText := r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
-			if answerText == "" {
-				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
-			}
-			answers = append(answers, models.Answer{
-				IsCorrect: answerIndex == correctAnswer,
-				Text:      answerText,
-			})
 
+		// Find the correct answer among the options
+		var answers []models.Answer
+		answerIndex := 1
+		for {
+			answerPrefix := "answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex)
+			answerText := r.FormValue(answerPrefix)
+			if answerText == "" {
+				break
+			}
+
+			// Check answer type and get respective value
+			answerType := r.FormValue(answerPrefix + "-type")
+			var answer models.Answer
+
+			switch answerType {
+			case "text":
+				answer = models.Answer{
+					Text: answerText,
+				}
+			case "image":
+				file, _, err := r.FormFile(answerPrefix + "-file")
+				if err != nil {
+					return nil, fmt.Errorf("error reading image file: %v", err)
+				}
+				defer file.Close()
+				var buf bytes.Buffer
+				_, err = io.Copy(&buf, file)
+				if err != nil {
+					return nil, fmt.Errorf("error copying image file: %v", err)
+				}
+				answer = models.Answer{
+					Image: buf.Bytes(),
+				}
+			case "latex":
+				answer = models.Answer{
+					LaTeX: answerText,
+				}
+			default:
+				return nil, fmt.Errorf("unsupported answer type: %v", answerType)
+			}
+
+			// Check if the answer is correct based on the hidden input value
+			isCorrect := r.FormValue("correct-answer-"+strconv.Itoa(questionIndex)+"-"+strconv.Itoa(answerIndex)) == "true"
+			answer.IsCorrect = isCorrect
+
+			answers = append(answers, answer)
+			answerIndex++
 		}
-		// Append questions to a slice
+
 		questions = append(questions, models.Question{
-			Text:          questionText,
-			Answers:       answers,
-			CorrectAnswer: correctAnswer,
+			Text:    questionText,
+			Answers: answers,
 		})
 		questionIndex++
 	}

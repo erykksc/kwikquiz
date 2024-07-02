@@ -53,19 +53,27 @@ func setUpDatabase() error {
 	database.Connect(cfg)
 	slog.Info("Database connected")
 
-	// Migrate schemas for quizzes
-	err = database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
-	}
-	// Migrate schemas for pastgames
-	err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
-	}
-	slog.Info("Database migrated")
+	// Migrate the schema
+	migrateDatabase()
 
 	return nil
+}
+
+func migrateDatabase() {
+	modelsToMigrate := []interface{}{
+		&models.Quiz{},
+		&models.Question{},
+		&models.Answer{},
+		&models.PastGame{},
+		&models.PlayerScore{},
+	}
+
+	for _, model := range modelsToMigrate {
+		if err := database.DB.AutoMigrate(model); err != nil {
+			log.Fatalf("failed to migrate model %T: %v", model, err)
+		}
+	}
+	slog.Info("Database migrated")
 }
 
 func main() {

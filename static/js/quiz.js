@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const answerInputName = event.target.getAttribute('data-answer');
         const answerType = event.target.getAttribute('data-type');
         const answerInput = document.querySelector(`input[name="${answerInputName}"], textarea[name="${answerInputName}"]`);
+
         if (!answerInput) return;
 
         switch (answerType) {
@@ -142,6 +143,12 @@ document.addEventListener('DOMContentLoaded', function() {
             correctBtn.classList.toggle('text-white');
             correctBtn.classList.toggle('text-white');
             correctBtn.textContent = correctBtn.textContent === 'Incorrect' ? 'Correct' : 'Incorrect';
+
+            // Update hidden input field value
+            const hiddenInput = correctBtn.nextElementSibling;
+            if (hiddenInput && hiddenInput.type === 'hidden' && hiddenInput.name.startsWith('correct-answer-')) {
+                hiddenInput.value = correctBtn.textContent === 'Correct' ? 'true' : 'false';
+            }
         }
     });
 });
