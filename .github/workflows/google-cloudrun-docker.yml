@@ -68,7 +68,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Log partial environment info
-        run: |
+        run:
           echo "Provider: ${{ secrets.WIF_PROVIDER:0:5 }}"
           echo "Service Account: ${{ secrets.WIF_SERVICE_ACCOUNT:0:5 }}"
 
