@@ -33,5 +33,8 @@ To run in production mode, set the environment variable `PROD` to `true` or `1`.
 PROD=1 go run cmd/main.go
 ```
 
+### SECURITY WARNING
+__If you plan to host the app on the web, you should change .env file so that the password to your database is not known to the public.__
+
 ## Contributing
 Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information on how to contribute to this project.
