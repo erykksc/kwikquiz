@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"log/slog"
+	"net/http"
+	"os"
+
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/database"
@@ -9,10 +14,6 @@ import (
 	"github.com/erykksc/kwikquiz/internal/models"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
-	"log"
-	"log/slog"
-	"net/http"
-	"os"
 )
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -34,42 +35,60 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 	return handler
 }
 
-func setUpDatabase() {
-	// Load config
-	cfg, _ := config.LoadConfig()
+func setUpDatabase() error {
+	// Load environment variables
+	if err := config.LoadEnv(".env"); err != nil {
+		return err
+	}
+	slog.Info("Environment variables loaded")
+
+	// Load config from environment variables
+	cfg, err := config.LoadConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	slog.Info("Config for DB loaded")
 
 	// Connect to the database
 	database.Connect(cfg)
+	slog.Info("Database connected")
 
-	// Migrate the schema
-	err := database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
+	// Migrate schemas for quizzes
+	err = database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
 	if err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
-	// Migrate the schema
+	// Migrate schemas for pastgames
 	err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
 	if err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
+	slog.Info("Database migrated")
+
+	return nil
 }
 
 func main() {
+	// Set up logging
 	var logLevel slog.Leveler = slog.LevelInfo
-	setUpDatabase()
-
 	if common.DebugOn() {
 		slog.Info("Debug mode enabled")
 		logLevel = slog.LevelDebug
 	}
-
 	handler := getLoggingHandler(logLevel)
-
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
-	fs := http.FileServer(http.Dir("static"))
+	// Set up database
+	if err := setUpDatabase(); err != nil {
+		log.Fatalf("failed to set up database: %v", err)
+	}
 
+	// Set up routes
 	router := http.NewServeMux()
+
+	fs := http.FileServer(http.Dir("static"))
+	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
@@ -79,8 +98,8 @@ func main() {
 			slog.Error("Error rendering template", "error", err)
 		}
 	})
-	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
+	// Start server
 	port := 3000
 	addr := fmt.Sprintf(":%d", port)
 	slog.Info("Server listening", "addr", addr)

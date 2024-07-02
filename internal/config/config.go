@@ -1,33 +1,65 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/spf13/viper"
+	"os"
+	"strings"
 )
 
 type Config struct {
-	DBUser     string `ini:"DBUser"`
-	DBPassword string `ini:"database.DBPassword"`
-	DBName     string `ini:"database.DBName"`
-	DBHost     string `ini:"database.DBHost"`
-	DBPort     string `ini:"database.DBPort"`
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBHost     string
+	DBPort     string
 }
 
-func LoadConfig() (*Config, error) {
-
-	viper.SetConfigName("de_local")
-	viper.SetConfigType("properties")
-	viper.AddConfigPath("./")
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+// LoadConfigFromEnv loads the configuration from the environment variables
+func LoadConfigFromEnv() (Config, error) {
+	cfg := Config{
+		DBUser:     os.Getenv("DB_USER"),
+		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBName:     os.Getenv("DB_NAME"),
+		DBHost:     os.Getenv("DB_HOST"),
+		DBPort:     os.Getenv("DB_PORT"),
 	}
 
-	var cfg Config
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	// Check if the environment variables are set
+	if cfg.DBUser == "" {
+		return cfg, fmt.Errorf("DB_USER is not set")
+	}
+	if cfg.DBPassword == "" {
+		return cfg, fmt.Errorf("DB_PASSWORD is not set")
+	}
+	if cfg.DBName == "" {
+		return cfg, fmt.Errorf("DB_NAME is not set")
+	}
+	if cfg.DBHost == "" {
+		return cfg, fmt.Errorf("DB_HOST is not set")
+	}
+	if cfg.DBPort == "" {
+		return cfg, fmt.Errorf("DB_PORT is not set")
 	}
 
-	return &cfg, nil
+	return cfg, nil
+}
 
+// LoadEnv loads the environment variables from the given file
+func LoadEnv(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		split := strings.SplitN(line, "=", 2)
+		if len(split) == 2 {
+			key := split[0]
+			value := split[1]
+			os.Setenv(key, value)
+		}
+	}
+	return nil
 }
