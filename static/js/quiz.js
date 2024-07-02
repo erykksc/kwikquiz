@@ -88,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case 'latex':
                 answerInput.outerHTML = `<textarea name="${answerInputName}" class="w-full px-4 py-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green mb-2" placeholder="Enter LaTeX" required></textarea>`;
-                MathJax.typeset(); // Re-render LaTeX formulas if using MathJax
                 break;
         }
     }
@@ -146,4 +145,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-g
