@@ -1,16 +1,17 @@
 FROM golang:1.22
 
-# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy everything from the current directory to the PWD(Present Working Directory) inside the container
-COPY . .
+COPY go.mod go.sum ./
 
-# Download all dependencies
+# Download all dependencies.
+# Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
-# Build the Go app
-RUN go build -o bin/kwikquiz cmd/kwikquiz/main.go
+# Copy the source from the current directory to the Working Directory inside the container
+COPY . .
 
-# Command to run the executable
-CMD ["PROD=1 ./bin/kwikquiz"]
+# Build the Go app
+RUN go build -o bin/kwikquiz cmd/main.go
+
+CMD ["./bin/kwikquiz"]
