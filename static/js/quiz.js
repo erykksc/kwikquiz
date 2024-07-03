@@ -144,11 +144,14 @@ document.addEventListener('DOMContentLoaded', function() {
             correctBtn.classList.toggle('text-white');
             correctBtn.textContent = correctBtn.textContent === 'Incorrect' ? 'Correct' : 'Incorrect';
 
-            // Update hidden input field value
-            const hiddenInput = correctBtn.nextElementSibling;
-            if (hiddenInput && hiddenInput.type === 'hidden' && hiddenInput.name.startsWith('correct-answer-')) {
-                hiddenInput.value = correctBtn.textContent === 'Correct' ? 'true' : 'false';
-            }
+            // Update hidden input
+            const questionNumber = correctBtn.closest('.question-item').querySelector('label').textContent.trim().replace('Question ', '');
+            const answerNumber = Array.from(correctBtn.closest('.answer-option').parentNode.children).indexOf(correctBtn.closest('.answer-option')) + 1;
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = `correct-answer-${questionNumber}-${answerNumber}`;
+            hiddenInput.value = correctBtn.textContent;
+            correctBtn.parentNode.appendChild(hiddenInput);
         }
     });
 });
