@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 var QuizzesRepo *GormQuizRepository
@@ -162,45 +163,51 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 			break
 		}
 
-		// Find the correct answer among the options
 		var answers []models.Answer
 		answerIndex := 1
 		for {
 			answerPrefix := "answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex)
-			answerText := r.FormValue(answerPrefix)
-			if answerText == "" {
-				break
+
+			// Check if any input with this name exists
+			_, _, err := r.FormFile(answerPrefix)
+			textValue := r.FormValue(answerPrefix)
+
+			if err != nil && textValue == "" {
+				break // No more answers for this question
 			}
 
-			// Check answer type and get respective value
-			answerType := r.FormValue(answerPrefix + "-type")
 			var answer models.Answer
 
-			switch answerType {
-			case "text":
-				answer = models.Answer{
-					Text: answerText,
+			// Determine answer type based on the input field present
+			if textValue != "" {
+				// Check if it's a textarea (LaTeX) or text input
+				if strings.Contains(textValue, "\n") {
+					answer = models.Answer{
+						LaTeX: textValue,
+					}
+				} else {
+					answer = models.Answer{
+						Text: textValue,
+					}
 				}
-			case "image":
-				file, _, err := r.FormFile(answerPrefix + "-file")
+			} else {
+				// It's an image file
+				file, header, err := r.FormFile(answerPrefix)
 				if err != nil {
 					return nil, fmt.Errorf("error reading image file: %v", err)
 				}
 				defer file.Close()
+
 				var buf bytes.Buffer
 				_, err = io.Copy(&buf, file)
 				if err != nil {
 					return nil, fmt.Errorf("error copying image file: %v", err)
 				}
+
 				answer = models.Answer{
-					Image: buf.Bytes(),
+					Image:     buf.Bytes(),
+					ImageName: header.Filename,
 				}
-			case "latex":
-				answer = models.Answer{
-					LaTeX: answerText,
-				}
-			default:
-				return nil, fmt.Errorf("unsupported answer type: %v", answerType)
 			}
 
 			// Check if the answer is correct based on the hidden input value

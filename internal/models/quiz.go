@@ -25,6 +25,7 @@ type Answer struct {
 	IsCorrect bool
 	Text      string
 	LaTeX     string
+	ImageName string
 	Image     []byte
 }
 
