@@ -54,13 +54,17 @@
     </style>
   </head>
   <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
+      <!-- Embed quiz data as JSON -->
+    <script id="quiz-data" type="application/json">
+      {{.QuizJSON}}
+    </script>
     <div class="bg-white shadow-lg rounded-lg p-8 md:p-10 w-full md:max-w-2xl flex flex-col overflow-auto">
       <h2 class="text-2xl md:text-3xl font-bold mb-6 text-dark-green">Create a new KWIKQUIZ</h2>
 
       <form
         id="quiz-form"
         class="flex-grow flex flex-col space-y-4"
-        hx-post="/quizzes/create/"
+        hx-post="/quizzes/update/"
         hx-trigger="submit"
         hx-target="this"
       >
@@ -136,13 +140,13 @@
               type="submit"
               class="px-4 py-2 bg-dark-green text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green"
             >
-              CREATE KWIKQUIZ
+              UPDATE KWIKQUIZ
             </button>
           </div>
         </div>
         {{ end }} {{ template "create-form" . }}
       </form>
     </div>
-    <script src="/static/js/quiz.js"></script>
+    <script src="/static/js/quiz-update.js"></script>
   </body>
 </html>

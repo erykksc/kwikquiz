@@ -6,12 +6,11 @@ import (
 
 type Quiz struct {
 	gorm.Model
-	ID            uint
-	Title         string
-	Password      string
-	Description   string
-	QuestionOrder string
-	Questions     []Question `gorm:"foreignKey:ID"`
+	ID          uint
+	Title       string
+	Password    string
+	Description string
+	Questions   []Question `gorm:"foreignKey:ID"`
 }
 
 type Question struct {

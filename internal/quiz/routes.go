@@ -210,9 +210,9 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 				}
 			}
 
-			// Check if the answer is correct based on the hidden input value
-			isCorrect := r.FormValue("correct-answer-"+strconv.Itoa(questionIndex)+"-"+strconv.Itoa(answerIndex)) == "true"
-			answer.IsCorrect = isCorrect
+			// Check if the answer is correct
+			correctBtnValue := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
+			answer.IsCorrect = correctBtnValue == "Correct"
 
 			answers = append(answers, answer)
 			answerIndex++
