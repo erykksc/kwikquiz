@@ -31,6 +31,7 @@ type QuizMetadata struct {
 }
 
 var ExampleQuizGeography = models.Quiz{
+	ID:          1,
 	Title:       "Geography",
 	Description: "This is a quiz about capitals around the world",
 	Questions: []models.Question{
@@ -56,6 +57,7 @@ var ExampleQuizGeography = models.Quiz{
 }
 
 var ExampleQuizMath = models.Quiz{
+	ID:          2,
 	Title:       "Math",
 	Description: "This is a quiz about math",
 	Questions: []models.Question{

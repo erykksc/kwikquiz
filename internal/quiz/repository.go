@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/erykksc/kwikquiz/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ErrQuizNotFound struct{}
@@ -33,7 +34,9 @@ func NewGormQuizRepository(db *gorm.DB) *GormQuizRepository {
 }
 
 func (r *GormQuizRepository) AddQuiz(q models.Quiz) (uint, error) {
-	result := r.DB.Create(&q)
+	result := r.DB.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&q)
 	if result.Error != nil {
 		return 0, result.Error
 	}
