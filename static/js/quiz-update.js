@@ -9,12 +9,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('password').value = quizData.Password;
     document.getElementById('description').value = quizData.Description;
 
+    ensureHiddenInputs();
     // Add existing questions
     quizData.Questions.forEach((question, index) => {
         addQuestion(question, index + 1);
     });
 
-    addQuestionBtn.addEventListener('click', function() {
+    addQuestionBtn.addEventListener('click', function () {
         const questionNumber = document.querySelectorAll('.question-item').length + 1;
         addQuestion(null, questionNumber);
     });
@@ -54,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div>
                     <button type="button" class="correct-answer-btn text-sm px-2 py-1 ${isCorrect ? 'bg-dark-green' : 'bg-red-500'} text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-green-500">${isCorrect ? 'Correct' : 'Incorrect'}</button>
+                    <input type="hidden" name="correct-answer-${questionNumber}-${answerNumber}" value="${isCorrect ? 'Correct' : 'Incorrect'}">
                     <button type="button" class="delete-answer-btn text-sm px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">Delete</button>
                 </div>
             </div>
@@ -66,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteButtons.forEach(button => {
             button.addEventListener('click', function() {
                 button.parentElement.remove();
+                updateQuestionNumbers();
                 toggleDeleteButtons();
             });
         });
@@ -74,26 +77,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleDeleteButtons() {
         const deleteButtons = document.querySelectorAll('.delete-question-btn');
-        if (deleteButtons.length === 1) {
-            deleteButtons[0].classList.add('hidden');
+        if (deleteButtons.length === 0) {
+            document.querySelectorAll('.delete-question-btn').forEach(button => {
+                button.classList.add('hidden');
+            });
         } else {
-            deleteButtons.forEach(button => button.classList.remove('hidden'));
+            document.querySelectorAll('.delete-question-btn').forEach(button => {
+                button.classList.remove('hidden');
+            });
         }
     }
 
     function updateQuestionNumbers() {
-        document.querySelectorAll('.question-item').forEach((item, index) => {
+        const questionItems = document.querySelectorAll('.question-item');
+        questionItems.forEach((item, index) => {
             const questionNumber = index + 1;
-            item.querySelector('label').textContent = `Question ${questionNumber}`;
-            item.querySelectorAll('input, textarea').forEach(input => {
-                input.name = input.name.replace(/-\d+/, `-${questionNumber}`);
+            const questionLabel = item.querySelector('label');
+            questionLabel.textContent = `Question ${questionNumber}`;
+            const inputs = item.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                const name = input.name.replace(/-\d+/, `-${questionNumber}`);
+                input.name = name;
+                const id = input.id.replace(/-\d+/, `-${questionNumber}`);
+                input.id = id;
+                const label = item.querySelector(`label[for="${id}"]`);
+                if (label) {
+                    label.setAttribute('for', id);
+                }
             });
-            item.querySelector('.answers-container').className = `answers-container answers-container-${questionNumber}`;
+
+            // Update answers-container class
+            const answersContainer = item.querySelector(`.answers-container-${questionNumber}`);
+            if (answersContainer) {
+                answersContainer.classList = `answers-container answers-container-${questionNumber}`;
+            }
         });
     }
 
     // Event delegation for dynamically added elements
-    questionList.addEventListener('click', function(event) {
+    questionList.addEventListener('click', function (event) {
         if (event.target.classList.contains('add-answer-btn')) {
             const questionItem = event.target.closest('.question-item');
             const questionNumber = questionItem.querySelector('label').textContent.trim().replace('Question ', '');
@@ -129,20 +151,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function toggleCorrectAnswer(button) {
-        button.classList.toggle('bg-red-500');
-        button.classList.toggle('bg-dark-green');
-        button.textContent = button.textContent === 'Incorrect' ? 'Correct' : 'Incorrect';
+function toggleCorrectAnswer(button) {
+    const isCurrentlyCorrect = button.textContent === 'Correct';
+    const newCorrectState = !isCurrentlyCorrect;
 
-        // Update hidden input
-        const questionNumber = button.closest('.question-item').querySelector('label').textContent.trim().replace('Question ', '');
-        const answerNumber = Array.from(button.closest('.answer-option').parentNode.children).indexOf(button.closest('.answer-option')) + 1;
-        const hiddenInput = button.parentNode.querySelector(`input[name="correct-answer-${questionNumber}-${answerNumber}"]`) || document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = `correct-answer-${questionNumber}-${answerNumber}`;
-        hiddenInput.value = button.textContent === 'Correct';
-        button.parentNode.appendChild(hiddenInput);
+    button.classList.toggle('bg-red-500', isCurrentlyCorrect);
+    button.classList.toggle('bg-dark-green', newCorrectState);
+    button.textContent = newCorrectState ? 'Correct' : 'Incorrect';
+
+    // Update hidden input
+    const hiddenInput = button.closest('.answer-option').querySelector('input[type="hidden"]');
+    if (hiddenInput) {
+        hiddenInput.value = newCorrectState ? 'Correct' : 'Incorrect';
     }
+}
+
+function ensureHiddenInputs() {
+    const questionItems = document.querySelectorAll('.question-item');
+    questionItems.forEach((item, questionIndex) => {
+        const questionNumber = questionIndex + 1;
+        const answerOptions = item.querySelectorAll('.answer-option');
+        answerOptions.forEach((option, answerIndex) => {
+            const answerNumber = answerIndex + 1;
+            let hiddenInput = option.querySelector(`input[name="correct-answer-${questionNumber}-${answerNumber}"]`);
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = `correct-answer-${questionNumber}-${answerNumber}`;
+                option.appendChild(hiddenInput);
+            }
+            const correctButton = option.querySelector('.correct-answer-btn');
+            hiddenInput.value = correctButton.textContent;
+        });
+    });
+}
 
     // Initial call to set up delete buttons
     updateDeleteButtons();

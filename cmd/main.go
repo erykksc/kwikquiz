@@ -53,6 +53,9 @@ func setUpDatabase() error {
 	database.Connect(cfg)
 	slog.Info("Database connected")
 
+	// Drop existing tables (Should only be used development!)
+	database.DB.Migrator().DropTable(&models.Answer{}, &models.Question{}, &models.Quiz{})
+
 	// Migrate the schema
 	migrateDatabase()
 
