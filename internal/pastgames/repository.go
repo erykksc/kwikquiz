@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/erykksc/kwikquiz/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ErrPastGameNotFound struct{}
@@ -28,8 +29,10 @@ func NewGormPastGameRepository(db *gorm.DB) *GormPastGameRepository {
 }
 
 func (repo *GormPastGameRepository) AddPastGame(game models.PastGame) (uint, error) {
-	result := repo.DB.Create(&game)
-	if result.Error != nil {
+	result := repo.DB.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&game)
+	if result == nil || result.Error != nil {
 		return 0, result.Error
 	}
 	return game.ID, nil

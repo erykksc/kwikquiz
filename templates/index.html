@@ -19,8 +19,8 @@
   </head>
   <body class="background-pattern">
     <div class="text-center">
-      <h1 class="text-4xl md:text-6xl font-bold text-dark-green mb-4">KWIKQUIZ</h1>
-      <h2 class="text-lg md:text-xl text-dark-green mb-8">Learning is Fun!</h2>
+      <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">KWIKQUIZ</h1>
+      <h2 class="italic text-xl md:text-xl text-green-700 mb-8">Learning is Fun!</h2>
       <div class="flex flex-col items-center space-y-4">
         <!-- Game Code Input -->
         {{ block "join-form" . }}
@@ -38,22 +38,20 @@
           <button
             type="submit"
             id="join-button"
-            class="mt-4 w-full px-6 py-4 bg-dark-green text-white text-lg rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+            class="mt-4 mb-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl">
             JOIN
           </button>
         </form>
         {{ end }}
 
-        <label for="game-code" class="block text-dark-green font-semibold mb-2">OR</label>
+        <label for="game-code" class="block text-green-700 font-bold mb-2 text-xl">OR</label>
 
         <div class="flex space-x-4">
           <button
             hx-post="/lobbies/"
             hx-trigger="click"
             hx-swap="none"
-            class="px-6 py-3 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green"
-          >
+            class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl">            
             Create new KWIKQUIZ
           </button>
         </div>
