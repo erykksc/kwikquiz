@@ -2,6 +2,7 @@ package pastgames
 
 import (
 	"github.com/erykksc/kwikquiz/internal/database"
+	"github.com/erykksc/kwikquiz/internal/models"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 )
 
 var pastGameTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgame.html", common.BaseTmplPath))
+var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgames.html", common.BaseTmplPath))
 
 var PastGamesRepo *GormPastGameRepository
 
@@ -18,6 +20,7 @@ var PastGamesRepo *GormPastGameRepository
 func NewPastGamesRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/past-games/{gameID}", getPastGameHandler)
+	mux.HandleFunc("/past-games/{gameID}", browsePastGamesHandler)
 
 	PastGamesRepo = NewGormPastGameRepository(database.DB)
 
@@ -50,6 +53,37 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := pastGameTmpl.Execute(w, pastGame); err != nil {
+		http.Error(w, "Error rendering template", http.StatusInternalServerError)
+		slog.Error("Error rendering template", "err", err)
+	}
+}
+
+func browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+
+	var pastGames []models.PastGame
+	var err error
+	if query != "" {
+		pastGames, err = PastGamesRepo.BrowsePastGamesByID(query)
+	} else {
+		pastGames, err = PastGamesRepo.GetAllPastGames()
+	}
+
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("Error searching past games", "err", err)
+		return
+	}
+
+	data := struct {
+		Query string
+		Games []models.PastGame
+	}{
+		Query: query,
+		Games: pastGames,
+	}
+
+	if err := pastGamesListTmpl.Execute(w, data); err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 		slog.Error("Error rendering template", "err", err)
 	}
