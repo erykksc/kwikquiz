@@ -49,9 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${answer && answer.Image ? 'accept="image/*"' : ''} required>
             <div class="flex justify-between items-center mt-2">
                 <div>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerNumber}" data-type="text">Text</button>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerNumber}" data-type="image">Image</button>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerNumber}" data-type="latex">LaTeX</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerNumber}" data-type="text" hidden>Text</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerNumber}" data-type="image" hidden>Image</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerNumber}" data-type="latex" hidden>LaTeX</button>
                 </div>
                 <div>
                     <button type="button" class="correct-answer-btn text-sm px-2 py-1 ${isCorrect ? 'bg-dark-green' : 'bg-red-500'} text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-green-500">${isCorrect ? 'Correct' : 'Incorrect'}</button>

@@ -2,36 +2,8 @@ package quiz
 
 import "github.com/erykksc/kwikquiz/internal/models"
 
-type Quiz struct {
-	ID            int
-	Title         string
-	Password      string
-	Description   string
-	QuestionOrder string
-	Questions     []Question `gorm:"foreignKey:QuizID"`
-}
-
-type Question struct {
-	Number        int
-	Text          string
-	Answers       []Answer `gorm:"foreignKey:QuestionID"`
-	CorrectAnswer int
-}
-
-type Answer struct {
-	IsCorrect bool
-	Text      string
-	// later we can add img, video etc. to allow multimodal questions
-}
-
-// It is used for faster lookups if only limited data is needed
-type QuizMetadata struct {
-	ID    int
-	Title string
-}
-
 var ExampleQuizGeography = models.Quiz{
-	ID:          1,
+	ID:          999,
 	Title:       "Geography",
 	Description: "This is a quiz about capitals around the world",
 	Questions: []models.Question{
@@ -57,7 +29,7 @@ var ExampleQuizGeography = models.Quiz{
 }
 
 var ExampleQuizMath = models.Quiz{
-	ID:          2,
+	ID:          998,
 	Title:       "Math",
 	Description: "This is a quiz about math",
 	Questions: []models.Question{

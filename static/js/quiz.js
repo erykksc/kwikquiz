@@ -56,9 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" name="answer-${questionNumber}-${answerCount}" class="w-full px-4 py-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green mb-2" placeholder="Option ${answerCount}" required>
             <div class="flex justify-between items-center mt-2">
                 <div>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="text">Text</button>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="image">Image</button>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="latex">LaTeX</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="text" hidden >Text</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="image" hidden>Image</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="latex" hidden>LaTeX</button>
                 </div>
                 <div>
                     <button type="button" class="correct-answer-btn text-sm px-2 py-1 bg-red-500 text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-green-500">Incorrect</button>

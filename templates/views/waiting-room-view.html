@@ -163,7 +163,7 @@ function createNewQuiz() {
 
     // Redirect to the new URL and reload
     window.location.href = url.toString();
-  }, 69); // 0.01 second delay
+  }, 400); // 0.01 second delay
 }
 
   document.getElementById('create-new-quiz-btn').addEventListener('htmx:afterOnLoad', function(event) {
