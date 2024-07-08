@@ -17,6 +17,7 @@ type PastGameRepository interface {
 	AddPastGame(game models.PastGame) (uint, error)
 	GetPastGameByID(id int) (PastGame, error)
 	GetAllPastGames() ([]models.PastGame, error)
+	BrowsePastGamesByID(query string) ([]models.PastGame, error)
 }
 
 // InMemoryPastGameRepository In-mem store for past games
@@ -50,5 +51,13 @@ func (repo *GormPastGameRepository) GetPastGameByID(id uint) (models.PastGame, e
 func (repo *GormPastGameRepository) GetAllPastGames() ([]models.PastGame, error) {
 	var games []models.PastGame
 	result := repo.DB.Preload("Scores").Find(&games)
+	return games, result.Error
+}
+
+func (repo *GormPastGameRepository) BrowsePastGamesByID(query string) ([]models.PastGame, error) {
+	var games []models.PastGame
+	result := repo.DB.Preload("Scores").
+		Where("id::text LIKE ?", "%"+query+"%").
+		Find(&games)
 	return games, result.Error
 }

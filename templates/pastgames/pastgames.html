@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Past Games</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col justify-center items-center">
+    <div class="text-center">
+        <h1 class="text-5xl mb-4">Past Games</h1>
+        <form method="GET" action="/past-games" class="mb-8">
+            <input type="text" name="q" placeholder="Search games by ID" value="{{.Query}}" class="p-2 border border-gray-300 rounded-md">
+            <button type="submit" class="p-2 bg-blue-500 text-white rounded-md">Search</button>
+        </form>
+        <ul class="list-disc list-inside">
+            {{range .Games}}
+            <li>
+                <a href="/past-games/{{.ID}}" class="text-blue-500">{{.QuizTitle}} ({{.StartedAt}} - {{.EndedAt}})</a>
+            </li>
+            {{else}}
+            <li>No past games found</li>
+            {{end}}
+        </ul>
+    </div>
+</body>
+</html>
