@@ -32,12 +32,12 @@ func NewQuizzesRouter() http.Handler {
 	QuizzesRepo = NewGormQuizRepository(database.DB)
 
 	// Add quiz if in debug mode
-	//if common.DevMode() {
-	//	QuizzesRepo.AddQuiz(ExampleQuizGeography)
-	//	slog.Info("Added example geography quiz")
-	//	QuizzesRepo.AddQuiz(ExampleQuizMath)
-	//	slog.Info("Added example math quiz")
-	//}
+	if common.DevMode() {
+		QuizzesRepo.AddQuiz(ExampleQuizGeography)
+		slog.Info("Added example geography quiz")
+		QuizzesRepo.AddQuiz(ExampleQuizMath)
+		slog.Info("Added example math quiz")
+	}
 
 	return mux
 }
