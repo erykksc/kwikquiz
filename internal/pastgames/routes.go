@@ -20,7 +20,7 @@ var PastGamesRepo *GormPastGameRepository
 func NewPastGamesRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/past-games/{gameID}", getPastGameHandler)
-	mux.HandleFunc("/past-games/{gameID}", browsePastGamesHandler)
+	mux.HandleFunc("/past-games", browsePastGamesHandler)
 
 	PastGamesRepo = NewGormPastGameRepository(database.DB)
 
