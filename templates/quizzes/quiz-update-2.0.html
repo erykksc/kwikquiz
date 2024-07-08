@@ -69,6 +69,9 @@
         hx-target="this"
       >
         {{ define "create-form" }}
+
+        <!-- Hidden LobbyPin Input -->
+        <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin.Pin }}">
         <!-- Quiz Title -->
         <div>
           <label for="title" class="block text-dark-green font-semibold mb-2">Quiz Title</label>

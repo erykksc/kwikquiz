@@ -109,21 +109,35 @@
   <!-- Add Create New Quiz Button -->
 <div class="flex flex-col mt-4">
   <button
-    name="create-new-quiz-btn"
-    class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl"
-    onclick="window.location.href='/quizzes/create/'"
+  id="create-new-quiz-btn"
+  name="create-new-quiz-btn"
+  class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl"
+  hx-get="/quizzes/create/"
+  hx-push-url="true"
+  hx-vals='{"LobbyPin": "{{ .Lobby.Pin }}"}'
+  hx-trigger="click"
+  hx-on="htmx:afterOnLoad: location.reload()"
   >
     Create New Quiz
   </button>
 </div>
 </form>
 
+<!-- Embed quiz data as JSON -->
+<script id="lobby-data" type="application/json">
+  {{.LobbyJSON}}
+</script>
+
 <script>
-function editSelectedQuiz() {
-  var quizSelector = document.getElementById('quizSelector');
-  var selectedId = quizSelector.value;
-  if (selectedId) {
-    window.location.href = '/quizzes/update/' + selectedId;
+  const lobbyData = JSON.parse(JSON.parse(document.getElementById('lobby-data').textContent));
+  const lobbyPin = lobbyData.Pin;
+
+  function editSelectedQuiz() {
+    const quizSelector = document.getElementById('quizSelector');
+    const selectedId = quizSelector.value;
+
+    if (selectedId) {
+    window.location.href = '/quizzes/update/' + selectedId + '?LobbyPin=' + lobbyPin;
   } else {
     alert('Please select a quiz first.');
   }
@@ -138,5 +152,23 @@ document.getElementById('quizSelector').addEventListener('change', function() {
     editButton.setAttribute('disabled', '');
   }
 });
+
+function createNewQuiz() {
+  // Delay to ensure the request is sent before the page refresh
+  setTimeout(function() {
+    // Construct the URL with the LobbyID parameter
+    const url = new URL(window.location.href);
+    url.pathname = '/quizzes/create/';
+    url.searchParams.set('LobbyPin', lobbyPin);
+
+    // Redirect to the new URL and reload
+    window.location.href = url.toString();
+  }, 69); // 0.01 second delay
+}
+
+  document.getElementById('create-new-quiz-btn').addEventListener('htmx:afterOnLoad', function(event) {
+    location.reload();
+  });
 </script>
+
 {{ end }}

@@ -104,21 +104,20 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quizID, err := QuizzesRepo.AddQuiz(quiz)
+	_, err = QuizzesRepo.AddQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		renderQuizCreateForm(w, quiz, err)
 		return
 	}
+	var lobbyPin = r.FormValue("lobbyPin")
 
-	redirectToQuiz(w, quizID)
+	redirectToQuiz(w, lobbyPin)
 }
 
 func parseQuizForm(r *http.Request) (models.Quiz, error) {
 	qidStr := r.PathValue("qid")
 	var qid uint
-
-	// Convert the string to an integer
 
 	// Convert the string to an integer if qidStr is not empty
 	if qidStr != "" {
@@ -240,14 +239,26 @@ func renderQuizCreateForm(w http.ResponseWriter, quiz models.Quiz, err error) {
 	}
 }
 
-func redirectToQuiz(w http.ResponseWriter, quizID uint) {
-	w.Header().Add("HX-Redirect", fmt.Sprintf("/quizzes/%d", quizID))
+func redirectToQuiz(w http.ResponseWriter, lobbyPin string) {
+	w.Header().Add("HX-Redirect", fmt.Sprintf("/lobbies/%s", lobbyPin))
 	w.WriteHeader(http.StatusCreated)
 }
 
 func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	err := QuizCreateTemplate.Execute(w, nil)
+
+	// Extract the 'LobbyPin' query parameter
+	queryParams := r.URL.Query()
+	lobbyPin := queryParams.Get("LobbyPin")
+
+	// Create data to pass to the template
+	data := struct {
+		LobbyPin string
+	}{
+		LobbyPin: lobbyPin,
+	}
+
+	err := QuizCreateTemplate.Execute(w, data)
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -288,9 +299,21 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract the 'LobbyPin' query parameter
+	queryParams := r.URL.Query()
+	lobbyPin := queryParams.Get("LobbyPin")
+
+	// Create data to pass to the template
+	data := struct {
+		Pin string
+	}{
+		Pin: lobbyPin,
+	}
+
 	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
 		"Quiz":     quiz,
 		"QuizJSON": string(quizJSON),
+		"LobbyPin": data,
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
@@ -308,14 +331,15 @@ func updateQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quizID, err := QuizzesRepo.UpdateQuiz(quiz)
+	_, err = QuizzesRepo.UpdateQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		renderQuizCreateForm(w, quiz, err)
 		return
 	}
+	var lobbyPin = r.FormValue("lobbyPin")
 
-	redirectToQuiz(w, quizID)
+	redirectToQuiz(w, lobbyPin)
 }
 
 func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {

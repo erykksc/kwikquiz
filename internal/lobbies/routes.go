@@ -1,6 +1,7 @@
 package lobbies
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -348,9 +349,18 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Serialize lobby data to JSON
+	lobbyJSON, err := json.Marshal(lobby)
+	if err != nil {
+		slog.Error("Error marshaling lobby data to JSON", "err", err)
+		http.Error(w, "Error processing lobby data", http.StatusInternalServerError)
+		return
+	}
+
 	err = LobbySettingsTmpl.Execute(w, LobbySettingsData{
-		Quizzes: quizzesMeta,
-		Lobby:   lobby,
+		Quizzes:   quizzesMeta,
+		Lobby:     lobby,
+		LobbyJSON: string(lobbyJSON),
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
