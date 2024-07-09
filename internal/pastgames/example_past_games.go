@@ -6,7 +6,7 @@ import (
 )
 
 var ExamplePastGame1 = models.PastGame{
-	ID:        1,
+	ID:        999,
 	StartedAt: time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	EndedAt:   time.Date(2020, 1, 1, 12, 30, 0, 0, time.UTC),
 	QuizTitle: "Geography",
