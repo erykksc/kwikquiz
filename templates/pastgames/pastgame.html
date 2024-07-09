@@ -1,82 +1,74 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>KwikQuiz Results</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <style>
-      .bg-baby-pink {
-        background-color: #f3c4db;
-      }
-      .text-dark-green {
-        color: #123f16;
-      }
-      .bg-dark-green {
-        background-color: #123f16;
-      }
-      .hover-bg-baby-pink:hover {
-        background-color: #f3c4db;
-        color: #123f16;
-      }
-      .podium {
-        display: flex;
-        justify-content: center;
-        align-items: flex-end;
-        gap: 10px;
-        margin-top: 2rem;
-      }
-      .podium div {
-        background-color: #123f16;
-        color: #fec6e2;
-        text-align: center;
-        padding: 20px;
-        border-radius: 8px;
-      }
-      .first {
-        height: 150px;
-      }
-      .second {
-        height: 100px;
-      }
-      .third {
-        height: 75px;
-      }
-    </style>
-  </head>
-  <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-2xl">
-      <div class="text-center mb-6">
-        <h1 class="text-5xl font-bold text-dark-green mb-4">Quiz Results</h1>
-        <h2 class="text-3xl text-dark-green mb-2">{{ .QuizTitle }}</h2>
-        <p class="text-dark-green">Started At: {{ .StartedAt }}</p>
-        <p class="text-dark-green">Ended At: {{ .EndedAt }}</p>
-      </div>
-      <div class="mb-6">
-        <h3 class="text-2xl text-dark-green mb-4">Top 3 Scores</h3>
-        <div class="podium flex justify-center items-end space-x-4">
-          {{ $top3 := slice .Scores 0 3 }} {{ range $index, $element := $top3 }}
-          <div
-            class="text-center p-4 rounded-lg {{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}"
-          >
-            <p class="text-xl">{{ .Username }}</p>
-            <p>{{ .Score }} points</p>
-          </div>
-          {{ end }}
+<head>
+  {{template "header-content" .}}
+  <title>KwikQuiz Results</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      margin-top: 2rem;
+    }
+
+    .podium div {
+      background-color: #123f16;
+      color: #fec6e2;
+      text-align: center;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .first {
+      height: 150px;
+    }
+
+    .second {
+      height: 100px;
+    }
+
+    .third {
+      height: 75px;
+    }
+  </style>
+</head>
+<body class="bg-baby-pink min-h-screen flex flex-col justify-center items-center">
+  <div class="text-center">
+        <h2 class="text-7xl mb-8 text-green-700">Lobby Results </h2>
+    <h1 class="text-5xl mb-4 text-green-700">You just finished playing the Quiz {{ .QuizTitle }}!</h1>
+    <main class="w-full max-w-3xl">
+    </main>
+    <div class="podium">
+      {{ $top3 := slice .Scores 0 3 }}
+      
+      {{ range $index, $element := $top3 }}
+        <div class="{{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}">
+          <p class="text-2xl">{{ .Username }}</p>
+          <p class="text-xl">{{ .Score }} points</p>
         </div>
-      </div>
-      <div>
-        <h3 class="text-2xl text-dark-green mb-4">All Scores</h3>
-        <ul class="list-disc list-inside text-dark-green">
-          {{ range .Scores }}
-          <li>{{ .Username }}: {{ .Score }} points</li>
+      {{ end }}
+      <h2 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-8">Final Leaderboard</h2>
+      <table class="table-auto bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
+        <thead>
+          <tr class="bg-green-500">
+            <th class="px-4 py-2">Rank</th>
+            <th class="px-4 py-2">Player</th>
+            <th class="px-4 py-2">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $index, $player := .Lobby.Players }}
+          <tr class="bg-green-300 last:rounded-b-lg">
+            <td class="px-4 py-2">{{ add $index 1 }}</td>
+            <td class="px-4 py-2">{{.Name}}</td>
+            <td class="px-4 py-2">{{.Score}}</td>
+          </tr>
           {{ end }}
-        </ul>
-      </div>
-      <div class="mt-6 text-center">
-        <a href="/past-games" class="px-4 py-2 bg-dark-green text-white rounded hover-bg-baby-pink"
-          >Back to all past games</a
-        >
-      </div>
+        </tbody>
+      </table>
     </div>
-  </body>
+  </div>
+</body>
 </html>
