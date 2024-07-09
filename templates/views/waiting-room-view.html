@@ -84,8 +84,18 @@
         <option
           value="{{ .ID }}"
           class="text-green-700"
-          {{/* prettier-ignore */}}
-          {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID) }} selected {{ end }}
+          {{
+          if
+          and
+          $.Lobby.Quiz.ID
+          (eq
+          $.Lobby.Quiz.ID
+          .ID)
+          }}
+          selected
+          {{
+          end
+          }}
         >
           {{ .Title }}
         </option>

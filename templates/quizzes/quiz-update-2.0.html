@@ -54,7 +54,7 @@
     </style>
   </head>
   <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
-      <!-- Embed quiz data as JSON -->
+    <!-- Embed quiz data as JSON -->
     <script id="quiz-data" type="application/json">
       {{.QuizJSON}}
     </script>
@@ -71,7 +71,7 @@
         {{ define "create-form" }}
 
         <!-- Hidden LobbyPin Input -->
-        <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin.Pin }}">
+        <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin.Pin }}" />
         <!-- Quiz Title -->
         <div>
           <label for="title" class="block text-dark-green font-semibold mb-2">Quiz Title</label>
@@ -88,7 +88,7 @@
 
         <!-- Quiz Password -->
         <div>
-<!--          <label for="password" class="block text-dark-green font-semibold mb-2">Password</label>-->
+          <!--          <label for="password" class="block text-dark-green font-semibold mb-2">Password</label>-->
           <input
             type="hidden"
             id="password"
