@@ -18,45 +18,41 @@
     </script>
   </head>
   <body class="background-pattern">
-    <div class="text-center">
+    <div class="text-center ">
       <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">KWIKQUIZ</h1>
-      <h2 class="italic text-xl md:text-xl text-green-700 mb-8">Learning is Fun!</h2>
-      <div class="flex flex-col items-center space-y-4">
+      <h2 class="italic text-xl md:text-2xl text-green-700 mb-8">Learning is Fun!</h2>
+      <div class="flex flex-col items-center space-y-6">
         <!-- Game Code Input -->
         {{ block "join-form" . }}
-        <form method="GET" hx-get="/lobbies/join" hx-include="#pin" hx-swap="outerHTML" class="mt-8 w-full max-w-xs">
+        <form method="GET" hx-get="/lobbies/join" hx-include="#pin" hx-swap="outerHTML" class="w-full max-w-sm">
           <input
             type="text"
             id="pin"
             name="pin"
-            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green mb-4"
             placeholder="Enter game code here..."
             required
           />
           <!-- red error string -->
-          <p id="error" style="color: red">{{.GamePinError}}</p>
+          <p id="error" class="text-red-500">{{.GamePinError}}</p>
           <button
             type="submit"
             id="join-button"
-            class="mt-4 mb-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl"
-          >
+            class="bg-green-700 hover:bg-green-600 text-white font-bold mt-4 py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl">
             JOIN
           </button>
         </form>
         {{ end }}
 
-        <label for="game-code" class="block text-green-700 font-bold mb-2 text-xl">OR</label>
+        <label for="game-code" class="block text-green-700 font-bold text-xl">OR</label>
 
-        <div class="flex space-x-4">
-          <button
-            hx-post="/lobbies/"
-            hx-trigger="click"
-            hx-swap="none"
-            class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl"
-          >
-            Create new KWIKQUIZ
-          </button>
-        </div>
+        <button
+          hx-post="/lobbies/"
+          hx-trigger="click"
+          hx-swap="none"
+          class="bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl">
+          Create new KWIKQUIZ
+        </button>
       </div>
     </div>
   </body>
