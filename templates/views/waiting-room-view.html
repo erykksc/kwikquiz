@@ -67,108 +67,53 @@
       class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
     />
   </div>
-<div class="flex flex-col">
-  <label for="quiz" class="text-xl my-1 font-semibold text-green-700">Quiz:</label>
-  <div class="flex items-center">
-    <select
-      id="quizSelector"
-      name="quiz"
-      class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700 w-full max-w-md"
-    >
-      <!-- Check if no quiz is selected -->
-      {{ if eq .Lobby.Quiz.ID 0 }}
-      <option value="" selected>Select a quiz</option>
-      {{ end }}
-      <!-- Add quizzes options -->
-      {{ range .Quizzes }}
-      <option
-        value="{{ .ID }}"
-        {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID) }}
-        selected
-        {{ end }}
-        class="text-green-700"
+  <div class="flex flex-col">
+    <label for="quiz" class="text-xl my-1 font-semibold text-green-700">Quiz:</label>
+    <div class="flex items-center">
+      <select
+        id="quizSelector"
+        name="quiz"
+        class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700 w-full max-w-md"
       >
-        {{ .Title }}
-      </option>
-      {{ end }}
-    </select>
-    <!-- Add Edit Button Next to the Quiz Selector -->
-    <button
-      id="editButton"
+        <!-- Check if no quiz is selected -->
+        {{ if eq .Lobby.Quiz.ID 0 }}
+        <option value="" selected>Select a quiz</option>
+        {{ end }}
+        <!-- Add quizzes options -->
+        {{ range .Quizzes }}
+        <option
+          value="{{ .ID }}"
+          class="text-green-700"
+          {{/* prettier-ignore */}}
+          {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID) }} selected {{ end }}
+        >
+          {{ .Title }}
+        </option>
+        {{ end }}
+      </select>
+      <!-- Add Edit Button Next to the Quiz Selector -->
+      {{ if eq .Lobby.Quiz.ID 0 }}{{else}}
+      <a
+        id="editButton"
         type="button"
         class="ml-2 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
-        onclick="editSelectedQuiz()"
-        {{ if eq .Lobby.Quiz.ID 0 }}
-        disabled
-        {{ end }}
-    >
-      Edit
-    </button>
+        href="/quizzes/update/{{ .Lobby.Quiz.ID }}?LobbyPin={{ .Lobby.Pin }}"
+      >
+        Edit
+      </a>
+      {{ end }}
+    </div>
   </div>
-</div>
   <!-- Add Create New Quiz Button -->
-<div class="flex flex-col mt-4">
-  <button
-  id="create-new-quiz-btn"
-  name="create-new-quiz-btn"
-  class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl"
-  hx-get="/quizzes/create/"
-  hx-push-url="true"
-  hx-vals='{"LobbyPin": "{{ .Lobby.Pin }}"}'
-  hx-trigger="click"
-  hx-on="htmx:afterOnLoad: location.reload()"
-  >
-    Create New Quiz
-  </button>
-</div>
+  <div class="flex flex-col mt-4">
+    <a
+      id="create-new-quiz-btn"
+      name="create-new-quiz-btn"
+      class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark cursor-pointer hover:border-main-color-hover rounded text-2xl"
+      href="/quizzes/create/?LobbyPin={{.Lobby.Pin}}"
+    >
+      Create New Quiz
+    </a>
+  </div>
 </form>
-
-<!-- Embed quiz data as JSON -->
-<script id="lobby-data" type="application/json">
-  {{.LobbyJSON}}
-</script>
-
-<script>
-  const lobbyData = JSON.parse(JSON.parse(document.getElementById('lobby-data').textContent));
-  const lobbyPin = lobbyData.Pin;
-
-  function editSelectedQuiz() {
-    const quizSelector = document.getElementById('quizSelector');
-    const selectedId = quizSelector.value;
-
-    if (selectedId) {
-    window.location.href = '/quizzes/update/' + selectedId + '?LobbyPin=' + lobbyPin;
-  } else {
-    alert('Please select a quiz first.');
-  }
-}
-
-document.getElementById('quizSelector').addEventListener('change', function() {
-  var editButton = document.getElementById('editButton');
-  var selectedId = this.value;
-  if (selectedId) {
-    editButton.removeAttribute('disabled');
-  } else {
-    editButton.setAttribute('disabled', '');
-  }
-});
-
-function createNewQuiz() {
-  // Delay to ensure the request is sent before the page refresh
-  setTimeout(function() {
-    // Construct the URL with the LobbyID parameter
-    const url = new URL(window.location.href);
-    url.pathname = '/quizzes/create/';
-    url.searchParams.set('LobbyPin', lobbyPin);
-
-    // Redirect to the new URL and reload
-    window.location.href = url.toString();
-  }, 400); // 0.01 second delay
-}
-
-  document.getElementById('create-new-quiz-btn').addEventListener('htmx:afterOnLoad', function(event) {
-    location.reload();
-  });
-</script>
-
 {{ end }}

@@ -56,9 +56,8 @@ type OnFinishData struct {
 var LobbySettingsTmpl = WaitingRoomView.Lookup("lobby-settings")
 
 type LobbySettingsData struct {
-	Quizzes   []models.QuizMetadata
-	Lobby     *Lobby
-	LobbyJSON string
+	Quizzes []models.QuizMetadata
+	Lobby   *Lobby
 }
 
 type LobbyState int
