@@ -19,10 +19,86 @@
         justify-content: space-between;
       }
     }
+
+    .full-screen {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .answer-grid.more-than-four {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .answer-grid.more-than-six {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .btn-color-0 {
+      background-color: #f44336;
+    } /* Red */
+    .btn-color-1 {
+      background-color: #2196f3;
+    } /* Blue */
+    .btn-color-2 {
+      background-color: #4caf50;
+    } /* Green */
+    .btn-color-3 {
+      background-color: #ffeb3b;
+    } /* Yellow */
+    .btn-color-4 {
+      background-color: #ff5722;
+    } /* Deep Orange */
+    .btn-color-5 {
+      background-color: #9c27b0;
+    } /* Purple */
+    .btn-color-6 {
+      background-color: #3f51b5;
+    } /* Indigo */
+    .btn-color-7 {
+      background-color: #00bcd4;
+    } /* Cyan */
+    .btn-color-8 {
+      background-color: #e91e63;
+    } /* Pink */
+    .btn-color-9 {
+      background-color: #8bc34a;
+    } /* Light Green */
+
+    .btn-color {
+      color: white;
+      border: none;
+      padding: 40px 80px; /* Increased padding */
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 24px; /* Increased font size */
+      margin: 4px 2px;
+      transition-duration: 0.4s;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-color:hover {
+      opacity: 0.9;
+    }
+
+    .answer-container {
+      border: 2px solid transparent;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      border-radius: 0.5rem;
+    }
   </style>
   <!-- body -->
-  <div class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
-    <div class="h-full w-full flex flex-col items-center justify-center p-4 max-w-2xl">
+  <div class="bg-baby-pink min-h-screen flex items-center justify-center p-4 full-screen">
+    <div class="h-full w-full flex flex-col items-center justify-center p-4 max-w-2xl full-screen">
       <!-- Quiz Header -->
       <div class="quiz-header flex items-center justify-between w-full px-4 mb-4">
         <!-- Quiz Name -->
@@ -70,35 +146,6 @@
           requestAnimationFrame(updateCountdown);
         })();
       </script>
-      <!-- Script to show the answers after reading time -->
-      <script>
-        (function () {
-          const readingElement = document.getElementById("reading-time-elem");
-          const progressBar = document.getElementById("reading-progress");
-
-          const startTime = new Date(readingElement.dataset.questionStartTime);
-          const finishTime = new Date(readingElement.dataset.readingTimeout);
-
-          const totalTime = finishTime - startTime;
-
-          function waitForAnsweringAllowed() {
-            const now = new Date();
-            const diff = finishTime - now;
-
-            if (diff <= 0) {
-              document.getElementById("reading-time-elem").classList.add("hidden");
-              document.getElementById("answer-options").classList.remove("hidden");
-              return;
-            }
-            const percentage = ((totalTime - diff) / totalTime) * 100;
-            progressBar.style.width = `${percentage}%`;
-
-            requestAnimationFrame(waitForAnsweringAllowed);
-          }
-
-          requestAnimationFrame(waitForAnsweringAllowed);
-        })();
-      </script>
 
       <!-- KWIKQUIZ Title -->
       <h1 class="text-2xl md:text-4xl font-bold text-dark-green my-4 text-center">KWIKQUIZ</h1>
@@ -127,29 +174,26 @@
 
         <!-- Answer Options -->
         {{ block "answer-options" . }}
-        <div id="answer-options" class="flex flex-col gap-4 hidden">
-          {{ range $index, $answer:= .Lobby.CurrentQuestion.Answers }}
-          <!---->
-          <button
-            class="py-3 md:py-4 px-4 md:px-8 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green transition duration-200 ease-in-out"
-            class="
-              {{ if eq $.User.SubmittedAnswerIdx $index}}
-              py-3 md:py-4 px-4 md:px-8 bg-dark-blue text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-dark-blue transition duration-200 ease-in-out
-              {{ else }}
-              py-3 md:py-4 px-4 md:px-8 bg-dark-green text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-dark-green transition duration-200 ease-in-out
-              {{ end }}"
-            id="answer-q{{$.Lobby.CurrentQuestionIdx}}-a{{$index}}"
-            name="answer"
-            ws-send
+        <div id="answer-options" class="answer-container p-6 shadow-md rounded-lg flex flex-col items-center w-full">
+          <div
+            class="answer-grid hidden {{ if gt (len .Lobby.CurrentQuestion.Answers) 4 }} more-than-four {{ end }} {{ if gt (len .Lobby.CurrentQuestion.Answers) 6 }} more-than-six {{ end }}"
           >
-            {{ $answer.Text }}
-          </button>
-          {{ end }}
+            {{ range $index, $answer := .Lobby.CurrentQuestion.Answers }}
+            <button
+              class="
+                py-5 md:py-6 px-5 md:px-10 text-white text-xl rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-75 transition duration-200 ease-in-out
+                btn-color btn-color-{{$index}}
+                {{ if eq $.User.SubmittedAnswerIdx $index}} bg-dark-blue hover:bg-blue-700 focus:ring-dark-blue {{ end }}
+              "
+              id="answer-q{{$.Lobby.CurrentQuestionIdx}}-a{{$index}}"
+              name="answer"
+              ws-send
+            >
+              {{ $answer.Text }}
+            </button>
+            {{ end }}
+          </div>
         </div>
-        {{ end }}
-        <!-- Skip to answer button -->
-        {{ if eq .Lobby.Host .User }}
-        <button name="skip-to-answer-btn" ws-send class="rounded bg-blue-200 p-1">Skip to Answer</button>
         {{ end }}
       </div>
 
@@ -157,11 +201,9 @@
       <div class="flex flex-col md:flex-row justify-between w-full max-w-md mt-8 px-4">
         <!-- Player Count -->
         <p class="text-lg md:text-xl font-semibold text-dark-green mb-2 md:mb-0">
-          Players Answering:
-          <!---->
-          {{ block "player-count" . }}
+          Players Answering: {{ block "player-count" . }}
           <span class="text-2xl font-bold text-dark-green" id="player-count"> {{ .Lobby.PlayersAnswering }} </span>
-          {{ end}}
+          {{ end }}
         </p>
         <!-- Score Counter -->
         {{ if eq .Lobby.Host .User }}
@@ -173,6 +215,49 @@
         </p>
         {{ end }}
       </div>
+
+      <!-- Skip to answer button -->
+      {{ if eq .Lobby.Host .User }}
+      <button
+        name="skip-to-answer-btn"
+        ws-send
+        class="mt-4 bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 border-b-4 border-red-800 hover:border-red-700 rounded text-lg"
+      >
+        Skip to Answer
+      </button>
+      {{ end }}
     </div>
   </div>
+  <!-- Script to show the answers after reading time -->
+  <script>
+    (function () {
+      const readingElement = document.getElementById("reading-time-elem");
+      const progressBar = document.getElementById("reading-progress");
+
+      document.getElementById("reading-time-elem").classList.remove("hidden");
+      document.getElementById("answer-options").classList.add("hidden");
+
+      const startTime = new Date(readingElement.dataset.questionStartTime);
+      const finishTime = new Date(readingElement.dataset.readingTimeout);
+
+      const totalTime = finishTime - startTime;
+
+      function waitForAnsweringAllowed() {
+        const now = new Date();
+        const diff = finishTime - now;
+
+        if (diff <= 0) {
+          document.getElementById("reading-time-elem").classList.add("hidden");
+          document.getElementById("answer-options").classList.remove("hidden");
+          return;
+        }
+        const percentage = ((totalTime - diff) / totalTime) * 100;
+        progressBar.style.width = `${percentage}%`;
+
+        requestAnimationFrame(waitForAnsweringAllowed);
+      }
+
+      requestAnimationFrame(waitForAnsweringAllowed);
+    })();
+  </script>
 </div>
