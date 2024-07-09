@@ -15,7 +15,7 @@ func (ErrPastGameNotFound) Error() string {
 
 type PastGameRepository interface {
 	AddPastGame(game models.PastGame) (uint, error)
-	GetPastGameByID(id int) (PastGame, error)
+	GetPastGameByID(id int) (models.PastGame, error)
 	GetAllPastGames() ([]models.PastGame, error)
 	BrowsePastGamesByID(query string) ([]models.PastGame, error)
 }
@@ -30,13 +30,42 @@ func NewGormPastGameRepository(db *gorm.DB) *GormPastGameRepository {
 }
 
 func (repo *GormPastGameRepository) AddPastGame(game models.PastGame) (uint, error) {
-	result := repo.DB.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&game)
-	if result == nil || result.Error != nil {
-		return 0, result.Error
+	var gameID uint
+	err := repo.DB.Transaction(func(tx *gorm.DB) error {
+		// Create or update the past game
+		if err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&game).Error; err != nil {
+			return err
+		}
+		gameID = game.ID
+
+		// Ensure the unique index exists on player_scores
+		if err := tx.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_past_game_user ON player_scores (past_game_id, username)").Error; err != nil {
+			return err
+		}
+
+		// Add or update player scores
+		for i := range game.Scores {
+			game.Scores[i].PastGameID = gameID
+			if err := tx.Exec(`
+                INSERT INTO player_scores (past_game_id, username, score, created_at, updated_at)
+                VALUES (?, ?, ?, NOW(), NOW())
+                ON CONFLICT (past_game_id, username)
+                DO UPDATE SET score = EXCLUDED.score, updated_at = NOW()
+            `, game.Scores[i].PastGameID, game.Scores[i].Username, game.Scores[i].Score).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
 	}
-	return game.ID, nil
+
+	return gameID, nil
 }
 
 func (repo *GormPastGameRepository) GetPastGameByID(id uint) (models.PastGame, error) {

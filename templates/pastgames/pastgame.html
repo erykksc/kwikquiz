@@ -56,10 +56,10 @@
             </tr>
           </thead>
           <tbody>
-            {{ range $index, $player := .Lobby.Players }}
+            {{ range $index, $player := .Scores }}
             <tr class="bg-green-300 last:rounded-b-lg">
               <td class="px-4 py-2">{{ add $index 1 }}</td>
-              <td class="px-4 py-2">{{.Name}}</td>
+              <td class="px-4 py-2">{{.Username}}</td>
               <td class="px-4 py-2">{{.Score}}</td>
             </tr>
             {{ end }}
