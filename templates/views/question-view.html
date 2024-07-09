@@ -146,35 +146,6 @@
           requestAnimationFrame(updateCountdown);
         })();
       </script>
-      <!-- Script to show the answers after reading time -->
-      <script>
-        (function () {
-          const readingElement = document.getElementById("reading-time-elem");
-          const progressBar = document.getElementById("reading-progress");
-
-          const startTime = new Date(readingElement.dataset.questionStartTime);
-          const finishTime = new Date(readingElement.dataset.readingTimeout);
-
-          const totalTime = finishTime - startTime;
-
-          function waitForAnsweringAllowed() {
-            const now = new Date();
-            const diff = finishTime - now;
-
-            if (diff <= 0) {
-              document.getElementById("reading-time-elem").classList.add("hidden");
-              document.getElementById("answer-options").classList.remove("hidden");
-              return;
-            }
-            const percentage = ((totalTime - diff) / totalTime) * 100;
-            progressBar.style.width = `${percentage}%`;
-
-            requestAnimationFrame(waitForAnsweringAllowed);
-          }
-
-          requestAnimationFrame(waitForAnsweringAllowed);
-        })();
-      </script>
 
       <!-- KWIKQUIZ Title -->
       <h1 class="text-2xl md:text-4xl font-bold text-dark-green my-4 text-center">KWIKQUIZ</h1>
@@ -203,9 +174,8 @@
 
         <!-- Answer Options -->
         {{ block "answer-options" . }}
-        <div class="answer-container p-6 shadow-md rounded-lg flex flex-col items-center w-full">
+        <div id="answer-options" class="answer-container p-6 shadow-md rounded-lg flex flex-col items-center w-full">
           <div
-            id="answer-options"
             class="answer-grid hidden {{ if gt (len .Lobby.CurrentQuestion.Answers) 4 }} more-than-four {{ end }} {{ if gt (len .Lobby.CurrentQuestion.Answers) 6 }} more-than-six {{ end }}"
           >
             {{ range $index, $answer := .Lobby.CurrentQuestion.Answers }}
@@ -219,7 +189,7 @@
               name="answer"
               ws-send
             >
-              {{ if eq $.Lobby.Host $.User }} {{ $answer.Text }} {{ end }}
+              {{ $answer.Text }}
             </button>
             {{ end }}
           </div>
@@ -258,4 +228,36 @@
       {{ end }}
     </div>
   </div>
+  <!-- Script to show the answers after reading time -->
+  <script>
+    (function () {
+      const readingElement = document.getElementById("reading-time-elem");
+      const progressBar = document.getElementById("reading-progress");
+
+      document.getElementById("reading-time-elem").classList.remove("hidden");
+      document.getElementById("answer-options").classList.add("hidden");
+
+      const startTime = new Date(readingElement.dataset.questionStartTime);
+      const finishTime = new Date(readingElement.dataset.readingTimeout);
+
+      const totalTime = finishTime - startTime;
+
+      function waitForAnsweringAllowed() {
+        const now = new Date();
+        const diff = finishTime - now;
+
+        if (diff <= 0) {
+          document.getElementById("reading-time-elem").classList.add("hidden");
+          document.getElementById("answer-options").classList.remove("hidden");
+          return;
+        }
+        const percentage = ((totalTime - diff) / totalTime) * 100;
+        progressBar.style.width = `${percentage}%`;
+
+        requestAnimationFrame(waitForAnsweringAllowed);
+      }
+
+      requestAnimationFrame(waitForAnsweringAllowed);
+    })();
+  </script>
 </div>
