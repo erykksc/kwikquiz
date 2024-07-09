@@ -24,10 +24,10 @@ func NewPastGamesRouter() http.Handler {
 
 	PastGamesRepo = NewGormPastGameRepository(database.DB)
 
-	//if common.DevMode() {
-	//	// Add test past game
-	//	PastGamesRepo.AddPastGame(ExamplePastGame1)
-	//}
+	if common.DevMode() {
+		// Add test past game
+		PastGamesRepo.AddPastGame(ExamplePastGame1)
+	}
 
 	return mux
 }
