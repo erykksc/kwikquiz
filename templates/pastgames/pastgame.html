@@ -1,52 +1,55 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    {{template "header-content" .}}
-    <title>KwikQuiz Results</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <style>
-      .podium {
-        display: flex;
-        justify-content: center;
-        align-items: flex-end;
-        gap: 10px;
-        margin-top: 2rem;
-      }
+<head>
+  {{template "header-content" .}}
+  <title>KwikQuiz Results</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      margin-top: 2rem;
+    }
 
-      .podium div {
-        background-color: #123f16;
-        color: #fec6e2;
-        text-align: center;
-        padding: 20px;
-        border-radius: 8px;
-      }
+    .podium div {
+      background-color: #123f16;
+      color: #fec6e2;
+      text-align: center;
+      padding: 20px;
+      border-radius: 8px;
+    }
 
-      .first {
-        height: 150px;
-      }
+    .first {
+      height: 150px;
+    }
 
-      .second {
-        height: 100px;
-      }
+    .second {
+      height: 100px;
+    }
 
-      .third {
-        height: 75px;
-      }
-    </style>
-  </head>
-  <body class="bg-baby-pink min-h-screen flex flex-col justify-center items-center">
-    <div class="text-center">
-      <h2 class="text-7xl mb-8 text-dark-green">Lobby Results</h2>
-      <h1 class="text-5xl mb-4 text-dark-green">Sie haben gerade das Quiz {{ .QuizTitle }} gespielt!</h1>
-      <main class="w-full max-w-3xl"></main>
-      <div class="podium">
-        {{ $top3 := slice .Scores 0 3 }} {{ range $index, $element := $top3 }}
+    .third {
+      height: 75px;
+    }
+  </style>
+</head>
+<body class="bg-baby-pink min-h-screen flex flex-col justify-center items-center">
+  <div class="text-center">
+        <h2 class="text-7xl mb-8 text-green-700">Lobby Results </h2>
+    <h1 class="text-5xl mb-4 text-green-700">You just finished playing the Quiz {{ .QuizTitle }}!</h1>
+    <main class="w-full max-w-3xl">
+    </main>
+    <div class="podium">
+      {{ $top3 := slice .Scores 0 3 }}
+      
+      {{ range $index, $element := $top3 }}
         <div class="{{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}">
           <p class="text-2xl">{{ .Username }}</p>
           <p class="text-xl">{{ .Score }} points</p>
         </div>
-        {{ end }}
-      </div>
+      {{ end }}
     </div>
-  </body>
+  </div>
+</body>
 </html>
