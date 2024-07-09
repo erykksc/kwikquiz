@@ -32,7 +32,6 @@
     </button>
     {{ else }}
     <!-- Display only the user's new points and score -->
-    <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">Your new points: {{.User.NewPoints}}</h1>
     <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">
       Total Score: {{.User.Score}}<sup><span class="superscript">+{{.User.NewPoints}}</span></sup>
       {{ end }}
@@ -41,7 +40,7 @@
 
   <style>
     .superscript {
-      color: #ff5722;
+      color: #25cc70;
       /* Orange color, change as per your design */
       font-size: 0.7em;
       /* Adjust font size as needed */
