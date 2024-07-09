@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/erykksc/kwikquiz/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ErrPastGameNotFound struct{}
@@ -16,6 +17,7 @@ type PastGameRepository interface {
 	AddPastGame(game models.PastGame) (uint, error)
 	GetPastGameByID(id int) (PastGame, error)
 	GetAllPastGames() ([]models.PastGame, error)
+	BrowsePastGamesByID(query string) ([]models.PastGame, error)
 }
 
 // InMemoryPastGameRepository In-mem store for past games
@@ -28,8 +30,10 @@ func NewGormPastGameRepository(db *gorm.DB) *GormPastGameRepository {
 }
 
 func (repo *GormPastGameRepository) AddPastGame(game models.PastGame) (uint, error) {
-	result := repo.DB.Create(&game)
-	if result.Error != nil {
+	result := repo.DB.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&game)
+	if result == nil || result.Error != nil {
 		return 0, result.Error
 	}
 	return game.ID, nil
@@ -47,5 +51,13 @@ func (repo *GormPastGameRepository) GetPastGameByID(id uint) (models.PastGame, e
 func (repo *GormPastGameRepository) GetAllPastGames() ([]models.PastGame, error) {
 	var games []models.PastGame
 	result := repo.DB.Preload("Scores").Find(&games)
+	return games, result.Error
+}
+
+func (repo *GormPastGameRepository) BrowsePastGamesByID(query string) ([]models.PastGame, error) {
+	var games []models.PastGame
+	result := repo.DB.Preload("Scores").
+		Where("id::text LIKE ?", "%"+query+"%").
+		Find(&games)
 	return games, result.Error
 }

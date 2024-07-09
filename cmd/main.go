@@ -11,7 +11,6 @@ import (
 	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/database"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/models"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
@@ -54,16 +53,16 @@ func setUpDatabase() error {
 	slog.Info("Database connected")
 
 	// Migrate schemas for quizzes
-	err = database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
-	}
-	// Migrate schemas for pastgames
-	err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
-	}
-	slog.Info("Database migrated")
+	//err = database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
+	//if err != nil {
+	//	log.Fatalf("failed to migrate database: %v", err)
+	//}
+	//// Migrate schemas for pastgames
+	//err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
+	//if err != nil {
+	//	log.Fatalf("failed to migrate database: %v", err)
+	//}
+	//slog.Info("Database migrated")
 
 	return nil
 }
