@@ -27,7 +27,7 @@ func NewPastGamesRouter() http.Handler {
 
 	if common.DevMode() {
 		// Add test past game
-		PastGamesRepo.AddPastGame(ExamplePastGame1)
+		PastGamesRepo.AddPastGame(models.ExamplePastGame1)
 	}
 
 	return mux
