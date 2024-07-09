@@ -1,81 +1,82 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>KwikQuiz Results</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <style>
-        .bg-baby-pink {
-            background-color: #f3c4db;
-        }
-        .text-dark-green {
-            color: #123f16;
-        }
-        .bg-dark-green {
-            background-color: #123f16;
-        }
-        .hover-bg-baby-pink:hover {
-            background-color: #f3c4db;
-            color: #123f16;
-        }
-        .podium {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 10px;
-            margin-top: 2rem;
-        }
-        .podium div {
-            background-color: #123f16;
-            color: #fec6e2;
-            text-align: center;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        .first {
-            height: 150px;
-        }
-        .second {
-            height: 100px;
-        }
-        .third {
-            height: 75px;
-        }
+      .bg-baby-pink {
+        background-color: #f3c4db;
+      }
+      .text-dark-green {
+        color: #123f16;
+      }
+      .bg-dark-green {
+        background-color: #123f16;
+      }
+      .hover-bg-baby-pink:hover {
+        background-color: #f3c4db;
+        color: #123f16;
+      }
+      .podium {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        margin-top: 2rem;
+      }
+      .podium div {
+        background-color: #123f16;
+        color: #fec6e2;
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      .first {
+        height: 150px;
+      }
+      .second {
+        height: 100px;
+      }
+      .third {
+        height: 75px;
+      }
     </style>
-</head>
-<body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
+  </head>
+  <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
     <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-2xl">
-        <div class="text-center mb-6">
-            <h1 class="text-5xl font-bold text-dark-green mb-4">Quiz Results</h1>
-            <h2 class="text-3xl text-dark-green mb-2">{{ .QuizTitle }}</h2>
-            <p class="text-dark-green">Started At: {{ .StartedAt }}</p>
-            <p class="text-dark-green">Ended At: {{ .EndedAt }}</p>
+      <div class="text-center mb-6">
+        <h1 class="text-5xl font-bold text-dark-green mb-4">Quiz Results</h1>
+        <h2 class="text-3xl text-dark-green mb-2">{{ .QuizTitle }}</h2>
+        <p class="text-dark-green">Started At: {{ .StartedAt }}</p>
+        <p class="text-dark-green">Ended At: {{ .EndedAt }}</p>
+      </div>
+      <div class="mb-6">
+        <h3 class="text-2xl text-dark-green mb-4">Top 3 Scores</h3>
+        <div class="podium flex justify-center items-end space-x-4">
+          {{ $top3 := slice .Scores 0 3 }} {{ range $index, $element := $top3 }}
+          <div
+            class="text-center p-4 rounded-lg {{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}"
+          >
+            <p class="text-xl">{{ .Username }}</p>
+            <p>{{ .Score }} points</p>
+          </div>
+          {{ end }}
         </div>
-        <div class="mb-6">
-            <h3 class="text-2xl text-dark-green mb-4">Top 3 Scores</h3>
-            <div class="podium flex justify-center items-end space-x-4">
-                {{ $top3 := slice .Scores 0 3 }}
-                {{ range $index, $element := $top3 }}
-                <div class="text-center p-4 rounded-lg {{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}">
-                    <p class="text-xl">{{ .Username }}</p>
-                    <p>{{ .Score }} points</p>
-                </div>
-                {{ end }}
-            </div>
-        </div>
-        <div>
-            <h3 class="text-2xl text-dark-green mb-4">All Scores</h3>
-            <ul class="list-disc list-inside text-dark-green">
-                {{ range .Scores }}
-                <li>{{ .Username }}: {{ .Score }} points</li>
-                {{ end }}
-            </ul>
-        </div>
-        <div class="mt-6 text-center">
-            <a href="/past-games" class="px-4 py-2 bg-dark-green text-white rounded hover-bg-baby-pink">Back to all past games</a>
-        </div>
+      </div>
+      <div>
+        <h3 class="text-2xl text-dark-green mb-4">All Scores</h3>
+        <ul class="list-disc list-inside text-dark-green">
+          {{ range .Scores }}
+          <li>{{ .Username }}: {{ .Score }} points</li>
+          {{ end }}
+        </ul>
+      </div>
+      <div class="mt-6 text-center">
+        <a href="/past-games" class="px-4 py-2 bg-dark-green text-white rounded hover-bg-baby-pink"
+          >Back to all past games</a
+        >
+      </div>
     </div>
-</body>
+  </body>
 </html>
-
-
