@@ -13,9 +13,9 @@
           </tr>
         </thead>
         <tbody>
-          {{ range .Lobby.Players }}
+          {{ range .Scores }}
           <tr class="bg-green-300 last:rounded-b-lg">
-            <td class="px-4 py-2">{{.Name}}</td>
+            <td class="px-4 py-2">{{.Username}}</td>
             <td class="px-4 py-2">{{.Score}}</td>
           </tr>
           {{ end }}
