@@ -19,5 +19,17 @@ var ExamplePastGame1 = models.PastGame{
 			Username: "Bob",
 			Score:    10000,
 		},
+		{
+			Username: "Jack",
+			Score:    9000,
+		},
+		{
+			Username: "Max",
+			Score:    8500,
+		},
+		{
+			Username: "Jamal",
+			Score:    5432,
+		},
 	},
 }
