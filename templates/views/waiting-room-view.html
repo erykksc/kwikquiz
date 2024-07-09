@@ -82,9 +82,18 @@
         {{ range .Quizzes }}
         <option
           value="{{ .ID }}"
-          {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID) }}
+          {{
+          if
+          and
+          $.Lobby.Quiz.ID
+          (eq
+          $.Lobby.Quiz.ID
+          .ID)
+          }}
           selected
-          {{ end }}
+          {{
+          end
+          }}
           class="text-green-700"
         >
           {{ .Title }}
