@@ -12,7 +12,7 @@ import (
 )
 
 var pastGameTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgame.html", common.BaseTmplPath))
-var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgames.html", common.BaseTmplPath))
+var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/search_pastgames.html", common.BaseTmplPath))
 
 var PastGamesRepo *GormPastGameRepository
 
