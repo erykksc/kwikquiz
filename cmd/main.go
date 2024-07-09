@@ -11,6 +11,7 @@ import (
 	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/database"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
+	"github.com/erykksc/kwikquiz/internal/models"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
@@ -52,19 +53,31 @@ func setUpDatabase() error {
 	database.Connect(cfg)
 	slog.Info("Database connected")
 
-	// Migrate schemas for quizzes
-	//err = database.DB.AutoMigrate(&models.Quiz{}, &models.Question{}, &models.Answer{})
-	//if err != nil {
-	//	log.Fatalf("failed to migrate database: %v", err)
-	//}
-	//// Migrate schemas for pastgames
-	//err = database.DB.AutoMigrate(&models.PastGame{}, &models.PlayerScore{})
-	//if err != nil {
-	//	log.Fatalf("failed to migrate database: %v", err)
-	//}
-	//slog.Info("Database migrated")
+	// Drop existing tables (Should only be used development!)
+	//database.DB.Migrator().DropTable(&models.Answer{}, &models.Question{}, &models.Quiz{}, &models.PastGame{},
+	//	&models.PlayerScore{})
+
+	// Migrate the schema
+	migrateDatabase()
 
 	return nil
+}
+
+func migrateDatabase() {
+	modelsToMigrate := []interface{}{
+		&models.Quiz{},
+		&models.Question{},
+		&models.Answer{},
+		&models.PastGame{},
+		&models.PlayerScore{},
+	}
+
+	for _, model := range modelsToMigrate {
+		if err := database.DB.AutoMigrate(model); err != nil {
+			log.Fatalf("failed to migrate model %T: %v", model, err)
+		}
+	}
+	slog.Info("Database migrated")
 }
 
 func main() {

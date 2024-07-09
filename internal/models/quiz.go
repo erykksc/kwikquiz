@@ -6,25 +6,28 @@ import (
 
 type Quiz struct {
 	gorm.Model
-	ID            uint
-	Title         string
-	Password      string
-	Description   string
-	QuestionOrder string
-	Questions     []Question `gorm:"foreignKey:ID"`
+	ID          uint
+	Title       string
+	Password    string
+	Description string
+	Questions   []Question `gorm:"foreignKey:QuizID"`
 }
 
 type Question struct {
 	gorm.Model
-	Text          string
-	Answers       []Answer `gorm:"foreignKey:Text"`
-	CorrectAnswer int
+	QuizID  uint
+	Text    string
+	Answers []Answer `gorm:"foreignKey:QuestionID"`
 }
 
 type Answer struct {
 	gorm.Model
-	IsCorrect bool
-	Text      string
+	QuestionID uint
+	IsCorrect  bool
+	Text       string
+	LaTeX      string
+	ImageName  string
+	Image      []byte
 }
 
 // It is used for faster lookups if only limited data is needed

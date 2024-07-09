@@ -1,15 +1,18 @@
 package quiz
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/database"
 	"github.com/erykksc/kwikquiz/internal/models"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 var QuizzesRepo *GormQuizRepository
@@ -101,24 +104,29 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quizID, err := QuizzesRepo.AddQuiz(quiz)
+	_, err = QuizzesRepo.AddQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		renderQuizCreateForm(w, quiz, err)
 		return
 	}
+	var lobbyPin = r.FormValue("lobbyPin")
 
-	redirectToQuiz(w, quizID)
+	redirectToQuiz(w, lobbyPin)
 }
 
 func parseQuizForm(r *http.Request) (models.Quiz, error) {
 	qidStr := r.PathValue("qid")
+	var qid uint
 
-	// Convert the string to an integer
-	qid, err := strconv.Atoi(qidStr)
-	if err != nil {
-		// Handle the error if conversion fails
-		slog.Error("Error converting qid", "error", err)
+	// Convert the string to an integer if qidStr is not empty
+	if qidStr != "" {
+		qidInt, convErr := strconv.Atoi(qidStr)
+		if convErr != nil {
+			slog.Error("Error converting qid", "error", convErr)
+			return models.Quiz{}, fmt.Errorf("invalid quiz ID")
+		}
+		qid = uint(qidInt)
 	}
 	title := r.FormValue("title")
 	password := r.FormValue("password")
@@ -128,8 +136,15 @@ func parseQuizForm(r *http.Request) (models.Quiz, error) {
 		return models.Quiz{}, err
 	}
 
+	// Parse questions
+	questions, parseErr := parseQuestions(r)
+	if parseErr != nil {
+		return models.Quiz{}, parseErr
+	}
+
+	// Return the Quiz model based on whether qid is provided or not
 	return models.Quiz{
-		ID:          uint(qid),
+		ID:          qid,
 		Title:       title,
 		Password:    password,
 		Description: description,
@@ -146,30 +161,65 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 		if questionText == "" {
 			break
 		}
-		// Get the correct answer string
-		correctAnswerStr := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex))
-		correctAnswer, err := strconv.Atoi(correctAnswerStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid answer option value")
-		}
-		// Append answers to a slice
-		var answers []models.Answer
-		for answerIndex := 1; answerIndex <= 4; answerIndex++ {
-			answerText := r.FormValue("answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
-			if answerText == "" {
-				return nil, fmt.Errorf("missing answer text for question %d, answer %d", questionIndex, answerIndex)
-			}
-			answers = append(answers, models.Answer{
-				IsCorrect: answerIndex == correctAnswer,
-				Text:      answerText,
-			})
 
+		var answers []models.Answer
+		answerIndex := 1
+		for {
+			answerPrefix := "answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex)
+
+			// Check if any input with this name exists
+			_, _, err := r.FormFile(answerPrefix)
+			textValue := r.FormValue(answerPrefix)
+
+			if err != nil && textValue == "" {
+				break // No more answers for this question
+			}
+
+			var answer models.Answer
+
+			// Determine answer type based on the input field present
+			if textValue != "" {
+				// Check if it's a textarea (LaTeX) or text input
+				if strings.Contains(textValue, "\n") {
+					answer = models.Answer{
+						LaTeX: textValue,
+					}
+				} else {
+					answer = models.Answer{
+						Text: textValue,
+					}
+				}
+			} else {
+				// It's an image file
+				file, header, err := r.FormFile(answerPrefix)
+				if err != nil {
+					return nil, fmt.Errorf("error reading image file: %v", err)
+				}
+				defer file.Close()
+
+				var buf bytes.Buffer
+				_, err = io.Copy(&buf, file)
+				if err != nil {
+					return nil, fmt.Errorf("error copying image file: %v", err)
+				}
+
+				answer = models.Answer{
+					Image:     buf.Bytes(),
+					ImageName: header.Filename,
+				}
+			}
+
+			// Check if the answer is correct
+			correctBtnValue := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
+			answer.IsCorrect = correctBtnValue == "Correct"
+
+			answers = append(answers, answer)
+			answerIndex++
 		}
-		// Append questions to a slice
+
 		questions = append(questions, models.Question{
-			Text:          questionText,
-			Answers:       answers,
-			CorrectAnswer: correctAnswer,
+			Text:    questionText,
+			Answers: answers,
 		})
 		questionIndex++
 	}
@@ -189,14 +239,26 @@ func renderQuizCreateForm(w http.ResponseWriter, quiz models.Quiz, err error) {
 	}
 }
 
-func redirectToQuiz(w http.ResponseWriter, quizID uint) {
-	w.Header().Add("HX-Redirect", fmt.Sprintf("/quizzes/%d", quizID))
+func redirectToQuiz(w http.ResponseWriter, lobbyPin string) {
+	w.Header().Add("HX-Redirect", fmt.Sprintf("/lobbies/%s", lobbyPin))
 	w.WriteHeader(http.StatusCreated)
 }
 
 func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	err := QuizCreateTemplate.Execute(w, nil)
+
+	// Extract the 'LobbyPin' query parameter
+	queryParams := r.URL.Query()
+	lobbyPin := queryParams.Get("LobbyPin")
+
+	// Create data to pass to the template
+	data := struct {
+		LobbyPin string
+	}{
+		LobbyPin: lobbyPin,
+	}
+
+	err := QuizCreateTemplate.Execute(w, data)
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -237,9 +299,21 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract the 'LobbyPin' query parameter
+	queryParams := r.URL.Query()
+	lobbyPin := queryParams.Get("LobbyPin")
+
+	// Create data to pass to the template
+	data := struct {
+		Pin string
+	}{
+		Pin: lobbyPin,
+	}
+
 	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
 		"Quiz":     quiz,
 		"QuizJSON": string(quizJSON),
+		"LobbyPin": data,
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
@@ -257,14 +331,15 @@ func updateQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quizID, err := QuizzesRepo.UpdateQuiz(quiz)
+	_, err = QuizzesRepo.UpdateQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		renderQuizCreateForm(w, quiz, err)
 		return
 	}
+	var lobbyPin = r.FormValue("lobbyPin")
 
-	redirectToQuiz(w, quizID)
+	redirectToQuiz(w, lobbyPin)
 }
 
 func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {

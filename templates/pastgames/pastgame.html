@@ -34,12 +34,12 @@
       }
     </style>
   </head>
-  <body class="bg-baby-pink min-h-screen flex flex-col justify-center items-center">
-    <div class="text-center">
-      <h2 class="text-7xl mb-8 text-green-700">Lobby Results</h2>
-      <h1 class="text-5xl mb-4 text-green-700">You just finished playing the Quiz {{ .QuizTitle }}!</h1>
+  <body class="bg-baby-pink min-h-screen">
+    <div class="text-center flex flex-col justify-center items-center">
+      <h2 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-8">Final Leaderboard</h2>
+      <h1 class="text-5xl mb-4 text-green-700">Of the {{ .QuizTitle }} Quiz</h1>
       <main class="w-full max-w-3xl"></main>
-      <div class="podium">
+      <div class="podium mb-5">
         {{ $top3 := slice .Scores 0 3 }} {{ range $index, $element := $top3 }}
         <div class="{{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}">
           <p class="text-2xl">{{ .Username }}</p>
@@ -47,6 +47,24 @@
         </div>
         {{ end }}
       </div>
+      <table class="table-auto mt-5 bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
+        <thead>
+          <tr class="bg-green-500">
+            <th class="px-4 py-2">Rank</th>
+            <th class="px-4 py-2">Player</th>
+            <th class="px-4 py-2">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $index, $player := .Scores }}
+          <tr class="bg-green-300 last:rounded-b-lg">
+            <td class="px-4 py-2">{{ add $index 1 }}</td>
+            <td class="px-4 py-2">{{.Username}}</td>
+            <td class="px-4 py-2">{{.Score}}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
     </div>
   </body>
 </html>

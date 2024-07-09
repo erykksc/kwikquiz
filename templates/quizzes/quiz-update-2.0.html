@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Create Quiz</title>
+    <title>Update Quiz</title>
     {{ template "header-content" }}
     <style>
       .bg-baby-pink {
@@ -54,21 +54,24 @@
     </style>
   </head>
   <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
+    <!-- Embed quiz data as JSON -->
+    <script id="quiz-data" type="application/json">
+      {{.QuizJSON}}
+    </script>
     <div class="bg-white shadow-lg rounded-lg p-8 md:p-10 w-full md:max-w-2xl flex flex-col overflow-auto">
       <h2 class="text-2xl md:text-3xl font-bold mb-6 text-dark-green">Create a new KWIKQUIZ</h2>
 
       <form
         id="quiz-form"
         class="flex-grow flex flex-col space-y-4"
-        hx-post="/quizzes/create/"
+        hx-put="/quizzes/update/{{.Quiz.ID}}"
         hx-trigger="submit"
         hx-target="this"
       >
         {{ define "create-form" }}
 
         <!-- Hidden LobbyPin Input -->
-        <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin }}" />
-
+        <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin.Pin }}" />
         <!-- Quiz Title -->
         <div>
           <label for="title" class="block text-dark-green font-semibold mb-2">Quiz Title</label>
@@ -77,6 +80,7 @@
             id="title"
             name="title"
             class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            value="{{ .Title }}"
             placeholder="Enter Quiz Title"
             required
           />
@@ -84,12 +88,13 @@
 
         <!-- Quiz Password -->
         <div>
-          <!-- <label for="password" class="block text-dark-green font-semibold mb-2" >Password</label>-->
+          <!--          <label for="password" class="block text-dark-green font-semibold mb-2">Password</label>-->
           <input
             type="hidden"
             id="password"
             name="password"
             class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            value="{{ .Password }}"
             placeholder="Enter Quiz Password"
           />
         </div>
@@ -102,6 +107,7 @@
             id="description"
             name="description"
             class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            value="{{ .Description }}"
             placeholder="Enter Description"
           />
         </div>
@@ -126,22 +132,30 @@
           <div>
             <button
               type="button"
-              class="px-4 py-2 bg-red-500 text-white rounded-lg mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+              class="px-4 py-2 bg-yellow-500 text-white rounded-lg mr-2 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
               onclick="window.location.href='/'"
             >
               Cancel
             </button>
             <button
+              type="button"
+              class="px-4 py-2 bg-red-500 text-white rounded-lg mr-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              hx-delete="/quizzes/delete/{{.Quiz.ID}}"
+              hx-trigger="click"
+            >
+              Delete
+            </button>
+            <button
               type="submit"
               class="px-4 py-2 bg-dark-green text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green"
             >
-              CREATE KWIKQUIZ
+              UPDATE KWIKQUIZ
             </button>
           </div>
         </div>
         {{ end }} {{ template "create-form" . }}
       </form>
     </div>
-    <script src="/static/js/quiz.js"></script>
+    <script src="/static/js/quiz-update.js"></script>
   </body>
 </html>
