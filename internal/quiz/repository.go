@@ -34,21 +34,96 @@ func NewGormQuizRepository(db *gorm.DB) *GormQuizRepository {
 }
 
 func (r *GormQuizRepository) AddQuiz(q models.Quiz) (uint, error) {
-	result := r.DB.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&q)
-	if result.Error != nil {
-		return 0, result.Error
+	var quizID uint
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		// Attempt to find an existing quiz by title
+		var existingQuiz models.Quiz
+		if err := tx.Where("title = ?", q.Title).First(&existingQuiz).Error; err == nil {
+			// Quiz exists, return without making changes
+			return nil
+		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			// Some other error occurred
+			return err
+		}
+
+		// Create the quiz, using OnConflict to handle any conflicts
+		if err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&q).Error; err != nil {
+			return err
+		}
+		quizID = q.ID
+
+		// Add or update questions and answers with OnConflict
+		for i := range q.Questions {
+			q.Questions[i].QuizID = quizID
+			if err := tx.Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).Create(&q.Questions[i]).Error; err != nil {
+				return err
+			}
+			for j := range q.Questions[i].Answers {
+				q.Questions[i].Answers[j].QuestionID = q.Questions[i].ID
+				if err := tx.Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).Create(&q.Questions[i].Answers[j]).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
 	}
-	return q.ID, nil
+
+	return quizID, nil
 }
 
 func (r *GormQuizRepository) UpdateQuiz(q models.Quiz) (uint, error) {
-	result := r.DB.Save(&q)
-	if result.Error != nil {
-		return 0, result.Error
+	var quizID uint
+	err := r.DB.Transaction(func(tx *gorm.DB) error {
+		// Fetch existing quiz
+		var existingQuiz models.Quiz
+		if err := tx.First(&existingQuiz, q.ID).Error; err != nil {
+			return err
+		}
+
+		// Update quiz fields
+		existingQuiz.Title = q.Title
+		existingQuiz.Password = q.Password
+		existingQuiz.Description = q.Description
+
+		// Delete existing questions and answers
+		if err := tx.Where("quiz_id = ?", q.ID).Delete(&models.Question{}).Error; err != nil {
+			return err
+		}
+
+		// Create new questions and answers
+		existingQuiz.Questions = q.Questions
+		for i := range existingQuiz.Questions {
+			existingQuiz.Questions[i].QuizID = existingQuiz.ID
+			for j := range existingQuiz.Questions[i].Answers {
+				existingQuiz.Questions[i].Answers[j].QuestionID = existingQuiz.Questions[i].ID
+			}
+		}
+
+		// Save the updated quiz with new questions and answers
+		if err := tx.Save(&existingQuiz).Error; err != nil {
+			return err
+		}
+
+		quizID = existingQuiz.ID
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
 	}
-	return q.ID, nil
+
+	return quizID, nil
 }
 
 func (r *GormQuizRepository) GetQuiz(id uint) (models.Quiz, error) {
