@@ -36,18 +36,17 @@ func NewGormQuizRepository(db *gorm.DB) *GormQuizRepository {
 func (r *GormQuizRepository) AddQuiz(q models.Quiz) (uint, error) {
 	var quizID uint
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
-		// Check for existing quiz by title
+		// Attempt to find an existing quiz by title
 		var existingQuiz models.Quiz
-		err := tx.Where("title = ?", q.Title).First(&existingQuiz).Error
-		if err == nil {
-			// Quiz exists, return without making any changes
+		if err := tx.Where("title = ?", q.Title).First(&existingQuiz).Error; err == nil {
+			// Quiz exists, return without making changes
 			return nil
-		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			// Some other error occurred
 			return err
 		}
 
-		// Create or update the quiz with OnConflict
+		// Create the quiz, using OnConflict to handle any conflicts
 		if err := tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(&q).Error; err != nil {
