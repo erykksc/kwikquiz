@@ -14,4 +14,4 @@ func tmplParseWithBase(path string) *template.Template {
 var QuizzesTemplate = tmplParseWithBase("templates/quizzes/quizzes.html")
 var QuizPreviewTemplate = tmplParseWithBase("templates/quizzes/quiz-preview.html")
 var QuizCreateTemplate = tmplParseWithBase("templates/quizzes/quiz-create.html")
-var QuizUpdateTemplate = tmplParseWithBase("templates/quizzes/quiz-update.html")
+var QuizUpdateTemplate = tmplParseWithBase("templates/quizzes/quiz-update-2.0.html")

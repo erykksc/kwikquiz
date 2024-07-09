@@ -4,12 +4,8 @@
   <div class="text-center">
     <h0 class="text-3xl font-extrabold mb-4 text-green-700 bg-transparent">GAME SETTINGS</h0>
     <h1 class="text-xl font-bold mt-4 mb-4 text-green-700">Your Lobby Pin: {{ .Lobby.Pin }}</h1>
-    <div
-      hx-get="/lobbies/{{ .Lobby.Pin }}/settings"
-      hx-swap="outerHTML"
-      hx-trigger="load"
-      class="p-4 bg-white shadow-md rounded-lg mb-4"
-    >
+    <div hx-get="/lobbies/{{ .Lobby.Pin }}/settings" hx-swap="outerHTML" hx-trigger="load"
+      class="p-4 bg-white shadow-md rounded-lg mb-4">
       <!-- Template lobby-settings should be returned here -->
       <p class="text-green-700">Loading lobby settings...</p>
     </div>
@@ -19,11 +15,8 @@
       <li class="text-lg">{{ $value.Username }}</li>
       {{ end }}
     </ul>
-    <button
-      name="start-game-btn"
-      ws-send
-      class="mt-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl"
-    >
+    <button name="start-game-btn" ws-send
+      class="mt-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl">
       Start Game
     </button>
   </div>
@@ -31,11 +24,9 @@
   {{ else }}
   <div class="text-center">
     <p class="text-3xl font-bold mb-4 text-green-700">Welcome to this KWIKQUIZ, {{ .User.Username }}</p>
-    <button
-      name="change-username-btn"
+    <button name="change-username-btn"
       class="mt-4 mb-4 w-full px-6 py-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl focus:outline-none focus:ring-2 focus:ring-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      ws-send
-    >
+      ws-send>
       Change Username
     </button>
     <p class="text-3xl font-semibold mt-4 mb-2 text-green-700">Wait for the host to start the game</p>
@@ -47,78 +38,50 @@
 <form hx-put="/lobbies/{{ .Lobby.Pin }}/settings" hx-trigger="change" hx-swap="outerHTML" class="space-y-4 text-center">
   <div class="flex flex-col">
     <label for="time-per-question" class="text-xl font-semibold text-green-700">Time per question in seconds:</label>
-    <input
-      name="time-per-question"
-      type="number"
-      min="1"
-      value="{{ .Lobby.TimePerQuestion.Seconds }}"
+    <input name="time-per-question" type="number" min="1" value="{{ .Lobby.TimePerQuestion.Seconds }}"
       placeholder="seconds"
-      class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
-    />
+      class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700" />
   </div>
   <div class="flex flex-col">
     <label for="time-for-reading" class="text-xl my-1 font-semibold text-green-700">Time for reading in seconds:</label>
-    <input
-      name="time-for-reading"
-      type="number"
-      min="0"
-      value="{{ .Lobby.TimeForReading.Seconds }}"
+    <input name="time-for-reading" type="number" min="0" value="{{ .Lobby.TimeForReading.Seconds }}"
       placeholder="seconds"
-      class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
-    />
+      class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700" />
   </div>
   <div class="flex flex-col">
     <label for="quiz" class="text-xl my-1 font-semibold text-green-700">Quiz:</label>
     <div class="flex items-center">
-      <select
-        name="quiz"
-        class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700 w-full max-w-md"
-      >
+      <select id="quizSelector" name="quiz"
+        class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700 w-full max-w-md">
         <!-- Check if no quiz is selected -->
         {{ if eq .Lobby.Quiz.ID 0 }}
         <option value="" selected>Select a quiz</option>
         {{ end }}
         <!-- Add quizzes options -->
         {{ range .Quizzes }}
-        <option
-          value="{{ .ID }}"
-          {{
-          if
-          and
-          $.Lobby.Quiz.ID
-          (eq
-          $.Lobby.Quiz.ID
-          .ID)
-          }}
-          selected
-          {{
-          end
-          }}
-          class="text-green-700"
-        >
+        <option value="{{ .ID }}" class="text-green-700" {{ if and $.Lobby.Quiz.ID (eq $.Lobby.Quiz.ID .ID) }} selected
+          {{ end }}>
           {{ .Title }}
         </option>
         {{ end }}
       </select>
       <!-- Add Edit Button Next to the Quiz Selector -->
-      <button
-        name="edit-quiz-btn"
+      {{ if eq .Lobby.Quiz.ID 0 }}{{else}}
+      <a id="editButton" type="button"
         class="ml-2 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
-        ws-send
-      >
+        href="/quizzes/update/{{ .Lobby.Quiz.ID }}?LobbyPin={{ .Lobby.Pin }}">
         Edit
-      </button>
+      </a>
+      {{ end }}
     </div>
   </div>
   <!-- Add Create New Quiz Button -->
   <div class="flex flex-col mt-4">
-    <button
-      name="create-new-quiz-btn"
-      class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-2xl"
-      ws-send
-    >
+    <a id="create-new-quiz-btn" name="create-new-quiz-btn"
+      class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark cursor-pointer hover:border-main-color-hover rounded text-2xl"
+      href="/quizzes/create/?LobbyPin={{.Lobby.Pin}}">
       Create New Quiz
-    </button>
+    </a>
   </div>
 </form>
 {{ end }}
