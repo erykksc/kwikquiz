@@ -1,6 +1,10 @@
 package common
 
-import "html/template"
+import (
+	"html/template"
+	"path/filepath"
+	"time"
+)
 
 const (
 	BaseTmplPath = "templates/base.html"
@@ -9,6 +13,25 @@ const (
 // tmplParseWithBase parses the given template file and base template file
 func tmplParseWithBase(path string) *template.Template {
 	return template.Must(template.ParseFiles(path, BaseTmplPath))
+}
+
+func ParseTmplWithFuncs(path string) *template.Template {
+	// get base name of the path
+	baseName := filepath.Base(path)
+	viewTmpl := template.Must(template.New(baseName).Funcs(template.FuncMap{
+		"formatAsISO": func(t time.Time) string {
+			return t.Format(time.RFC3339)
+		},
+		// Decrement function used for checking if the current question is the last one
+		"decrement": func(i int) int {
+			return i - 1
+		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+	}).ParseFiles(path, BaseTmplPath))
+
+	return viewTmpl
 }
 
 var IndexTmpl = tmplParseWithBase("templates/index.html")

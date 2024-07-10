@@ -1,17 +1,18 @@
 package pastgames
 
 import (
-	"github.com/erykksc/kwikquiz/internal/database"
-	"github.com/erykksc/kwikquiz/internal/models"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/database"
+	"github.com/erykksc/kwikquiz/internal/models"
 )
 
-var pastGameTmpl = template.Must(template.ParseFiles("templates/pastgames/pastgame.html", common.BaseTmplPath))
+var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html")
+
 var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/search_pastgames.html", common.BaseTmplPath))
 
 var PastGamesRepo *GormPastGameRepository
@@ -26,7 +27,7 @@ func NewPastGamesRouter() http.Handler {
 
 	if common.DevMode() {
 		// Add test past game
-		PastGamesRepo.AddPastGame(ExamplePastGame1)
+		PastGamesRepo.AddPastGame(models.ExamplePastGame1)
 	}
 
 	return mux

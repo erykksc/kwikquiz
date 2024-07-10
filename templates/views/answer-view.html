@@ -1,22 +1,20 @@
+<!-- Match background pattern -->
 <div id="view" class="p-6 min-h-screen flex flex-col items-center background-pattern">
-  <!-- Match background pattern -->
-  <!-- Title positioned at the top of the screen with green letters -->
-
-  <div class="text-center mt-20">
-    <!-- Add margin-top to space from the title -->
+  <!-- Add margin-top to space from the title -->
+  <div class="text-center mt-20 p-6 shadow-md rounded-lg space-y-4">
     {{ if eq .Lobby.Host .User }}
     <!-- Display leaderboard if the user is the host -->
     <h2 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-8">Leaderboard</h2>
     <table class="table-auto bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
       <thead>
-        <tr class="bg-green-200">
+        <tr class="bg-green-500">
           <th class="px-4 py-2">Player</th>
           <th class="px-4 py-2">Score</th>
         </tr>
       </thead>
       <tbody>
-        {{ range .Lobby.Players }}
-        <tr class="bg-green-100 border-b border-green-200">
+        {{ range .Lobby.Leaderboard }}
+        <tr class="bg-green-300 last:rounded-b-lg">
           <td class="px-4 py-2">{{.Username}}</td>
           <td class="px-4 py-2">{{.Score}}</td>
         </tr>
@@ -24,15 +22,30 @@
       </tbody>
     </table>
 
-    <button name="next-question-btn" ws-send
-      class="mt-4 mb-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl">
-      ftzfutz {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next
-      Question {{ end }}
+    <button
+      name="next-question-btn"
+      ws-send
+      class="mt-4 mb-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl"
+    >
+      {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }} Finish Quiz {{ else }} Next Question
+      {{ end }}
     </button>
     {{ else }}
     <!-- Display only the user's new points and score -->
-    <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">Your new points: {{.User.NewPoints}}</h1>
-    <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">Your score: {{.User.Score}}</h1>
-    {{ end }}
+    <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">
+      Total Score: {{.User.Score}}<sup><span class="superscript">+{{.User.NewPoints}}</span></sup>
+      {{ end }}
+    </h1>
   </div>
+
+  <style>
+    .superscript {
+      color: #25cc70;
+      /* Orange color, change as per your design */
+      font-size: 0.7em;
+      /* Adjust font size as needed */
+      vertical-align: super;
+      /* Align superscript text */
+    }
+  </style>
 </div>
