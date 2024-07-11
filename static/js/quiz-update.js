@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
             ${question ? question.Answers.map((answer, index) => getAnswerHTML(questionNumber, index + 1, answer)).join('') : ''}
           </div>
           <!-- Add Answer Button -->
-          <button type="button" class="add-answer-btn px-4 py-2 bg-dark-green text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green mb-2">Add Answer</button>
-          <button type="button" class="delete-question-btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">Delete Question</button>
+          <button type="button" class="add-answer-btn mt-2 bg-green-700 hover:bg-green-600 text-white font-bold py-1 px-2 border-b-4 border-green-800 hover:border-green-700 rounded">Add Answer</button>
+          <button type="button" class="delete-question-btn mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 border-b-4 border-red-700 hover:border-red-800 rounded">Delete Question</button>
         </div>
         `;
         questionList.insertAdjacentHTML('beforeend', questionHTML);
@@ -151,40 +151,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-function toggleCorrectAnswer(button) {
-    const isCurrentlyCorrect = button.textContent === 'Correct';
-    const newCorrectState = !isCurrentlyCorrect;
+    function toggleCorrectAnswer(button) {
+        const isCurrentlyCorrect = button.textContent === 'Correct';
+        const newCorrectState = !isCurrentlyCorrect;
 
-    button.classList.toggle('bg-red-500', isCurrentlyCorrect);
-    button.classList.toggle('bg-dark-green', newCorrectState);
-    button.textContent = newCorrectState ? 'Correct' : 'Incorrect';
+        button.classList.toggle('bg-red-500', isCurrentlyCorrect);
+        button.classList.toggle('bg-dark-green', newCorrectState);
+        button.textContent = newCorrectState ? 'Correct' : 'Incorrect';
 
-    // Update hidden input
-    const hiddenInput = button.closest('.answer-option').querySelector('input[type="hidden"]');
-    if (hiddenInput) {
-        hiddenInput.value = newCorrectState ? 'Correct' : 'Incorrect';
+        // Update hidden input
+        const hiddenInput = button.closest('.answer-option').querySelector('input[type="hidden"]');
+        if (hiddenInput) {
+            hiddenInput.value = newCorrectState ? 'Correct' : 'Incorrect';
+        }
     }
-}
 
-function ensureHiddenInputs() {
-    const questionItems = document.querySelectorAll('.question-item');
-    questionItems.forEach((item, questionIndex) => {
-        const questionNumber = questionIndex + 1;
-        const answerOptions = item.querySelectorAll('.answer-option');
-        answerOptions.forEach((option, answerIndex) => {
-            const answerNumber = answerIndex + 1;
-            let hiddenInput = option.querySelector(`input[name="correct-answer-${questionNumber}-${answerNumber}"]`);
-            if (!hiddenInput) {
-                hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = `correct-answer-${questionNumber}-${answerNumber}`;
-                option.appendChild(hiddenInput);
-            }
-            const correctButton = option.querySelector('.correct-answer-btn');
-            hiddenInput.value = correctButton.textContent;
+    function ensureHiddenInputs() {
+        const questionItems = document.querySelectorAll('.question-item');
+        questionItems.forEach((item, questionIndex) => {
+            const questionNumber = questionIndex + 1;
+            const answerOptions = item.querySelectorAll('.answer-option');
+            answerOptions.forEach((option, answerIndex) => {
+                const answerNumber = answerIndex + 1;
+                let hiddenInput = option.querySelector(`input[name="correct-answer-${questionNumber}-${answerNumber}"]`);
+                if (!hiddenInput) {
+                    hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = `correct-answer-${questionNumber}-${answerNumber}`;
+                    option.appendChild(hiddenInput);
+                }
+                const correctButton = option.querySelector('.correct-answer-btn');
+                hiddenInput.value = correctButton.textContent;
+            });
         });
-    });
-}
+    }
 
     // Initial call to set up delete buttons
     updateDeleteButtons();
