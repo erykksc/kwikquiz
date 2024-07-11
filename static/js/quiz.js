@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="answers-container answers-container-${questionNumber}">
             <!-- Answer Options will be added dynamically here -->
           </div>
-          <button type="button" class="add-answer-btn px-4 py-2 bg-dark-green text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green mb-2">Add Answer</button>
-          <button type="button" class="delete-question-btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">Delete Question</button>
+          <button type="button" class="add-answer-btn mt-2 bg-green-700 hover:bg-green-600 text-white font-bold py-1 px-2 border-b-4 border-green-800 hover:border-green-700 rounded">Add Answer</button>
+          <button type="button" class="delete-question-btn mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 border-b-4 border-red-700 hover:border-red-800 rounded">Delete Question</button>
         </div>
         `;
     }
@@ -56,12 +56,12 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" name="answer-${questionNumber}-${answerCount}" class="w-full px-4 py-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green mb-2" placeholder="Option ${answerCount}" required>
             <div class="flex justify-between items-center mt-2">
                 <div>
-                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="text" hidden >Text</button>
+                    <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="text" hidden>Text</button>
                     <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="image" hidden>Image</button>
                     <button type="button" class="add-answer-type-btn text-sm px-2 py-1 bg-baby-pink-button text-dark-green rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-dark-green" data-answer="answer-${questionNumber}-${answerCount}" data-type="latex" hidden>LaTeX</button>
                 </div>
                 <div>
-                    <button type="button" class="correct-answer-btn text-sm px-2 py-1 bg-red-500 text-white rounded-lg hover-bg-baby-pink focus:outline-none focus:ring-2 focus:ring-green-500">Incorrect</button>
+                    <button type="button" class="correct-answer-btn text-sm px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-green-500">Incorrect</button>
                     <button type="button" class="delete-answer-btn text-sm px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">Delete</button>
                 </div>
             </div>
