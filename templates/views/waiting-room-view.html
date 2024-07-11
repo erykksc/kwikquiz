@@ -13,12 +13,14 @@
       <!-- Template lobby-settings should be returned here -->
       <p class="text-green-700">Loading lobby settings...</p>
     </div>
+    {{ if gt (len .Lobby.Players) 0 }}
     <h2 class="text-2xl font-semibold mt-6 mb-2 text-green-700">Players</h2>
     <ul class="list-disc pl-6 mb-4 text-green-700">
       {{ range $key, $value := .Lobby.Players }}
       <li class="text-lg">{{ $value.Username }}</li>
       {{ end }}
     </ul>
+    {{ end }}
     <button
       name="start-game-btn"
       ws-send
