@@ -2,7 +2,7 @@ package quiz
 
 import (
 	"errors"
-	"github.com/erykksc/kwikquiz/internal/models"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -16,12 +16,12 @@ type ErrQuizAlreadyExists struct{}
 func (ErrQuizAlreadyExists) Error() string { return "Quiz already exists" }
 
 type QuizRepository interface {
-	AddQuiz(models.Quiz) (uint, error)
-	UpdateQuiz(models.Quiz) (uint, error)
-	GetQuiz(id uint) (models.Quiz, error)
+	AddQuiz(Quiz) (uint, error)
+	UpdateQuiz(Quiz) (uint, error)
+	GetQuiz(id uint) (Quiz, error)
 	DeleteQuiz(id uint) error
-	GetAllQuizzes() ([]models.Quiz, error)
-	GetAllQuizzesMetadata() ([]models.QuizMetadata, error)
+	GetAllQuizzes() ([]Quiz, error)
+	GetAllQuizzesMetadata() ([]QuizMetadata, error)
 }
 
 // DB for quizzes
@@ -33,11 +33,11 @@ func NewGormQuizRepository(db *gorm.DB) *GormQuizRepository {
 	return &GormQuizRepository{DB: db}
 }
 
-func (r *GormQuizRepository) AddQuiz(q models.Quiz) (uint, error) {
+func (r *GormQuizRepository) AddQuiz(q Quiz) (uint, error) {
 	var quizID uint
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Attempt to find an existing quiz by title
-		var existingQuiz models.Quiz
+		var existingQuiz Quiz
 		if err := tx.Where("title = ?", q.Title).First(&existingQuiz).Error; err == nil {
 			// Quiz exists, return without making changes
 			return nil
@@ -82,11 +82,11 @@ func (r *GormQuizRepository) AddQuiz(q models.Quiz) (uint, error) {
 	return quizID, nil
 }
 
-func (r *GormQuizRepository) UpdateQuiz(q models.Quiz) (uint, error) {
+func (r *GormQuizRepository) UpdateQuiz(q Quiz) (uint, error) {
 	var quizID uint
 	err := r.DB.Transaction(func(tx *gorm.DB) error {
 		// Fetch existing quiz
-		var existingQuiz models.Quiz
+		var existingQuiz Quiz
 		if err := tx.First(&existingQuiz, q.ID).Error; err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (r *GormQuizRepository) UpdateQuiz(q models.Quiz) (uint, error) {
 		existingQuiz.Description = q.Description
 
 		// Delete existing questions and answers
-		if err := tx.Where("quiz_id = ?", q.ID).Delete(&models.Question{}).Error; err != nil {
+		if err := tx.Where("quiz_id = ?", q.ID).Delete(&Question{}).Error; err != nil {
 			return err
 		}
 
@@ -126,20 +126,20 @@ func (r *GormQuizRepository) UpdateQuiz(q models.Quiz) (uint, error) {
 	return quizID, nil
 }
 
-func (r *GormQuizRepository) GetQuiz(id uint) (models.Quiz, error) {
-	var quiz models.Quiz
+func (r *GormQuizRepository) GetQuiz(id uint) (Quiz, error) {
+	var quiz Quiz
 	result := r.DB.Preload("Questions.Answers").First(&quiz, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return models.Quiz{}, ErrQuizNotFound{}
+			return Quiz{}, ErrQuizNotFound{}
 		}
-		return models.Quiz{}, result.Error
+		return Quiz{}, result.Error
 	}
 	return quiz, nil
 }
 
 func (r *GormQuizRepository) DeleteQuiz(id uint) error {
-	result := r.DB.Delete(&models.Quiz{}, id)
+	result := r.DB.Delete(&Quiz{}, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return ErrQuizNotFound{}
@@ -149,8 +149,8 @@ func (r *GormQuizRepository) DeleteQuiz(id uint) error {
 	return nil
 }
 
-func (r *GormQuizRepository) GetAllQuizzes() ([]models.Quiz, error) {
-	var quizzes []models.Quiz
+func (r *GormQuizRepository) GetAllQuizzes() ([]Quiz, error) {
+	var quizzes []Quiz
 	result := r.DB.Preload("Questions.Answers").Find(&quizzes)
 	if result.Error != nil {
 		return nil, result.Error
@@ -158,16 +158,16 @@ func (r *GormQuizRepository) GetAllQuizzes() ([]models.Quiz, error) {
 	return quizzes, nil
 }
 
-func (r *GormQuizRepository) GetAllQuizzesMetadata() ([]models.QuizMetadata, error) {
-	var quizzes []models.Quiz
+func (r *GormQuizRepository) GetAllQuizzesMetadata() ([]QuizMetadata, error) {
+	var quizzes []Quiz
 	result := r.DB.Find(&quizzes)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	var metadata []models.QuizMetadata
+	var metadata []QuizMetadata
 	for _, quiz := range quizzes {
-		metadata = append(metadata, models.QuizMetadata{
+		metadata = append(metadata, QuizMetadata{
 			ID:    quiz.ID,
 			Title: quiz.Title,
 		})

@@ -5,7 +5,7 @@ import (
 	"html/template"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/models"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func tmplParseWithBase(path string) *template.Template {
@@ -38,7 +38,7 @@ type OnFinishData struct {
 var LobbySettingsTmpl = WaitingRoomView.Lookup("lobby-settings")
 
 type LobbySettingsData struct {
-	Quizzes []models.QuizMetadata
+	Quizzes []quiz.QuizMetadata
 	Lobby   *Lobby
 }
 

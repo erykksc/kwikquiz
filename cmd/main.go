@@ -11,7 +11,6 @@ import (
 	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/database"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
-	"github.com/erykksc/kwikquiz/internal/models"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
@@ -65,9 +64,9 @@ func setUpDatabase() error {
 
 func migrateDatabase() {
 	modelsToMigrate := []interface{}{
-		&models.Quiz{},
-		&models.Question{},
-		&models.Answer{},
+		&quiz.Quiz{},
+		&quiz.Question{},
+		&quiz.Answer{},
 		&pastgames.PastGame{},
 		&pastgames.PlayerScore{},
 	}

@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/database"
-	"github.com/erykksc/kwikquiz/internal/models"
 	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/database"
 )
 
 var QuizzesRepo *GormQuizRepository
@@ -91,7 +91,7 @@ type createQuizForm struct {
 	Title       string
 	Password    string
 	Description string
-	Questions   []models.Question
+	Questions   []Question
 	FormError   string
 }
 
@@ -115,7 +115,7 @@ func postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	redirectToQuiz(w, lobbyPin)
 }
 
-func parseQuizForm(r *http.Request) (models.Quiz, error) {
+func parseQuizForm(r *http.Request) (Quiz, error) {
 	qidStr := r.PathValue("qid")
 	var qid uint
 
@@ -124,7 +124,7 @@ func parseQuizForm(r *http.Request) (models.Quiz, error) {
 		qidInt, convErr := strconv.Atoi(qidStr)
 		if convErr != nil {
 			slog.Error("Error converting qid", "error", convErr)
-			return models.Quiz{}, fmt.Errorf("invalid quiz ID")
+			return Quiz{}, fmt.Errorf("invalid quiz ID")
 		}
 		qid = uint(qidInt)
 	}
@@ -133,17 +133,17 @@ func parseQuizForm(r *http.Request) (models.Quiz, error) {
 	description := r.FormValue("description")
 	questions, err := parseQuestions(r)
 	if err != nil {
-		return models.Quiz{}, err
+		return Quiz{}, err
 	}
 
 	// Parse questions
 	questions, parseErr := parseQuestions(r)
 	if parseErr != nil {
-		return models.Quiz{}, parseErr
+		return Quiz{}, parseErr
 	}
 
 	// Return the Quiz model based on whether qid is provided or not
-	return models.Quiz{
+	return Quiz{
 		ID:          qid,
 		Title:       title,
 		Password:    password,
@@ -152,8 +152,8 @@ func parseQuizForm(r *http.Request) (models.Quiz, error) {
 	}, nil
 }
 
-func parseQuestions(r *http.Request) ([]models.Question, error) {
-	var questions []models.Question
+func parseQuestions(r *http.Request) ([]Question, error) {
+	var questions []Question
 	questionIndex := 1
 
 	for {
@@ -162,7 +162,7 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 			break
 		}
 
-		var answers []models.Answer
+		var answers []Answer
 		answerIndex := 1
 		for {
 			answerPrefix := "answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex)
@@ -175,17 +175,17 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 				break // No more answers for this question
 			}
 
-			var answer models.Answer
+			var answer Answer
 
 			// Determine answer type based on the input field present
 			if textValue != "" {
 				// Check if it's a textarea (LaTeX) or text input
 				if strings.Contains(textValue, "\n") {
-					answer = models.Answer{
+					answer = Answer{
 						LaTeX: textValue,
 					}
 				} else {
-					answer = models.Answer{
+					answer = Answer{
 						Text: textValue,
 					}
 				}
@@ -203,7 +203,7 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 					return nil, fmt.Errorf("error copying image file: %v", err)
 				}
 
-				answer = models.Answer{
+				answer = Answer{
 					Image:     buf.Bytes(),
 					ImageName: header.Filename,
 				}
@@ -217,7 +217,7 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 			answerIndex++
 		}
 
-		questions = append(questions, models.Question{
+		questions = append(questions, Question{
 			Text:    questionText,
 			Answers: answers,
 		})
@@ -226,7 +226,7 @@ func parseQuestions(r *http.Request) ([]models.Question, error) {
 	return questions, nil
 }
 
-func renderQuizCreateForm(w http.ResponseWriter, quiz models.Quiz, err error) {
+func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
 		Title:       quiz.Title,
 		Description: quiz.Description,

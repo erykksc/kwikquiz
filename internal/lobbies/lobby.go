@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erykksc/kwikquiz/internal/models"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 // Lobby is a actively running game session
@@ -16,7 +16,7 @@ type Lobby struct {
 	CreatedAt                time.Time
 	StartedAt                time.Time
 	FinishedAt               time.Time
-	Quiz                     models.Quiz
+	Quiz                     quiz.Quiz
 	Host                     *User
 	Pin                      string
 	TimePerQuestion          time.Duration // Time for players to answer a question
@@ -28,7 +28,7 @@ type Lobby struct {
 	CurrentQuestionTimeout   time.Time
 	ReadingTimeout           time.Time
 	CurrentQuestionIdx       int
-	CurrentQuestion          *models.Question
+	CurrentQuestion          *quiz.Question
 	PlayersAnswering         int     // Number of players who haven't submitted an answer
 	Leaderboard              []*User // Players sorted by score
 }
@@ -37,7 +37,7 @@ type lobbyOptions struct {
 	TimePerQuestion time.Duration
 	TimeForReading  time.Duration
 	Pin             string
-	Quiz            models.Quiz
+	Quiz            quiz.Quiz
 }
 
 func createLobby(options lobbyOptions) *Lobby {

@@ -1,4 +1,4 @@
-package models
+package quiz
 
 import (
 	"gorm.io/gorm"
