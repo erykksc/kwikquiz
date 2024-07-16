@@ -41,7 +41,7 @@ func (r *GormQuizRepository) AddQuiz(q Quiz) (uint, error) {
 		if err := tx.Where("title = ?", q.Title).First(&existingQuiz).Error; err == nil {
 			// Quiz exists, return without making changes
 			return nil
-		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			// Some other error occurred
 			return err
 		}
