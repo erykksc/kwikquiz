@@ -1,5 +1,12 @@
 package quiz
 
+func GetExamples() []Quiz {
+	return []Quiz{
+		ExampleQuizGeography,
+		ExampleQuizMath,
+	}
+}
+
 var ExampleQuizGeography = Quiz{
 	ID:          999,
 	Title:       "Geography",
