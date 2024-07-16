@@ -15,7 +15,7 @@ func (ErrPastGameNotFound) Error() string {
 
 type PastGameRepository interface {
 	AddPastGame(game PastGame) (uint, error)
-	GetPastGameByID(id int) (PastGame, error)
+	GetPastGameByID(id uint) (PastGame, error)
 	GetAllPastGames() ([]PastGame, error)
 	BrowsePastGamesByID(query string) ([]PastGame, error)
 }

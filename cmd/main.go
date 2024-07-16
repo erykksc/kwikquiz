@@ -34,22 +34,9 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 	return handler
 }
 
-func setUpDatabase() error {
-	// Load environment variables
-	if err := config.LoadEnv(".env"); err != nil {
-		return err
-	}
-	slog.Info("Environment variables loaded")
-
-	// Load config from environment variables
-	cfg, err := config.LoadConfigFromEnv()
-	if err != nil {
-		return err
-	}
-	slog.Info("Config for DB loaded")
-
+func setUpDatabase(conf config.Config) error {
 	// Connect to the database
-	database.Connect(cfg)
+	database.Connect(conf)
 	slog.Info("Database connected")
 
 	// Drop existing tables (Should only be used development!)
@@ -58,6 +45,10 @@ func setUpDatabase() error {
 
 	// Migrate the schema
 	migrateDatabase()
+
+	quiz.InitRepo()
+	lobbies.InitRepo()
+	pastgames.InitRepo()
 
 	return nil
 }
@@ -80,10 +71,19 @@ func migrateDatabase() {
 }
 
 func main() {
+	// Load config from environmental variables
+	if err := config.LoadEnv(".env"); err != nil {
+		slog.Warn("Couldn't load .env file", "error", err)
+	}
+	conf, err := config.LoadConfigFromEnv()
+	if err != nil {
+		panic(err)
+	}
+
 	// Set up logging
 	var logLevel slog.Leveler = slog.LevelInfo
-	if common.DebugOn() {
-		slog.Info("Debug mode enabled")
+	if conf.InDevMode {
+		slog.Info("Development mode enabled, setting LogLevel to Debug")
 		logLevel = slog.LevelDebug
 	}
 	handler := getLoggingHandler(logLevel)
@@ -91,7 +91,7 @@ func main() {
 	slog.SetDefault(logger)
 
 	// Set up database
-	if err := setUpDatabase(); err != nil {
+	if err := setUpDatabase(conf); err != nil {
 		log.Fatalf("failed to set up database: %v", err)
 	}
 
@@ -110,12 +110,28 @@ func main() {
 		}
 	})
 
+	// Add example data types
+	if conf.InDevMode {
+		// Pastgames
+		for _, example := range pastgames.GetExamples() {
+			pastgames.PastGamesRepo.AddPastGame(example)
+		}
+		// Quizzes
+		for _, example := range quiz.GetExamples() {
+			quiz.QuizzesRepo.AddQuiz(example)
+		}
+		// Lobbies
+		for _, example := range lobbies.GetExamples() {
+			lobbies.LobbiesRepo.AddLobby(example)
+		}
+	}
+
 	// Start server
 	port := 3000
 	addr := fmt.Sprintf(":%d", port)
 	slog.Info("Server listening", "addr", addr)
 
-	err := http.ListenAndServe(addr, loggingMiddleware(router))
+	err = http.ListenAndServe(addr, loggingMiddleware(router))
 	if err != nil {
 		slog.Error("Server shutting down", "err", err.Error())
 	}

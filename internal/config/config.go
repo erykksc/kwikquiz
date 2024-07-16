@@ -7,7 +7,11 @@ import (
 	"strings"
 )
 
+// GlobalConfig is the global configuration,
+// it should be set by the main function
 type Config struct {
+	InDevMode  bool
+	InProdMode bool
 	DBUser     string
 	DBPassword string
 	DBName     string
@@ -17,7 +21,12 @@ type Config struct {
 
 // LoadConfigFromEnv loads the configuration from the environment variables
 func LoadConfigFromEnv() (Config, error) {
+	prodVar := os.Getenv("PROD")
+	inProd := prodVar == "true" || prodVar == "1"
+	inDebug := !inProd
 	cfg := Config{
+		InDevMode:  inDebug,
+		InProdMode: inProd,
 		DBUser:     os.Getenv("DB_USER"),
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:     os.Getenv("DB_NAME"),

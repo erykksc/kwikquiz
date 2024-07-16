@@ -12,7 +12,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var lobbiesRepo lobbyRepository = newInMemoryLobbyRepository()
+var LobbiesRepo lobbyRepository
+
+func InitRepo() {
+	LobbiesRepo = newInMemoryLobbyRepository()
+}
 
 // Returns a handler for routes starting with /lobbies
 func NewLobbiesRouter() http.Handler {
@@ -25,48 +29,6 @@ func NewLobbiesRouter() http.Handler {
 	mux.HandleFunc("/lobbies/{pin}/settings", lobbySettingsHandler)
 
 	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
-
-	// Add test lobby
-	if common.DevMode() {
-		lOptions := lobbyOptions{
-			TimePerQuestion: 30 * time.Second,
-			Pin:             "1234",
-			Quiz:            quiz.ExampleQuizGeography,
-		}
-		testLobby := createLobby(lOptions)
-		lobbiesRepo.AddLobby(testLobby)
-		slog.Info("Added test lobby", "lobby-pin", testLobby.Pin)
-
-		// Question View Lobby
-		// a lobby with fixed question-view, for design purposes
-		lOptions.Pin = "0001"
-		qwLobby := createLobby(lOptions)
-		qwLobby.StartedAt = time.Now()
-		qwLobby.CurrentQuestionStartTime = time.Now()
-		qwLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
-		qwLobby.CurrentQuestionIdx = 0
-		qwLobby.CurrentQuestionTimeout = time.Now().Add(30 * time.Second)
-		qwLobby.ReadingTimeout = time.Now()
-		qwLobby.State = LsQuestion
-		qwLobby.PlayersAnswering = 3
-		lobbiesRepo.AddLobby(qwLobby)
-		slog.Info("Added question view lobby", "lobby-pin", qwLobby.Pin)
-
-		// Question View Reading Lobby
-		// a lobby with fixed question-view, for design purposes
-		lOptions.Pin = "0002"
-		qwrLobby := createLobby(lOptions)
-		qwrLobby.StartedAt = time.Now()
-		qwrLobby.CurrentQuestionStartTime = time.Now()
-		qwrLobby.CurrentQuestion = &quiz.ExampleQuizGeography.Questions[0]
-		qwrLobby.CurrentQuestionIdx = 0
-		qwrLobby.CurrentQuestionTimeout = time.Now().Add(300 * time.Second)
-		qwrLobby.ReadingTimeout = time.Now().Add(100 * time.Second)
-		qwrLobby.State = LsQuestion
-		qwrLobby.PlayersAnswering = 3
-		lobbiesRepo.AddLobby(qwrLobby)
-		slog.Info("Added question view lobby during reading", "lobby-pin", qwrLobby.Pin)
-	}
 
 	return mux
 }
@@ -83,7 +45,7 @@ func getClientIDFromRequest(r *http.Request) (ClientID, error) {
 // TODO: Make it only accessible by admin
 func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	lobbies, err := lobbiesRepo.GetAllLobbies()
+	lobbies, err := LobbiesRepo.GetAllLobbies()
 	if err != nil {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -98,7 +60,7 @@ func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the client isn't a host of another lobby
 	clientID, err := getClientIDFromRequest(r)
 	if err == nil {
-		lobby, err := lobbiesRepo.GetLobbyByHost(clientID)
+		lobby, err := LobbiesRepo.GetLobbyByHost(clientID)
 		if err == nil {
 			// Redirect to the lobby
 			w.Header().Add("HX-Redirect", "/lobbies/"+lobby.Pin)
@@ -111,7 +73,7 @@ func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Parse possible arguments
 	options := lobbyOptions{}
 	newLobby := createLobby(options)
-	lobbiesRepo.AddLobby(newLobby)
+	LobbiesRepo.AddLobby(newLobby)
 	slog.Info("Created new lobby", "lobby", newLobby)
 	// Redirect to the new lobby
 	w.Header().Add("HX-Redirect", "/lobbies/"+newLobby.Pin)
@@ -123,7 +85,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.PathValue("pin")
 
-	lobby, err := lobbiesRepo.GetLobby(pin)
+	lobby, err := LobbiesRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
 		case errLobbyNotFound:
@@ -168,7 +130,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 
 	pin := r.PathValue("pin")
 
-	lobby, err := lobbiesRepo.GetLobby(pin)
+	lobby, err := LobbiesRepo.GetLobby(pin)
 	switch err.(type) {
 	case nil:
 		break
@@ -248,7 +210,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := lobbiesRepo.GetLobby(pin)
+	_, err := LobbiesRepo.GetLobby(pin)
 	switch err.(type) {
 	case nil:
 		// Do nothing
@@ -279,7 +241,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	pin := r.PathValue("pin")
 
-	lobby, err := lobbiesRepo.GetLobby(pin)
+	lobby, err := LobbiesRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
 		case errLobbyNotFound:

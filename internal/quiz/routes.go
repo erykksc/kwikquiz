@@ -15,7 +15,11 @@ import (
 	"github.com/erykksc/kwikquiz/internal/database"
 )
 
-var QuizzesRepo *GormQuizRepository
+var QuizzesRepo QuizRepository
+
+func InitRepo() {
+	QuizzesRepo = NewGormQuizRepository(database.DB)
+}
 
 func NewQuizzesRouter() http.Handler {
 	mux := http.NewServeMux()
@@ -27,17 +31,6 @@ func NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("GET /quizzes/update/{qid}", getQuizUpdateHandler)
 	mux.HandleFunc("PUT /quizzes/update/{qid}", updateQuizHandler)
 	mux.HandleFunc("DELETE /quizzes/delete/{qid}", deleteQuizHandler)
-
-	// init database instance
-	QuizzesRepo = NewGormQuizRepository(database.DB)
-
-	// Add quiz if in debug mode
-	if common.DevMode() {
-		QuizzesRepo.AddQuiz(ExampleQuizGeography)
-		slog.Info("Added example geography quiz")
-		QuizzesRepo.AddQuiz(ExampleQuizMath)
-		slog.Info("Added example math quiz")
-	}
 
 	return mux
 }

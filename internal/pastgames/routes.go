@@ -14,20 +14,17 @@ var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html"
 
 var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/search_pastgames.html", common.BaseTmplPath))
 
-var PastGamesRepo *GormPastGameRepository
+var PastGamesRepo PastGameRepository
+
+func InitRepo() {
+	PastGamesRepo = NewGormPastGameRepository(database.DB)
+}
 
 // NewPastGamesRouter sets up the routes for the pastgames package.
 func NewPastGamesRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/past-games/{gameID}", getPastGameHandler)
 	mux.HandleFunc("/past-games/{$}", browsePastGamesHandler)
-
-	PastGamesRepo = NewGormPastGameRepository(database.DB)
-
-	if common.DevMode() {
-		// Add test past game
-		PastGamesRepo.AddPastGame(ExamplePastGame1)
-	}
 
 	return mux
 }
