@@ -68,8 +68,8 @@ func migrateDatabase() {
 		&models.Quiz{},
 		&models.Question{},
 		&models.Answer{},
-		&models.PastGame{},
-		&models.PlayerScore{},
+		&pastgames.PastGame{},
+		&pastgames.PlayerScore{},
 	}
 
 	for _, model := range modelsToMigrate {

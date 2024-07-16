@@ -1,12 +1,13 @@
 package lobbies
 
 import (
-	"github.com/erykksc/kwikquiz/internal/models"
-	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"log/slog"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/erykksc/kwikquiz/internal/models"
+	"github.com/erykksc/kwikquiz/internal/pastgames"
 )
 
 // Lobby is a actively running game session
@@ -193,15 +194,15 @@ func (l *Lobby) endGame() error {
 		return err
 	}
 
-	scores := make([]models.PlayerScore, 0, len(l.Players)+1)
+	scores := make([]pastgames.PlayerScore, 0, len(l.Players)+1)
 	for _, player := range l.Leaderboard {
-		scores = append(scores, models.PlayerScore{
+		scores = append(scores, pastgames.PlayerScore{
 			Username: player.Username,
 			Score:    player.Score,
 		})
 	}
 
-	pastGame := models.PastGame{
+	pastGame := pastgames.PastGame{
 		StartedAt: l.StartedAt,
 		EndedAt:   time.Now(),
 		QuizTitle: l.Quiz.Title,

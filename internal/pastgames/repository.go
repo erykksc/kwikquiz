@@ -2,7 +2,7 @@ package pastgames
 
 import (
 	"errors"
-	"github.com/erykksc/kwikquiz/internal/models"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -14,10 +14,10 @@ func (ErrPastGameNotFound) Error() string {
 }
 
 type PastGameRepository interface {
-	AddPastGame(game models.PastGame) (uint, error)
-	GetPastGameByID(id int) (models.PastGame, error)
-	GetAllPastGames() ([]models.PastGame, error)
-	BrowsePastGamesByID(query string) ([]models.PastGame, error)
+	AddPastGame(game PastGame) (uint, error)
+	GetPastGameByID(id int) (PastGame, error)
+	GetAllPastGames() ([]PastGame, error)
+	BrowsePastGamesByID(query string) ([]PastGame, error)
 }
 
 // InMemoryPastGameRepository In-mem store for past games
@@ -29,7 +29,7 @@ func NewGormPastGameRepository(db *gorm.DB) *GormPastGameRepository {
 	return &GormPastGameRepository{DB: db}
 }
 
-func (repo *GormPastGameRepository) AddPastGame(game models.PastGame) (uint, error) {
+func (repo *GormPastGameRepository) AddPastGame(game PastGame) (uint, error) {
 	var gameID uint
 	err := repo.DB.Transaction(func(tx *gorm.DB) error {
 		// Create or update the past game
@@ -68,23 +68,23 @@ func (repo *GormPastGameRepository) AddPastGame(game models.PastGame) (uint, err
 	return gameID, nil
 }
 
-func (repo *GormPastGameRepository) GetPastGameByID(id uint) (models.PastGame, error) {
-	var game models.PastGame
+func (repo *GormPastGameRepository) GetPastGameByID(id uint) (PastGame, error) {
+	var game PastGame
 	result := repo.DB.Preload("Scores").First(&game, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return models.PastGame{}, ErrPastGameNotFound{}
+		return PastGame{}, ErrPastGameNotFound{}
 	}
 	return game, result.Error
 }
 
-func (repo *GormPastGameRepository) GetAllPastGames() ([]models.PastGame, error) {
-	var games []models.PastGame
+func (repo *GormPastGameRepository) GetAllPastGames() ([]PastGame, error) {
+	var games []PastGame
 	result := repo.DB.Preload("Scores").Find(&games)
 	return games, result.Error
 }
 
-func (repo *GormPastGameRepository) BrowsePastGamesByID(query string) ([]models.PastGame, error) {
-	var games []models.PastGame
+func (repo *GormPastGameRepository) BrowsePastGamesByID(query string) ([]PastGame, error) {
+	var games []PastGame
 	result := repo.DB.Preload("Scores").
 		Where("id::text LIKE ?", "%"+query+"%").
 		Find(&games)

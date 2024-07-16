@@ -8,7 +8,6 @@ import (
 
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/database"
-	"github.com/erykksc/kwikquiz/internal/models"
 )
 
 var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html")
@@ -27,7 +26,7 @@ func NewPastGamesRouter() http.Handler {
 
 	if common.DevMode() {
 		// Add test past game
-		PastGamesRepo.AddPastGame(models.ExamplePastGame1)
+		PastGamesRepo.AddPastGame(ExamplePastGame1)
 	}
 
 	return mux
@@ -62,7 +61,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 func browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 
-	var pastGames []models.PastGame
+	var pastGames []PastGame
 	var err error
 	if query != "" {
 		pastGames, err = PastGamesRepo.BrowsePastGamesByID(query)
@@ -78,7 +77,7 @@ func browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Query string
-		Games []models.PastGame
+		Games []PastGame
 	}{
 		Query: query,
 		Games: pastGames,
