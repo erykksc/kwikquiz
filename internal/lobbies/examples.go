@@ -10,6 +10,7 @@ import (
 func GetExamples() []*Lobby {
 	return []*Lobby{
 		&Example1234Lobby,
+		&Example1235Lobby,
 		&ExampleLobbyOnQuestionView,
 	}
 }
@@ -35,6 +36,37 @@ var Example1234Lobby = Lobby{
 	PlayersAnswering:         0,
 	Leaderboard:              []*User{},
 }
+var Example1235Lobby = Lobby{
+	Pin:             "1235",
+	mu:              sync.Mutex{},
+	CreatedAt:       time.Now(),
+	StartedAt:       time.Time{},
+	FinishedAt:      time.Time{},
+	Quiz:            quiz.ExampleQuizGeography,
+	Host:            nil,
+	TimePerQuestion: 30 * time.Second,
+	TimeForReading:  time.Second * 5,
+	Players: map[ClientID]*User{
+		"IMPOSSIBLE_ID": &User{
+			Username: "Jeff",
+			Score:    100,
+		},
+	},
+	State:                    LsWaitingForPlayers,
+	questionTimer:            &cancellableTimer{},
+	CurrentQuestionStartTime: time.Time{},
+	CurrentQuestionTimeout:   time.Time{},
+	ReadingTimeout:           time.Time{},
+	CurrentQuestionIdx:       0,
+	CurrentQuestion:          &quiz.Question{},
+	PlayersAnswering:         0,
+	Leaderboard: []*User{
+		{
+			Username: "Jeff",
+			Score:    100,
+		}},
+}
+
 var ExampleLobbyOnQuestionView = Lobby{
 	Pin:                      "0001",
 	mu:                       sync.Mutex{},
