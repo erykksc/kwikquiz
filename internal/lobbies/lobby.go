@@ -223,9 +223,15 @@ func (l *Lobby) endGame() error {
 
 	// Close websocket connections
 	// The redirection to lobby results is handled by the view
-	l.Host.writeTemplate(onFinishView, data)
-	l.Host.Conn.Close()
+	if l.Host.Conn != nil {
+		l.Host.writeTemplate(onFinishView, data)
+		l.Host.Conn.Close()
+	}
 	for _, player := range l.Players {
+		if player.Conn == nil {
+			slog.Error("Player connection is nil", "player", player)
+			continue
+		}
 		data.User = player
 		err = player.writeTemplate(onFinishView, data)
 		if err != nil {

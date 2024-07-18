@@ -10,6 +10,10 @@ import (
 // GlobalConfig is the global configuration,
 // it should be set by the main function
 type Config struct {
+	config
+}
+
+type config struct {
 	InDevMode  bool
 	InProdMode bool
 	DBUser     string
@@ -25,13 +29,15 @@ func LoadConfigFromEnv() (Config, error) {
 	inProd := prodVar == "true" || prodVar == "1"
 	inDebug := !inProd
 	cfg := Config{
-		InDevMode:  inDebug,
-		InProdMode: inProd,
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
-		DBHost:     os.Getenv("DB_HOST"),
-		DBPort:     os.Getenv("DB_PORT"),
+		config{
+			InDevMode:  inDebug,
+			InProdMode: inProd,
+			DBUser:     os.Getenv("DB_USER"),
+			DBPassword: os.Getenv("DB_PASSWORD"),
+			DBName:     os.Getenv("DB_NAME"),
+			DBHost:     os.Getenv("DB_HOST"),
+			DBPort:     os.Getenv("DB_PORT"),
+		},
 	}
 
 	// Check if the environment variables are set

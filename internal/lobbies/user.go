@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"html/template"
 	"time"
 
@@ -22,6 +23,9 @@ type User struct {
 
 // writeTemplate does tmpl.Execute(w, data) on websocket connection to the user
 func (client *User) writeTemplate(tmpl *template.Template, data any) error {
+	if client.Conn == nil {
+		return errors.New("client.Conn is nil")
+	}
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
@@ -36,6 +40,9 @@ func (client *User) writeTemplate(tmpl *template.Template, data any) error {
 
 // writeNamedTemplate does tmpl.ExecuteTemplate(w, name, data) on websocket connection to the user
 func (client *User) writeNamedTemplate(tmpl *template.Template, name string, data any) error {
+	if client.Conn == nil {
+		return errors.New("client.Conn is nil")
+	}
 	w, err := client.Conn.NextWriter(websocket.TextMessage)
 	if err != nil {
 		return err
