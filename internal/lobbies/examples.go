@@ -47,7 +47,7 @@ var Example1235Lobby = Lobby{
 	TimePerQuestion: 30 * time.Second,
 	TimeForReading:  time.Second * 5,
 	Players: map[ClientID]*User{
-		"IMPOSSIBLE_ID": &User{
+		"IMPOSSIBLE_ID": {
 			Username: "Jeff",
 			Score:    100,
 		},
