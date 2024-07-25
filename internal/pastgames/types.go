@@ -2,22 +2,17 @@ package pastgames
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
-type PlayerScore struct {
-	gorm.Model
-	PastGameID uint
-	Username   string
-	Score      int
+type PastGame struct {
+	ID        int64
+	StartedAt time.Time     `db:"started_at"`
+	EndedAt   time.Time     `db:"ended_at"`
+	QuizTitle string        `db:"quiz_title"`
+	Scores    []PlayerScore // sorted by score, descending
 }
 
-type PastGame struct {
-	gorm.Model
-	ID        uint
-	StartedAt time.Time
-	EndedAt   time.Time
-	QuizTitle string
-	Scores    []PlayerScore `gorm:"foreignKey:PastGameID"` // sorted by score, descending
+type PlayerScore struct {
+	Username string `db:"username"`
+	Score    int    `db:"score"`
 }
