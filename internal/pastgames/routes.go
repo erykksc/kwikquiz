@@ -14,7 +14,7 @@ var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html"
 
 var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/search_pastgames.html", common.BaseTmplPath))
 
-var PastGamesRepo PastGameRepository
+var Repo Repository
 
 func InitRepo(db *sqlx.DB) error {
 	sqliteRepo := NewPastGameRepositorySQLite(db)
@@ -23,7 +23,7 @@ func InitRepo(db *sqlx.DB) error {
 		return err
 	}
 
-	PastGamesRepo = sqliteRepo
+	Repo = sqliteRepo
 	return nil
 }
 
@@ -46,7 +46,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pastGame, err := PastGamesRepo.GetByID(int64(id))
+	pastGame, err := Repo.GetByID(int64(id))
 	if err != nil {
 		if _, ok := err.(ErrPastGameNotFound); ok {
 			http.Error(w, "Past game not found", http.StatusNotFound)
@@ -57,7 +57,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = PastGamesRepo.HydrateScores(pastGame)
+	err = Repo.HydrateScores(pastGame)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		slog.Error("Error hydrating past game scores", "err", err)
@@ -76,9 +76,9 @@ func browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
 	var pastGames []PastGame
 	var err error
 	if query != "" {
-		pastGames, err = PastGamesRepo.BrowsePastGamesByID(query)
+		pastGames, err = Repo.BrowsePastGamesByID(query)
 	} else {
-		pastGames, err = PastGamesRepo.GetAll()
+		pastGames, err = Repo.GetAll()
 	}
 
 	if err != nil {

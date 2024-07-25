@@ -6,7 +6,7 @@ func (ErrPastGameNotFound) Error() string {
 	return "past game not found"
 }
 
-type PastGameRepository interface {
+type Repository interface {
 	Insert(game *PastGame) (int64, error)
 	Upsert(game *PastGame) (int64, error)
 	GetByID(id int64) (*PastGame, error)

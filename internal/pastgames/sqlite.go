@@ -8,23 +8,23 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type PastGameRepositorySQLite struct {
-	*sqliteRepository
+type RepositorySQLite struct {
+	*repositorySQLite
 }
 
-func NewPastGameRepositorySQLite(db *sqlx.DB) PastGameRepositorySQLite {
-	return PastGameRepositorySQLite{
-		&sqliteRepository{
+func NewPastGameRepositorySQLite(db *sqlx.DB) RepositorySQLite {
+	return RepositorySQLite{
+		&repositorySQLite{
 			db: db,
 		},
 	}
 }
 
-type sqliteRepository struct {
+type repositorySQLite struct {
 	db *sqlx.DB
 }
 
-func (repo PastGameRepositorySQLite) Initialize() error {
+func (repo *repositorySQLite) Initialize() error {
 	const schema = `
 		CREATE TABLE IF NOT EXISTS past_game (
 			id INTEGER PRIMARY KEY,
@@ -44,7 +44,7 @@ func (repo PastGameRepositorySQLite) Initialize() error {
 	_, err := repo.db.Exec(schema)
 	return err
 }
-func (repo PastGameRepositorySQLite) Insert(game *PastGame) (int64, error) {
+func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 	tx, err := repo.db.Beginx()
 	if err != nil {
 		return 0, err
@@ -85,7 +85,7 @@ func (repo PastGameRepositorySQLite) Insert(game *PastGame) (int64, error) {
 	return insertedGameID, err
 }
 
-func (repo PastGameRepositorySQLite) Upsert(game *PastGame) (int64, error) {
+func (repo *repositorySQLite) Upsert(game *PastGame) (int64, error) {
 	tx, err := repo.db.Beginx()
 	if err != nil {
 		return 0, err
@@ -133,20 +133,17 @@ func (repo PastGameRepositorySQLite) Upsert(game *PastGame) (int64, error) {
 	return upsertedGameID, err
 }
 
-func (repo PastGameRepositorySQLite) GetByID(id int64) (*PastGame, error) {
+func (repo *repositorySQLite) GetByID(id int64) (*PastGame, error) {
 	query := "SELECT * FROM past_game WHERE id=?"
 	var game PastGame
 	err := repo.db.Get(&game, query, id)
 	if err != nil {
 		return nil, err
 	}
-	if game.Scores == nil {
-		game.Scores = []PlayerScore{}
-	}
 	return &game, err
 }
 
-func (repo PastGameRepositorySQLite) HydrateScores(game *PastGame) error {
+func (repo *repositorySQLite) HydrateScores(game *PastGame) error {
 	if game.ID == 0 {
 		return errors.New("game ID is not set")
 	}
@@ -157,16 +154,16 @@ func (repo PastGameRepositorySQLite) HydrateScores(game *PastGame) error {
 
 // GetAllPastGames returns all past games
 // NOTE: PastGame.Scores are unhydrated, use HydrateScores to get them
-func (repo PastGameRepositorySQLite) GetAll() ([]PastGame, error) {
+func (repo *repositorySQLite) GetAll() ([]PastGame, error) {
 	query := "SELECT * FROM past_game"
-	pastGames := []PastGame{}
-	err := repo.db.Select(&pastGames, query)
-	return pastGames, err
+	var games []PastGame
+	err := repo.db.Select(&games, query)
+	return games, err
 }
 
-func (repo PastGameRepositorySQLite) BrowsePastGamesByID(query string) ([]PastGame, error) {
+func (repo *repositorySQLite) BrowsePastGamesByID(query string) ([]PastGame, error) {
 	sQuery := "SELECT * FROM past_game WHERE CAST(id AS TEXT) LIKE ?"
-	games := []PastGame{}
+	var games []PastGame
 	err := repo.db.Select(&games, sQuery, fmt.Sprintf("%%%s%%", query))
 	return games, err
 }
