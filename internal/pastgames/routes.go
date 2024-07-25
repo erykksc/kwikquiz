@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/database"
+	"github.com/jmoiron/sqlx"
 )
 
 var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html")
@@ -16,8 +16,15 @@ var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/s
 
 var PastGamesRepo PastGameRepository
 
-func InitRepo() {
-	PastGamesRepo = NewGormPastGameRepository(database.DB)
+func InitRepo(db *sqlx.DB) error {
+	sqliteRepo := NewPastGameRepositorySQLite(db)
+	err := sqliteRepo.Initialize()
+	if err != nil {
+		return err
+	}
+
+	PastGamesRepo = sqliteRepo
+	return nil
 }
 
 // NewPastGamesRouter sets up the routes for the pastgames package.
@@ -39,13 +46,21 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pastGame, err := PastGamesRepo.GetPastGameByID(uint(id))
+	pastGame, err := PastGamesRepo.GetByID(int64(id))
 	if err != nil {
 		if _, ok := err.(ErrPastGameNotFound); ok {
 			http.Error(w, "Past game not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("Error getting past game", "err", err)
+		return
+	}
+
+	err = PastGamesRepo.HydrateScores(pastGame)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("Error hydrating past game scores", "err", err)
 		return
 	}
 
@@ -63,7 +78,7 @@ func browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
 	if query != "" {
 		pastGames, err = PastGamesRepo.BrowsePastGamesByID(query)
 	} else {
-		pastGames, err = PastGamesRepo.GetAllPastGames()
+		pastGames, err = PastGamesRepo.GetAll()
 	}
 
 	if err != nil {

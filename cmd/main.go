@@ -13,6 +13,8 @@ import (
 	"github.com/erykksc/kwikquiz/internal/lobbies"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -48,7 +50,6 @@ func setUpDatabase(conf config.Config) error {
 
 	quiz.InitRepo()
 	lobbies.InitRepo()
-	pastgames.InitRepo()
 
 	return nil
 }
@@ -58,8 +59,8 @@ func migrateDatabase() {
 		&quiz.Quiz{},
 		&quiz.Question{},
 		&quiz.Answer{},
-		&pastgames.PastGame{},
-		&pastgames.PlayerScore{},
+		// &pastgames.PastGame{},
+		// &pastgames.PlayerScore{},
 	}
 
 	for _, model := range modelsToMigrate {
@@ -95,6 +96,18 @@ func main() {
 		log.Fatalf("failed to set up database: %v", err)
 	}
 
+	db, err := sqlx.Open("sqlite3", "kwikquiz.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	err = pastgames.InitRepo(db)
+	if err != nil {
+		slog.Error("failed to set up pastgames repo", "err", err)
+		panic(err)
+	}
+
 	// Set up routes
 	router := http.NewServeMux()
 
@@ -114,7 +127,7 @@ func main() {
 	if conf.InDevMode {
 		// Pastgames
 		for _, example := range pastgames.GetExamples() {
-			pastgames.PastGamesRepo.AddPastGame(example)
+			pastgames.PastGamesRepo.Upsert(&example)
 		}
 		// Quizzes
 		for _, example := range quiz.GetExamples() {
