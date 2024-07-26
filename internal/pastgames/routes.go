@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/jmoiron/sqlx"
 )
 
 var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html")
@@ -16,15 +15,8 @@ var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/s
 
 var Repo Repository
 
-func InitRepo(db *sqlx.DB) error {
-	sqliteRepo := NewPastGameRepositorySQLite(db)
-	err := sqliteRepo.Initialize()
-	if err != nil {
-		return err
-	}
-
-	Repo = sqliteRepo
-	return nil
+func Init(repo Repository) {
+	Repo = repo
 }
 
 // NewPastGamesRouter sets up the routes for the pastgames package.

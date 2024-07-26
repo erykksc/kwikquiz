@@ -208,7 +208,7 @@ func (l *Lobby) endGame() error {
 		QuizTitle: l.Quiz.Title,
 		Scores:    scores,
 	}
-	id, err := pastgames.PastGamesRepo.Insert(&pastGame)
+	id, err := pastgames.Repo.Insert(&pastGame)
 	if err != nil {
 		return err
 	}

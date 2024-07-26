@@ -101,12 +101,14 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	err = pastgames.InitRepo(db)
+	pastGamesRepo := pastgames.NewRepositorySQLite(db)
+	err = pastGamesRepo.Initialize()
 	if err != nil {
 		slog.Error("failed to set up pastgames repo", "err", err)
 		panic(err)
 	}
+
+	pastgames.Init(pastGamesRepo)
 
 	// Set up routes
 	router := http.NewServeMux()
@@ -127,7 +129,7 @@ func main() {
 	if conf.InDevMode {
 		// Pastgames
 		for _, example := range pastgames.GetExamples() {
-			pastgames.PastGamesRepo.Upsert(&example)
+			pastgames.Repo.Upsert(&example)
 		}
 		// Quizzes
 		for _, example := range quiz.GetExamples() {
