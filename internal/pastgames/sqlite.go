@@ -55,8 +55,8 @@ func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 
 	// Insert the game
 	res, err := tx.NamedExec(`
-        INSERT INTO past_game (id, started_at, ended_at, quiz_title)
-		VALUES (:id, :started_at, :ended_at, :quiz_title)
+        INSERT INTO past_game (started_at, ended_at, quiz_title)
+		VALUES (:started_at, :ended_at, :quiz_title)
     `, game)
 	if err != nil {
 		return 0, err
@@ -69,10 +69,10 @@ func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 
 	// Insert all scores
 	for _, score := range game.Scores {
-		_, err := tx.NamedExec(`
-			INSERT INTO player_score (id, past_game_id, username, score)
-			VALUES (:id, :past_game_id, :username, :score)
-		`, &score)
+		_, err := tx.Exec(`
+			INSERT INTO player_score (past_game_id, username, score)
+			VALUES (?, ?, ?)
+		`, insertedGameID, score.Username, score.Score)
 
 		if err != nil {
 			rErr := tx.Rollback()
