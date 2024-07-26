@@ -32,7 +32,7 @@ type inMemoryLobbyRepository struct {
 	mu      sync.RWMutex
 }
 
-func newInMemoryLobbyRepository() *inMemoryLobbyRepository {
+func NewRepositoryInMemory() *inMemoryLobbyRepository {
 	return &inMemoryLobbyRepository{
 		lobbies: make(map[string]*Lobby),
 	}

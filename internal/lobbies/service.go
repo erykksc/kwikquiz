@@ -4,12 +4,12 @@ import "github.com/erykksc/kwikquiz/internal/pastgames"
 
 type Service struct {
 	// Lobby Repository
-	lRepo lobbyRepository
+	lRepo Repository
 	// PastGames Repository
 	pgRepo pastgames.Repository
 }
 
-func NewService(lobbyRepo lobbyRepository, pastGamesRepo pastgames.Repository) Service {
+func NewService(lobbyRepo Repository, pastGamesRepo pastgames.Repository) Service {
 	return Service{
 		lRepo:  lobbyRepo,
 		pgRepo: pastGamesRepo,

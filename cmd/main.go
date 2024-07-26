@@ -49,7 +49,6 @@ func setUpDatabase(conf config.Config) error {
 	migrateDatabase()
 
 	quiz.InitRepo()
-	lobbies.InitRepo()
 
 	return nil
 }
@@ -110,6 +109,10 @@ func main() {
 
 	pastgames.Init(pastGamesRepo)
 
+	lobbiesRepo := lobbies.NewRepositoryInMemory()
+
+	lobbiesService := lobbies.NewService(lobbiesRepo, pastGamesRepo)
+
 	// Set up routes
 	router := http.NewServeMux()
 
@@ -117,7 +120,7 @@ func main() {
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
-	router.Handle("/lobbies/", lobbies.NewLobbiesRouter())
+	router.Handle("/lobbies/", lobbiesService.NewLobbiesRouter())
 	router.Handle("/past-games/", pastgames.NewPastGamesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
@@ -129,7 +132,7 @@ func main() {
 	if conf.InDevMode {
 		// Pastgames
 		for _, example := range pastgames.GetExamples() {
-			pastgames.Repo.Upsert(&example)
+			pastGamesRepo.Upsert(&example)
 		}
 		// Quizzes
 		for _, example := range quiz.GetExamples() {
@@ -137,7 +140,7 @@ func main() {
 		}
 		// Lobbies
 		for _, example := range lobbies.GetExamples() {
-			lobbies.LobbiesRepo.AddLobby(example)
+			lobbiesRepo.AddLobby(example)
 		}
 	}
 
