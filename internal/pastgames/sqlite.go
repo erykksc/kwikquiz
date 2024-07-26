@@ -12,19 +12,20 @@ type RepositorySQLite struct {
 	*repositorySQLite
 }
 
-func NewRepositorySQLite(db *sqlx.DB) RepositorySQLite {
-	return RepositorySQLite{
+func NewRepositorySQLite(db *sqlx.DB) (RepositorySQLite, error) {
+	repo := RepositorySQLite{
 		&repositorySQLite{
 			db: db,
 		},
 	}
+	return repo, repo.createTables()
 }
 
 type repositorySQLite struct {
 	db *sqlx.DB
 }
 
-func (repo *repositorySQLite) Initialize() error {
+func (repo *repositorySQLite) createTables() error {
 	const schema = `
 		CREATE TABLE IF NOT EXISTS past_game (
 			id INTEGER PRIMARY KEY,

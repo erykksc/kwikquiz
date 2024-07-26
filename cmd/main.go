@@ -63,8 +63,7 @@ func main() {
 	}
 
 	// Setup pastgames Service
-	pastGamesRepo := pastgames.NewRepositorySQLite(db)
-	err = pastGamesRepo.Initialize()
+	pastGamesRepo, err := pastgames.NewRepositorySQLite(db)
 	if err != nil {
 		slog.Error("failed to set up pastgames repo", "err", err)
 		panic(err)
@@ -72,8 +71,7 @@ func main() {
 	pastGamesService := pastgames.NewService(pastGamesRepo)
 
 	// Setup Quiz Service
-	quizRepo := quiz.NewRepositorySQLite(db)
-	err = quizRepo.Initialize()
+	quizRepo, err := quiz.NewRepositorySQLite(db)
 	if err != nil {
 		slog.Error("failed to set up quiz repo", "err", err)
 		panic(err)

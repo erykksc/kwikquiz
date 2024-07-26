@@ -32,20 +32,18 @@ func TestRepositorySQLite(t *testing.T) {
 		return db
 	}
 
-	t.Run("Initialize", func(t *testing.T) {
+	t.Run("call NewRepositorySQLite", func(t *testing.T) {
 		db := newDB()
 		defer db.Close()
 
-		repo := NewRepositorySQLite(db)
-		err := repo.Initialize()
+		_, err := NewRepositorySQLite(db)
 		if err != nil {
 			t.Errorf("Failed to initialize repository: %v", err)
 		}
 	})
 
 	newRepo := func(db *sqlx.DB) RepositorySQLite {
-		repo := NewRepositorySQLite(db)
-		err := repo.Initialize()
+		repo, err := NewRepositorySQLite(db)
 		if err != nil {
 			t.Fatalf("Failed to initialize repository: %v", err)
 		}

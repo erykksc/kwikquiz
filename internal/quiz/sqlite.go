@@ -15,15 +15,17 @@ type repositorySQLite struct {
 	db *sqlx.DB
 }
 
-func NewRepositorySQLite(db *sqlx.DB) RepositorySQLite {
-	return RepositorySQLite{
+func NewRepositorySQLite(db *sqlx.DB) (RepositorySQLite, error) {
+	repo := RepositorySQLite{
 		&repositorySQLite{
 			db: db,
 		},
 	}
+
+	return repo, repo.createTables()
 }
 
-func (repo *repositorySQLite) Initialize() error {
+func (repo *repositorySQLite) createTables() error {
 	schema := `
 	CREATE TABLE IF NOT EXISTS quiz (
 		quiz_id     INTEGER PRIMARY KEY,
