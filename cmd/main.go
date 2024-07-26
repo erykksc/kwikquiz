@@ -18,21 +18,11 @@ import (
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		slog.Debug(fmt.Sprintf("%s %s", r.Method, r.URL.Path))
+		slog.Debug("HTTP Call", "method", r.Method, "url_path", r.URL.Path)
 
 		// Call the next handler
 		next.ServeHTTP(w, r)
 	})
-}
-
-func getLoggingHandler(level slog.Leveler) slog.Handler {
-	opts := &slog.HandlerOptions{
-		AddSource: false,
-		Level:     level,
-	}
-	handler := slog.NewJSONHandler(os.Stderr, opts)
-
-	return handler
 }
 
 func main() {
@@ -46,12 +36,16 @@ func main() {
 	}
 
 	// Set up logging
-	var logLevel slog.Leveler = slog.LevelInfo
-	if conf.InDevMode {
-		slog.Info("Development mode enabled, setting LogLevel to Debug")
-		logLevel = slog.LevelDebug
+	opts := slog.HandlerOptions{
+		AddSource: false,
+		Level:     slog.LevelInfo,
 	}
-	handler := getLoggingHandler(logLevel)
+	if conf.InDevMode {
+		slog.Info("Development mode enabled, setting LogLevel to Debug and adding source")
+		opts.Level = slog.LevelDebug
+		opts.AddSource = true
+	}
+	handler := slog.NewJSONHandler(os.Stderr, &opts)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
@@ -61,6 +55,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
 	// Enforce CASCADE in sqlite, this needs to run before any other query
 	_, err = db.Exec("PRAGMA foreign_keys = ON;")
 	if err != nil {
