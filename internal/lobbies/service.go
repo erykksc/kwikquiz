@@ -8,3 +8,10 @@ type Service struct {
 	// PastGames Repository
 	pgRepo pastgames.Repository
 }
+
+func NewService(lobbyRepo lobbyRepository, pastGamesRepo pastgames.Repository) Service {
+	return Service{
+		lRepo:  lobbyRepo,
+		pgRepo: pastGamesRepo,
+	}
+}

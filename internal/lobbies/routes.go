@@ -12,23 +12,17 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var LobbiesRepo lobbyRepository
-
-func InitRepo() {
-	LobbiesRepo = newInMemoryLobbyRepository()
-}
-
 // Returns a handler for routes starting with /lobbies
-func NewLobbiesRouter() http.Handler {
+func (s Service) NewLobbiesRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /lobbies/{$}", getLobbiesHandler)
-	mux.HandleFunc("POST /lobbies/{$}", postLobbiesHandler)
-	mux.HandleFunc("GET /lobbies/{pin}", getLobbyByPinHandler)
-	mux.HandleFunc("/lobbies/{pin}/ws", getLobbyByPinWsHandler)
-	mux.HandleFunc("/lobbies/{pin}/settings", lobbySettingsHandler)
+	mux.HandleFunc("GET /lobbies/{$}", s.getLobbiesHandler)
+	mux.HandleFunc("POST /lobbies/{$}", s.postLobbiesHandler)
+	mux.HandleFunc("GET /lobbies/{pin}", s.getLobbyByPinHandler)
+	mux.HandleFunc("/lobbies/{pin}/ws", s.getLobbyByPinWsHandler)
+	mux.HandleFunc("/lobbies/{pin}/settings", s.lobbySettingsHandler)
 
-	mux.HandleFunc("GET /lobbies/join", getLobbyJoinHandler)
+	mux.HandleFunc("GET /lobbies/join", s.getLobbyJoinHandler)
 
 	return mux
 }
@@ -43,9 +37,9 @@ func getClientIDFromRequest(r *http.Request) (ClientID, error) {
 }
 
 // TODO: Make it only accessible by admin
-func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	lobbies, err := LobbiesRepo.GetAllLobbies()
+	lobbies, err := s.lRepo.GetAllLobbies()
 	if err != nil {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -56,11 +50,11 @@ func getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the client isn't a host of another lobby
 	clientID, err := getClientIDFromRequest(r)
 	if err == nil {
-		lobby, err := LobbiesRepo.GetLobbyByHost(clientID)
+		lobby, err := s.lRepo.GetLobbyByHost(clientID)
 		if err == nil {
 			// Redirect to the lobby
 			w.Header().Add("HX-Redirect", "/lobbies/"+lobby.Pin)
@@ -73,7 +67,7 @@ func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Parse possible arguments
 	options := lobbyOptions{}
 	newLobby := createLobby(options)
-	LobbiesRepo.AddLobby(newLobby)
+	s.lRepo.AddLobby(newLobby)
 	slog.Info("Created new lobby", "lobby", newLobby)
 	// Redirect to the new lobby
 	w.Header().Add("HX-Redirect", "/lobbies/"+newLobby.Pin)
@@ -81,11 +75,11 @@ func postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLobbyByPinHandler handles requests to /lobbies/{pin}
-func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 	pin := r.PathValue("pin")
 
-	lobby, err := LobbiesRepo.GetLobby(pin)
+	lobby, err := s.lRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
 		case errLobbyNotFound:
@@ -121,7 +115,7 @@ func getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
-func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 	clientID, err := getClientIDFromRequest(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -130,7 +124,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 
 	pin := r.PathValue("pin")
 
-	lobby, err := LobbiesRepo.GetLobby(pin)
+	lobby, err := s.lRepo.GetLobby(pin)
 	switch err.(type) {
 	case nil:
 		break
@@ -200,7 +194,7 @@ func getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // getLobbyJoinHandler handles requests to /lobbies/join
-func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
 	pin := r.URL.Query().Get("pin")
@@ -210,7 +204,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := LobbiesRepo.GetLobby(pin)
+	_, err := s.lRepo.GetLobby(pin)
 	switch err.(type) {
 	case nil:
 		// Do nothing
@@ -232,7 +226,7 @@ func getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handler used for getting/updating the lobby settings from the waiting room
-func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 	clientID, err := getClientIDFromRequest(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -241,7 +235,7 @@ func lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	pin := r.PathValue("pin")
 
-	lobby, err := LobbiesRepo.GetLobby(pin)
+	lobby, err := s.lRepo.GetLobby(pin)
 	if err != nil {
 		switch err.(type) {
 		case errLobbyNotFound:

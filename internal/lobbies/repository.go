@@ -18,7 +18,7 @@ func (errLobbyAlreadyExists) Error() string {
 	return "game already exists"
 }
 
-type lobbyRepository interface {
+type Repository interface {
 	AddLobby(*Lobby) error
 	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error

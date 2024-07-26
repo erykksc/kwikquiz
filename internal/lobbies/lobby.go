@@ -190,7 +190,7 @@ func (l *Lobby) showAnswer() error {
 
 func (l *Lobby) endGame() error {
 	l.FinishedAt = time.Now()
-	if err := LobbiesRepo.DeleteLobby(l.Pin); err != nil {
+	if err := s.lRepo.DeleteLobby(l.Pin); err != nil {
 		return err
 	}
 
