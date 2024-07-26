@@ -36,13 +36,6 @@ func (s Service) getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.repo.HydrateScores(pastGame)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		slog.Error("Error hydrating past game scores", "err", err)
-		return
-	}
-
 	if err := pastGameTmpl.Execute(w, pastGame); err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 		slog.Error("Error rendering template", "err", err)

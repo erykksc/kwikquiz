@@ -11,6 +11,5 @@ type Repository interface {
 	Upsert(game *PastGame) (int64, error)
 	GetByID(id int64) (*PastGame, error)
 	GetAll() ([]PastGame, error)
-	HydrateScores(*PastGame) error
 	BrowsePastGamesByID(query string) ([]PastGame, error)
 }

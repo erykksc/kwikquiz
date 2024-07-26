@@ -44,6 +44,7 @@ func (repo *repositorySQLite) createTables() error {
 	_, err := repo.db.Exec(schema)
 	return err
 }
+
 func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 	if game == nil {
 		return 0, errors.New("game is nil")
@@ -146,16 +147,10 @@ func (repo *repositorySQLite) GetByID(id int64) (*PastGame, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &game, err
-}
 
-func (repo *repositorySQLite) HydrateScores(game *PastGame) error {
-	if game.ID == 0 {
-		return errors.New("game ID is not set")
-	}
-	query := "SELECT username, score FROM player_score WHERE past_game_ID=?"
-	err := repo.db.Select(&game.Scores, query, game.ID)
-	return err
+	query = "SELECT username, score FROM player_score WHERE past_game_ID=?"
+	err = repo.db.Select(&game.Scores, query, game.ID)
+	return &game, err
 }
 
 // GetAllPastGames returns all past games
