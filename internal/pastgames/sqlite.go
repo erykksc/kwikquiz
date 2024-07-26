@@ -12,7 +12,7 @@ type RepositorySQLite struct {
 	*repositorySQLite
 }
 
-func NewPastGameRepositorySQLite(db *sqlx.DB) RepositorySQLite {
+func NewRepositorySQLite(db *sqlx.DB) RepositorySQLite {
 	return RepositorySQLite{
 		&repositorySQLite{
 			db: db,
@@ -45,6 +45,9 @@ func (repo *repositorySQLite) Initialize() error {
 	return err
 }
 func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
+	if game == nil {
+		return 0, errors.New("game is nil")
+	}
 	tx, err := repo.db.Beginx()
 	if err != nil {
 		return 0, err
@@ -86,6 +89,9 @@ func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 }
 
 func (repo *repositorySQLite) Upsert(game *PastGame) (int64, error) {
+	if game == nil {
+		return 0, errors.New("game is nil")
+	}
 	tx, err := repo.db.Beginx()
 	if err != nil {
 		return 0, err
