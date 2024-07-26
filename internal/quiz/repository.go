@@ -8,7 +8,7 @@ type ErrQuizAlreadyExists struct{}
 
 func (ErrQuizAlreadyExists) Error() string { return "Quiz already exists" }
 
-type QuizRepository interface {
+type Repository interface {
 	AddQuiz(Quiz) (uint, error)
 	UpdateQuiz(Quiz) (uint, error)
 	GetQuiz(id uint) (Quiz, error)
