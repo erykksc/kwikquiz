@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	embed_files "github.com/erykksc/kwikquiz"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
@@ -85,7 +86,7 @@ func main() {
 	// Set up routes
 	router := http.NewServeMux()
 
-	fs := http.FileServer(http.Dir("static"))
+	fs := http.FileServer(http.FS(embed_files.Static))
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	router.Handle("/quizzes/", quizService.NewQuizzesRouter())
@@ -100,17 +101,21 @@ func main() {
 	// Add example data types
 	if conf.InDevMode {
 		// Pastgames
+		slog.Debug("Upserting examples pastgames")
 		for _, example := range pastgames.GetExamples() {
 			pastGamesRepo.Upsert(&example)
 		}
 		// Quizzes
+		slog.Debug("Upserting example quizzes")
 		for _, example := range quiz.GetExamples() {
 			quizRepo.Insert(&example)
 		}
 		// Lobbies
+		slog.Debug("Adding example lobbies")
 		for _, example := range lobbies.GetExamples() {
 			lobbiesRepo.AddLobby(example)
 		}
+		slog.Debug("Finished upserting example data")
 	}
 
 	// Start server
