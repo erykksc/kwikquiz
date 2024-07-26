@@ -186,7 +186,7 @@ func (s Service) getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) 
 
 		lobby.mu.Lock()
 		if err := event.Handle(s, lobby, user); err != nil {
-			slog.Error("Error handling lobby event", "event", event, "err", err)
+			slog.Error("Error handling lobby event", "event", event.String(), "err", err)
 		}
 		lobby.mu.Unlock()
 	}
