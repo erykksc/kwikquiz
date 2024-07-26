@@ -13,22 +13,16 @@ var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html"
 
 var pastGamesListTmpl = template.Must(template.ParseFiles("templates/pastgames/search_pastgames.html", common.BaseTmplPath))
 
-var Repo Repository
-
-func Init(repo Repository) {
-	Repo = repo
-}
-
 // NewPastGamesRouter sets up the routes for the pastgames package.
-func NewPastGamesRouter() http.Handler {
+func (s Service) NewPastGamesRouter() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/past-games/{gameID}", getPastGameHandler)
-	mux.HandleFunc("/past-games/{$}", browsePastGamesHandler)
+	mux.HandleFunc("/past-games/{gameID}", s.getPastGameHandler)
+	mux.HandleFunc("/past-games/{$}", s.browsePastGamesHandler)
 
 	return mux
 }
 
-func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract the game ID from the URL
 	gameID := r.PathValue("gameID")
 
@@ -38,7 +32,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pastGame, err := Repo.GetByID(int64(id))
+	pastGame, err := s.repo.GetByID(int64(id))
 	if err != nil {
 		if _, ok := err.(ErrPastGameNotFound); ok {
 			http.Error(w, "Past game not found", http.StatusNotFound)
@@ -49,7 +43,7 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = Repo.HydrateScores(pastGame)
+	err = s.repo.HydrateScores(pastGame)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		slog.Error("Error hydrating past game scores", "err", err)
@@ -62,15 +56,15 @@ func getPastGameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) browsePastGamesHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 
 	var pastGames []PastGame
 	var err error
 	if query != "" {
-		pastGames, err = Repo.BrowsePastGamesByID(query)
+		pastGames, err = s.repo.BrowsePastGamesByID(query)
 	} else {
-		pastGames, err = Repo.GetAll()
+		pastGames, err = s.repo.GetAll()
 	}
 
 	if err != nil {

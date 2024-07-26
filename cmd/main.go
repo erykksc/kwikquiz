@@ -58,8 +58,6 @@ func migrateDatabase() {
 		&quiz.Quiz{},
 		&quiz.Question{},
 		&quiz.Answer{},
-		// &pastgames.PastGame{},
-		// &pastgames.PlayerScore{},
 	}
 
 	for _, model := range modelsToMigrate {
@@ -95,22 +93,24 @@ func main() {
 		log.Fatalf("failed to set up database: %v", err)
 	}
 
+	// Open sqlite database connection
 	db, err := sqlx.Open("sqlite3", "kwikquiz.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	// Setup pastgames Service
 	pastGamesRepo := pastgames.NewRepositorySQLite(db)
 	err = pastGamesRepo.Initialize()
 	if err != nil {
 		slog.Error("failed to set up pastgames repo", "err", err)
 		panic(err)
 	}
+	pastGamesService := pastgames.NewService(pastGamesRepo)
 
-	pastgames.Init(pastGamesRepo)
-
+	// Setup lobbies Service
 	lobbiesRepo := lobbies.NewRepositoryInMemory()
-
 	lobbiesService := lobbies.NewService(lobbiesRepo, pastGamesRepo)
 
 	// Set up routes
@@ -121,7 +121,7 @@ func main() {
 
 	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbiesService.NewLobbiesRouter())
-	router.Handle("/past-games/", pastgames.NewPastGamesRouter())
+	router.Handle("/past-games/", pastGamesService.NewPastGamesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		if err := common.IndexTmpl.Execute(w, nil); err != nil {
 			slog.Error("Error rendering template", "error", err)
