@@ -12,32 +12,25 @@ import (
 	"strings"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/database"
 )
 
-var QuizzesRepo QuizRepository
-
-func InitRepo() {
-	QuizzesRepo = NewGormQuizRepository(database.DB)
-}
-
-func NewQuizzesRouter() http.Handler {
+func (s Service) NewQuizzesRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /quizzes/{$}", getAllQuizzesHandler)
-	mux.HandleFunc("GET /quizzes/{qid}", getQuizHandler)
-	mux.HandleFunc("POST /quizzes/create/{$}", postQuizHandler)
-	mux.HandleFunc("GET /quizzes/create/{$}", getQuizCreateHandler)
-	mux.HandleFunc("GET /quizzes/update/{qid}", getQuizUpdateHandler)
-	mux.HandleFunc("PUT /quizzes/update/{qid}", updateQuizHandler)
-	mux.HandleFunc("DELETE /quizzes/delete/{qid}", deleteQuizHandler)
+	mux.HandleFunc("GET /quizzes/{$}", s.getAllQuizzesHandler)
+	mux.HandleFunc("GET /quizzes/{qid}", s.getQuizHandler)
+	mux.HandleFunc("POST /quizzes/create/{$}", s.postQuizHandler)
+	mux.HandleFunc("GET /quizzes/create/{$}", s.getQuizCreateHandler)
+	mux.HandleFunc("GET /quizzes/update/{qid}", s.getQuizUpdateHandler)
+	mux.HandleFunc("PUT /quizzes/update/{qid}", s.updateQuizHandler)
+	mux.HandleFunc("DELETE /quizzes/delete/{qid}", s.deleteQuizHandler)
 
 	return mux
 }
 
-func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	quizzes, err := QuizzesRepo.GetAllQuizzes()
+	quizzes, err := s.repo.GetAllQuizzes()
 	if err != nil {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -48,7 +41,7 @@ func getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getQuizHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
 	qidStr := r.PathValue("qid")
@@ -61,7 +54,7 @@ func getQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := QuizzesRepo.GetQuiz(uint(qid))
+	quiz, err := s.repo.GetQuiz(uint(qid))
 	if err != nil {
 		var errQuizNotFound ErrQuizNotFound
 		switch {
@@ -88,27 +81,27 @@ type createQuizForm struct {
 	FormError   string
 }
 
-func postQuizHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) postQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
-	quiz, err := parseQuizForm(r)
+	quiz, err := s.parseQuizForm(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	_, err = QuizzesRepo.AddQuiz(quiz)
+	_, err = s.repo.AddQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
-		renderQuizCreateForm(w, quiz, err)
+		s.renderQuizCreateForm(w, quiz, err)
 		return
 	}
 	var lobbyPin = r.FormValue("lobbyPin")
 
-	redirectToQuiz(w, lobbyPin)
+	s.redirectToQuiz(w, lobbyPin)
 }
 
-func parseQuizForm(r *http.Request) (Quiz, error) {
+func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 	qidStr := r.PathValue("qid")
 	var qid uint
 
@@ -124,13 +117,13 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
-	questions, err := parseQuestions(r)
+	questions, err := s.parseQuestions(r)
 	if err != nil {
 		return Quiz{}, err
 	}
 
 	// Parse questions
-	questions, parseErr := parseQuestions(r)
+	questions, parseErr := s.parseQuestions(r)
 	if parseErr != nil {
 		return Quiz{}, parseErr
 	}
@@ -145,7 +138,7 @@ func parseQuizForm(r *http.Request) (Quiz, error) {
 	}, nil
 }
 
-func parseQuestions(r *http.Request) ([]Question, error) {
+func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 	var questions []Question
 	questionIndex := 1
 
@@ -219,7 +212,7 @@ func parseQuestions(r *http.Request) ([]Question, error) {
 	return questions, nil
 }
 
-func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
+func (s Service) renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
 		Title:       quiz.Title,
 		Description: quiz.Description,
@@ -232,12 +225,12 @@ func renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	}
 }
 
-func redirectToQuiz(w http.ResponseWriter, lobbyPin string) {
+func (s Service) redirectToQuiz(w http.ResponseWriter, lobbyPin string) {
 	w.Header().Add("HX-Redirect", fmt.Sprintf("/lobbies/%s", lobbyPin))
 	w.WriteHeader(http.StatusCreated)
 }
 
-func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
 	// Extract the 'LobbyPin' query parameter
@@ -258,7 +251,7 @@ func getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
 	qidStr := r.PathValue("qid")
@@ -271,7 +264,7 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := QuizzesRepo.GetQuiz(uint(qid))
+	quiz, err := s.repo.GetQuiz(uint(qid))
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:
@@ -315,27 +308,27 @@ func getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func updateQuizHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) updateQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
-	quiz, err := parseQuizForm(r)
+	quiz, err := s.parseQuizForm(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	_, err = QuizzesRepo.UpdateQuiz(quiz)
+	_, err = s.repo.UpdateQuiz(quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
-		renderQuizCreateForm(w, quiz, err)
+		s.renderQuizCreateForm(w, quiz, err)
 		return
 	}
 	var lobbyPin = r.FormValue("lobbyPin")
 
-	redirectToQuiz(w, lobbyPin)
+	s.redirectToQuiz(w, lobbyPin)
 }
 
-func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
+func (s Service) deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
 	qidStr := r.PathValue("qid")
@@ -348,7 +341,7 @@ func deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = QuizzesRepo.DeleteQuiz(uint(qid))
+	err = s.repo.DeleteQuiz(uint(qid))
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:

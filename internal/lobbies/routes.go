@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/quiz"
 	"github.com/gorilla/websocket"
 )
 
@@ -286,7 +285,7 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			quiz, err := quiz.QuizzesRepo.GetQuiz(uint(quizID))
+			quiz, err := s.qRepo.GetQuiz(uint(quizID))
 			if err != nil {
 				slog.Error("Error getting quiz", "err", err)
 				common.ErrorHandler(w, r, http.StatusBadRequest)
@@ -297,7 +296,7 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	quizzesMeta, err := quiz.QuizzesRepo.GetAllQuizzesMetadata()
+	quizzesMeta, err := s.qRepo.GetAllQuizzesMetadata()
 	if err != nil {
 		slog.Error("Error getting quizzes metadata", "err", err)
 		common.ErrorHandler(w, r, http.StatusInternalServerError)

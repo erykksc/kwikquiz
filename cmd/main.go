@@ -48,8 +48,6 @@ func setUpDatabase(conf config.Config) error {
 	// Migrate the schema
 	migrateDatabase()
 
-	quiz.InitRepo()
-
 	return nil
 }
 
@@ -109,9 +107,13 @@ func main() {
 	}
 	pastGamesService := pastgames.NewService(pastGamesRepo)
 
+	// Setup Quiz Service
+	quizRepo := quiz.NewGormQuizRepository(database.DB)
+	quizService := quiz.NewService(quizRepo)
+
 	// Setup lobbies Service
 	lobbiesRepo := lobbies.NewRepositoryInMemory()
-	lobbiesService := lobbies.NewService(lobbiesRepo, pastGamesRepo)
+	lobbiesService := lobbies.NewService(lobbiesRepo, pastGamesRepo, quizRepo)
 
 	// Set up routes
 	router := http.NewServeMux()
@@ -119,7 +121,7 @@ func main() {
 	fs := http.FileServer(http.Dir("static"))
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	router.Handle("/quizzes/", quiz.NewQuizzesRouter())
+	router.Handle("/quizzes/", quizService.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbiesService.NewLobbiesRouter())
 	router.Handle("/past-games/", pastGamesService.NewPastGamesRouter())
 	router.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +138,7 @@ func main() {
 		}
 		// Quizzes
 		for _, example := range quiz.GetExamples() {
-			quiz.QuizzesRepo.AddQuiz(example)
+			quizRepo.AddQuiz(example)
 		}
 		// Lobbies
 		for _, example := range lobbies.GetExamples() {
