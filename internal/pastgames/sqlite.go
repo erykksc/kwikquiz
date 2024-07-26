@@ -35,10 +35,9 @@ func (repo *repositorySQLite) Initialize() error {
 
 		CREATE TABLE IF NOT EXISTS player_score (
 			id INTEGER PRIMARY KEY,
-			past_game_id INTEGER,
+			past_game_id INTEGER REFERENCES past_games(id) ON DELETE CASCADE,
 			username TEXT,
-			score INTEGER,
-			FOREIGN KEY(past_game_id) REFERENCES past_games(id)
+			score INTEGER
 		);
 	`
 	_, err := repo.db.Exec(schema)
@@ -114,9 +113,9 @@ func (repo *repositorySQLite) Upsert(game *PastGame) (int64, error) {
 	}
 
 	// Delete all scores as updating isn't an option
-	res, err = repo.db.Exec(`
+	_, err = repo.db.Exec(`
 		DELETE FROM player_score WHERE past_game_id = ?
-	`)
+	`, upsertedGameID)
 
 	// Insert all scores
 	for _, score := range game.Scores {
