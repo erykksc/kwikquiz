@@ -1,18 +1,10 @@
 package pastgames
 
 import (
-	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
-
-	embed_files "github.com/erykksc/kwikquiz"
-	"github.com/erykksc/kwikquiz/internal/common"
 )
-
-var pastGameTmpl = common.ParseTmplWithFuncs("templates/pastgames/pastgame.html")
-
-var pastGamesListTmpl = template.Must(template.ParseFS(embed_files.Templates, "templates/pastgames/search_pastgames.html", common.BaseTmplPath))
 
 // NewPastGamesRouter sets up the routes for the pastgames package.
 func (s Service) NewPastGamesRouter() http.Handler {
