@@ -9,7 +9,6 @@ import (
 
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/config"
-	"github.com/erykksc/kwikquiz/internal/database"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -36,36 +35,6 @@ func getLoggingHandler(level slog.Leveler) slog.Handler {
 	return handler
 }
 
-func setUpDatabase(conf config.Config) error {
-	// Connect to the database
-	database.Connect(conf)
-	slog.Info("Database connected")
-
-	// Drop existing tables (Should only be used development!)
-	//database.DB.Migrator().DropTable(&models.Answer{}, &models.Question{}, &models.Quiz{}, &models.PastGame{},
-	//	&models.PlayerScore{})
-
-	// Migrate the schema
-	migrateDatabase()
-
-	return nil
-}
-
-func migrateDatabase() {
-	modelsToMigrate := []interface{}{
-		&quiz.Quiz{},
-		&quiz.Question{},
-		&quiz.Answer{},
-	}
-
-	for _, model := range modelsToMigrate {
-		if err := database.DB.AutoMigrate(model); err != nil {
-			log.Fatalf("failed to migrate model %T: %v", model, err)
-		}
-	}
-	slog.Info("Database migrated")
-}
-
 func main() {
 	// Load config from environmental variables
 	if err := config.LoadEnv(".env"); err != nil {
@@ -86,17 +55,17 @@ func main() {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
-	// Set up database
-	if err := setUpDatabase(conf); err != nil {
-		log.Fatalf("failed to set up database: %v", err)
-	}
-
 	// Open sqlite database connection
 	db, err := sqlx.Open("sqlite3", "kwikquiz.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
+	// Enforce CASCADE in sqlite, this needs to run before any other query
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Setup pastgames Service
 	pastGamesRepo := pastgames.NewRepositorySQLite(db)
@@ -108,7 +77,12 @@ func main() {
 	pastGamesService := pastgames.NewService(pastGamesRepo)
 
 	// Setup Quiz Service
-	quizRepo := quiz.NewGormQuizRepository(database.DB)
+	quizRepo := quiz.NewRepositorySQLite(db)
+	err = quizRepo.Initialize()
+	if err != nil {
+		slog.Error("failed to set up quiz repo", "err", err)
+		panic(err)
+	}
 	quizService := quiz.NewService(quizRepo)
 
 	// Setup lobbies Service
@@ -138,7 +112,7 @@ func main() {
 		}
 		// Quizzes
 		for _, example := range quiz.GetExamples() {
-			quizRepo.AddQuiz(example)
+			quizRepo.Insert(&example)
 		}
 		// Lobbies
 		for _, example := range lobbies.GetExamples() {

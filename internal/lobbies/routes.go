@@ -285,13 +285,13 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			quiz, err := s.qRepo.GetQuiz(uint(quizID))
+			quiz, err := s.qRepo.Get(int64(quizID))
 			if err != nil {
 				slog.Error("Error getting quiz", "err", err)
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			lobby.Quiz = quiz
+			lobby.Quiz = *quiz
 			slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
 		}
 	}

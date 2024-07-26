@@ -30,7 +30,7 @@ func (s Service) NewQuizzesRouter() http.Handler {
 
 func (s Service) getAllQuizzesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
-	quizzes, err := s.repo.GetAllQuizzes()
+	quizzes, err := s.repo.GetAll()
 	if err != nil {
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -54,7 +54,7 @@ func (s Service) getQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := s.repo.GetQuiz(uint(qid))
+	quiz, err := s.repo.Get(int64(qid))
 	if err != nil {
 		var errQuizNotFound ErrQuizNotFound
 		switch {
@@ -90,7 +90,7 @@ func (s Service) postQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.repo.AddQuiz(quiz)
+	_, err = s.repo.Insert(&quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		s.renderQuizCreateForm(w, quiz, err)
@@ -103,7 +103,7 @@ func (s Service) postQuizHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 	qidStr := r.PathValue("qid")
-	var qid uint
+	var qid int64
 
 	// Convert the string to an integer if qidStr is not empty
 	if qidStr != "" {
@@ -112,7 +112,7 @@ func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 			slog.Error("Error converting qid", "error", convErr)
 			return Quiz{}, fmt.Errorf("invalid quiz ID")
 		}
-		qid = uint(qidInt)
+		qid = int64(qidInt)
 	}
 	title := r.FormValue("title")
 	password := r.FormValue("password")
@@ -264,7 +264,7 @@ func (s Service) getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	quiz, err := s.repo.GetQuiz(uint(qid))
+	quiz, err := s.repo.Get(int64(qid))
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:
@@ -317,7 +317,7 @@ func (s Service) updateQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.repo.UpdateQuiz(quiz)
+	_, err = s.repo.Update(&quiz)
 	if err != nil {
 		slog.Error("Error adding quiz", "error", err)
 		s.renderQuizCreateForm(w, quiz, err)
@@ -341,7 +341,7 @@ func (s Service) deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.repo.DeleteQuiz(uint(qid))
+	err = s.repo.Delete(int64(qid))
 	if err != nil {
 		switch err.(type) {
 		case ErrQuizNotFound:

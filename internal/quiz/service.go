@@ -1,10 +1,10 @@
 package quiz
 
 type Service struct {
-	repo QuizRepository
+	repo Repository
 }
 
-func NewService(repo QuizRepository) Service {
+func NewService(repo Repository) Service {
 	return Service{
 		repo: repo,
 	}

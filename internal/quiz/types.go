@@ -1,12 +1,7 @@
 package quiz
 
-import (
-	"gorm.io/gorm"
-)
-
 type Quiz struct {
-	gorm.Model
-	ID          uint
+	ID          int64 `db:"quiz_id"`
 	Title       string
 	Password    string
 	Description string
@@ -14,24 +9,24 @@ type Quiz struct {
 }
 
 type Question struct {
-	gorm.Model
-	QuizID  uint
-	Text    string
+	id      int64    `db:"question_id"`
+	QuizID  int64    `db:"quiz_id"`
+	Text    string   `db:"question_text"`
 	Answers []Answer `gorm:"foreignKey:QuestionID"`
 }
 
 type Answer struct {
-	gorm.Model
-	QuestionID uint
-	IsCorrect  bool
-	Text       string
-	LaTeX      string
+	ID         int64  `db:"answer_id"`
+	QuestionID int64  `db:"question_id"`
+	IsCorrect  bool   `db:"is_correct"`
+	Text       string `db:"answer_text"`
+	LaTeX      string `db:"latex"`
 	ImageName  string
 	Image      []byte
 }
 
 // It is used for faster lookups if only limited data is needed
 type QuizMetadata struct {
-	ID    uint
+	ID    uint `db:"quiz_id"`
 	Title string
 }
