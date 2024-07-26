@@ -4,17 +4,12 @@ import (
 	"fmt"
 	"html/template"
 
-	embed_files "github.com/erykksc/kwikquiz"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
-func tmplParseWithBase(path string) *template.Template {
-	return template.Must(template.ParseFS(embed_files.Templates, path, common.BaseTmplPath))
-}
-
-var LobbiesTmpl = tmplParseWithBase("templates/lobbies/lobbies.html")
-var LobbyTmpl = tmplParseWithBase("templates/lobbies/lobby.html")
+var LobbiesTmpl = common.TmplParseWithBase("templates/lobbies/lobbies.html")
+var LobbyTmpl = common.TmplParseWithBase("templates/lobbies/lobby.html")
 var LobbyErrorAlertTmpl = LobbyTmpl.Lookup("error-alert")
 
 type ViewData struct {
@@ -28,7 +23,7 @@ var ChooseUsernameView = common.ParseTmplWithFuncs("templates/views/choose-usern
 var WaitingRoomView = common.ParseTmplWithFuncs("templates/views/waiting-room-view.html")
 var QuestionView = common.ParseTmplWithFuncs("templates/views/question-view.html")
 var AnswerView = common.ParseTmplWithFuncs("templates/views/answer-view.html")
-var onFinishView = tmplParseWithBase("templates/views/on-finish-view.html")
+var onFinishView = common.TmplParseWithBase("templates/views/on-finish-view.html")
 
 type OnFinishData struct {
 	PastGameID int64
