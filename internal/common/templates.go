@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"path/filepath"
 	"time"
+
+	embed_files "github.com/erykksc/kwikquiz"
 )
 
 const (
@@ -12,7 +14,7 @@ const (
 
 // tmplParseWithBase parses the given template file and base template file
 func tmplParseWithBase(path string) *template.Template {
-	return template.Must(template.ParseFiles(path, BaseTmplPath))
+	return template.Must(template.ParseFS(embed_files.Templates, path, BaseTmplPath))
 }
 
 func ParseTmplWithFuncs(path string) *template.Template {
@@ -29,7 +31,7 @@ func ParseTmplWithFuncs(path string) *template.Template {
 		"add": func(a, b int) int {
 			return a + b
 		},
-	}).ParseFiles(path, BaseTmplPath))
+	}).ParseFS(embed_files.Templates, path, BaseTmplPath))
 
 	return viewTmpl
 }

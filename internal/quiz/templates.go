@@ -3,11 +3,12 @@ package quiz
 import (
 	"html/template"
 
+	embed_files "github.com/erykksc/kwikquiz"
 	"github.com/erykksc/kwikquiz/internal/common"
 )
 
 func tmplParseWithBase(path string) *template.Template {
-	return template.Must(template.ParseFiles(path, common.BaseTmplPath))
+	return template.Must(template.ParseFS(embed_files.Templates, path, common.BaseTmplPath))
 }
 
 // Templates used to render the different pages of the quiz
