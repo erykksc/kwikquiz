@@ -1,169 +1,97 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <title>Create Quiz</title>
-  {{ template "header-content" }}
-  <style>
-    .bg-baby-pink {
-      background-color: #fec6e2;
-    }
+  <head>
+    <title>Create Quiz</title>
+    {{ template "header-content" }}
+  </head>
+  <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white shadow-lg rounded-lg p-8 md:p-10 w-full md:max-w-2xl flex flex-col overflow-auto">
+      <h2 class="text-2xl md:text-3xl font-bold mb-6 text-green-700">Create a new KWIKQUIZ</h2>
 
-    .bg-dark-green {
-      background-color: #123f16;
-    }
-
-    .text-baby-pink {
-      color: #fec6e2;
-    }
-
-    .text-dark-green {
-      color: #123f16;
-    }
-
-    .input-border-green {
-      border-color: #123f16;
-    }
-
-    .border-dark-green {
-      border-color: #123f16;
-    }
-
-    .border-baby-pink {
-      border-color: #f3c4db;
-    }
-
-    .bg-medium-pink {
-      background-color: #d180a8;
-    }
-
-    .hover-bg-dark-green {
-      background-color: #123f16;
-    }
-
-    .hover-text-baby-pink {
-      color: #f6cee2;
-    }
-
-    .bg-main-color {
-      background-color: #9ec58d; /* main color */
-    }
-
-    .hover\:bg-main-color-hover:hover {
-      background-color: #88b378; /* slightly darker shade for hover */
-    }
-
-    .border-main-color-dark {
-      border-color: #7ca374; /* darker shade for border */
-    }
-
-    .hover\:border-main-color-hover:hover {
-      border-color: #7ca374; /* darker shade for hover border */
-    }
-
-    .background-pattern {
-      background-color: #fec6e2;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    h0 {
-      background-color: #123f16;
-      padding: 1px;
-      border-radius: 8px;
-    }
-  </style>
-</head>
-<body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
-<div class="bg-white shadow-lg rounded-lg p-8 md:p-10 w-full md:max-w-2xl flex flex-col overflow-auto">
-  <h2 class="text-2xl md:text-3xl font-bold mb-6 text-green-700">Create a new KWIKQUIZ</h2>
-
-  <form
-    id="quiz-form"
-    class="flex-grow flex flex-col space-y-4"
-    hx-post="/quizzes/create/"
-    hx-trigger="submit"
-    hx-target="this"
-  >
-    {{ define "create-form" }}
-
-    <!-- Hidden LobbyPin Input -->
-    <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin }}" />
-
-    <!-- Quiz Title -->
-    <div>
-      <label for="title" class="block text-green-700 font-semibold mb-2">Quiz Title</label>
-      <input
-        type="text"
-        id="title"
-        name="title"
-        class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
-        placeholder="Enter Quiz Title"
-        required
-      />
-    </div>
-
-    <!-- Quiz Password -->
-    <div>
-      <input
-        type="hidden"
-        id="password"
-        name="password"
-        class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
-        placeholder="Enter Quiz Password"
-      />
-    </div>
-
-    <!-- Quiz Description -->
-    <div>
-      <label for="description" class="block text-green-700 font-semibold mb-2">Description</label>
-      <input
-        type="text"
-        id="description"
-        name="description"
-        class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
-        placeholder="Enter Description"
-      />
-    </div>
-
-    <!-- Questions -->
-    <div id="questions-section" class="flex-grow overflow-auto mb-4">
-      <label class="block text-green-700 font-semibold mb-2">Questions</label>
-      <div id="questions-list" class="flex-grow overflow-auto border border-gray-200 rounded-lg p-4">
-        <!-- Questions will be added here dynamically -->
-      </div>
-    </div>
-
-    <!-- Buttons -->
-    <div class="flex justify-between items-center">
-      <button
-        type="button"
-        id="add-question-btn"
-        class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-xl"
+      <form
+        id="quiz-form"
+        class="flex-grow flex flex-col space-y-4"
+        hx-post="/quizzes/create/"
+        hx-trigger="submit"
+        hx-target="this"
       >
-        Add Question
-      </button>
-      <div>
-        <button
-          type="button"
-          class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 border-b-4 border-red-700 hover:border-red-800 rounded text-xl mr-2"
-          onclick="window.location.href='/'"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="bg-green-700 hover:bg-green-600 text-white font-bold mt-4 py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-xl"
-        >
-          Create KWIKQUIZ
-        </button>
-      </div>
+        {{ define "create-form" }}
+
+        <!-- Hidden LobbyPin Input -->
+        <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin }}" />
+
+        <!-- Quiz Title -->
+        <div>
+          <label for="title" class="block text-green-700 font-semibold mb-2">Quiz Title</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            placeholder="Enter Quiz Title"
+            required
+          />
+        </div>
+
+        <!-- Quiz Password -->
+        <div>
+          <input
+            type="hidden"
+            id="password"
+            name="password"
+            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            placeholder="Enter Quiz Password"
+          />
+        </div>
+
+        <!-- Quiz Description -->
+        <div>
+          <label for="description" class="block text-green-700 font-semibold mb-2">Description</label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
+            placeholder="Enter Description"
+          />
+        </div>
+
+        <!-- Questions -->
+        <div id="questions-section" class="flex-grow overflow-auto mb-4">
+          <label class="block text-green-700 font-semibold mb-2">Questions</label>
+          <div id="questions-list" class="flex-grow overflow-auto border border-gray-200 rounded-lg p-4">
+            <!-- Questions will be added here dynamically -->
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-between items-center">
+          <button
+            type="button"
+            id="add-question-btn"
+            class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-xl"
+          >
+            Add Question
+          </button>
+          <div>
+            <button
+              type="button"
+              class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 border-b-4 border-red-700 hover:border-red-800 rounded text-xl mr-2"
+              onclick="window.location.href='/'"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="bg-green-700 hover:bg-green-600 text-white font-bold mt-4 py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-xl"
+            >
+              Create KWIKQUIZ
+            </button>
+          </div>
+        </div>
+        {{ end }} {{ template "create-form" . }}
+      </form>
     </div>
-    {{ end }}
-    {{ template "create-form" . }}
-  </form>
-</div>
-<script src="/static/js/quiz.js"></script>
-</body>
+    <script src="/static/js/quiz.js"></script>
+  </body>
 </html>
