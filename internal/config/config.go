@@ -2,7 +2,6 @@ package config
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 )
@@ -16,11 +15,11 @@ type Config struct {
 type config struct {
 	InDevMode  bool
 	InProdMode bool
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBHost     string
-	DBPort     string
+	// DBUser     string
+	// DBPassword string
+	// DBName     string
+	// DBHost     string
+	// DBPort     string
 }
 
 // LoadConfigFromEnv loads the configuration from the environment variables
@@ -32,30 +31,30 @@ func LoadConfigFromEnv() (Config, error) {
 		config{
 			InDevMode:  inDebug,
 			InProdMode: inProd,
-			DBUser:     os.Getenv("DB_USER"),
-			DBPassword: os.Getenv("DB_PASSWORD"),
-			DBName:     os.Getenv("DB_NAME"),
-			DBHost:     os.Getenv("DB_HOST"),
-			DBPort:     os.Getenv("DB_PORT"),
+			// DBUser:     os.Getenv("DB_USER"),
+			// DBPassword: os.Getenv("DB_PASSWORD"),
+			// DBName:     os.Getenv("DB_NAME"),
+			// DBHost:     os.Getenv("DB_HOST"),
+			// DBPort:     os.Getenv("DB_PORT"),
 		},
 	}
 
 	// Check if the environment variables are set
-	if cfg.DBUser == "" {
-		return cfg, fmt.Errorf("DB_USER is not set")
-	}
-	if cfg.DBPassword == "" {
-		return cfg, fmt.Errorf("DB_PASSWORD is not set")
-	}
-	if cfg.DBName == "" {
-		return cfg, fmt.Errorf("DB_NAME is not set")
-	}
-	if cfg.DBHost == "" {
-		return cfg, fmt.Errorf("DB_HOST is not set")
-	}
-	if cfg.DBPort == "" {
-		return cfg, fmt.Errorf("DB_PORT is not set")
-	}
+	// if cfg.DBUser == "" {
+	// 	return cfg, fmt.Errorf("DB_USER is not set")
+	// }
+	// if cfg.DBPassword == "" {
+	// 	return cfg, fmt.Errorf("DB_PASSWORD is not set")
+	// }
+	// if cfg.DBName == "" {
+	// 	return cfg, fmt.Errorf("DB_NAME is not set")
+	// }
+	// if cfg.DBHost == "" {
+	// 	return cfg, fmt.Errorf("DB_HOST is not set")
+	// }
+	// if cfg.DBPort == "" {
+	// 	return cfg, fmt.Errorf("DB_PORT is not set")
+	// }
 
 	return cfg, nil
 }
