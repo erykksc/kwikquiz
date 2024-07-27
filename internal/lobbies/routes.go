@@ -26,15 +26,6 @@ func (s Service) NewLobbiesRouter() http.Handler {
 	return mux
 }
 
-// getClientIDFromRequest returns the clientID from the request cookie
-func getClientIDFromRequest(r *http.Request) (ClientID, error) {
-	clientIDCookie, err := r.Cookie("client-id")
-	if err == http.ErrNoCookie {
-		return "", err
-	}
-	return ClientID(clientIDCookie.Value), nil
-}
-
 // TODO: Make it only accessible by admin
 func (s Service) getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
@@ -51,7 +42,7 @@ func (s Service) getLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s Service) postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the client isn't a host of another lobby
-	clientID, err := getClientIDFromRequest(r)
+	clientID, err := common.EnsureClientID(w, r)
 	if err == nil {
 		lobby, err := s.lRepo.GetLobbyByHost(clientID)
 		if err == nil {
@@ -90,24 +81,6 @@ func (s Service) getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// GET CLIENT ID from COOKIE
-	cID, err := getClientIDFromRequest(r)
-	if err == http.ErrNoCookie {
-		// Set new client id if not present
-		cID, err = NewClientID()
-		if err != nil {
-			slog.Error("Error generating new client id", "err", err)
-			common.ErrorHandler(w, r, http.StatusInternalServerError)
-			return
-		}
-	}
-
-	// SET CLIENT ID COOKIE or UPDATE EXPIRATION
-	http.SetCookie(w, &http.Cookie{
-		Name:  "client-id",
-		Value: string(cID),
-	})
-
 	if err := LobbyTmpl.Execute(w, &lobby); err != nil {
 		slog.Error("Error rendering template", "err", err)
 	}
@@ -115,9 +88,9 @@ func (s Service) getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
 func (s Service) getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
-	clientID, err := getClientIDFromRequest(r)
+	clientID, err := common.EnsureClientID(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -226,12 +199,6 @@ func (s Service) getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 
 // Handler used for getting/updating the lobby settings from the waiting room
 func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
-	clientID, err := getClientIDFromRequest(r)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
 	pin := r.PathValue("pin")
 
 	lobby, err := s.lRepo.GetLobby(pin)
@@ -245,7 +212,14 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 	// Check if the client is the host
+	clientID, err := common.EnsureClientID(w, r)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	if lobby.Host == nil || lobby.Host.ClientID != clientID {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

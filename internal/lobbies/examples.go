@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
@@ -25,7 +26,7 @@ var Example1234Lobby = Lobby{
 	Host:                     nil,
 	TimePerQuestion:          30 * time.Second,
 	TimeForReading:           time.Second * 5,
-	Players:                  make(map[ClientID]*User),
+	Players:                  make(map[common.ClientID]*User),
 	State:                    LsWaitingForPlayers,
 	questionTimer:            &cancellableTimer{},
 	CurrentQuestionStartTime: time.Time{},
@@ -46,7 +47,7 @@ var Example1235Lobby = Lobby{
 	Host:            nil,
 	TimePerQuestion: 30 * time.Second,
 	TimeForReading:  time.Second * 5,
-	Players: map[ClientID]*User{
+	Players: map[common.ClientID]*User{
 		"IMPOSSIBLE_ID": {
 			Username: "Jeff",
 			Score:    100,
@@ -77,7 +78,7 @@ var ExampleLobbyOnQuestionView = Lobby{
 	Host:                     nil,
 	TimePerQuestion:          30 * time.Second,
 	TimeForReading:           time.Second * 5,
-	Players:                  make(map[ClientID]*User),
+	Players:                  make(map[common.ClientID]*User),
 	State:                    LsQuestion,
 	questionTimer:            &cancellableTimer{},
 	CurrentQuestionStartTime: time.Now(),

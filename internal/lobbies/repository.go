@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+
+	"github.com/erykksc/kwikquiz/internal/common"
 )
 
 type errLobbyNotFound struct{}
@@ -23,7 +25,7 @@ type Repository interface {
 	GetLobby(pin string) (*Lobby, error)
 	DeleteLobby(pin string) error
 	GetAllLobbies() ([]*Lobby, error)
-	GetLobbyByHost(ClientID) (*Lobby, error)
+	GetLobbyByHost(common.ClientID) (*Lobby, error)
 }
 
 // In-memory store for games
@@ -97,7 +99,7 @@ func (s *inMemoryLobbyRepository) GetAllLobbies() ([]*Lobby, error) {
 	return lobbies, nil
 }
 
-func (s *inMemoryLobbyRepository) GetLobbyByHost(host ClientID) (*Lobby, error) {
+func (s *inMemoryLobbyRepository) GetLobbyByHost(host common.ClientID) (*Lobby, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, l := range s.lobbies {

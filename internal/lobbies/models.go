@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
@@ -18,7 +19,7 @@ type Lobby struct {
 	Pin                      string
 	TimePerQuestion          time.Duration // Time for players to answer a question
 	TimeForReading           time.Duration // Time to read the question before answering is allowed
-	Players                  map[ClientID]*User
+	Players                  map[common.ClientID]*User
 	State                    LobbyState
 	questionTimer            *cancellableTimer
 	CurrentQuestionStartTime time.Time
@@ -59,7 +60,7 @@ func createLobby(options lobbyOptions) *Lobby {
 		TimePerQuestion: timePerQuestion,
 		TimeForReading:  timeForReading,
 		CreatedAt:       time.Now(),
-		Players:         make(map[ClientID]*User),
+		Players:         make(map[common.ClientID]*User),
 		State:           LsWaitingForPlayers,
 		Quiz:            options.Quiz,
 	}

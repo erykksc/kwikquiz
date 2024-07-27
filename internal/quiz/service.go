@@ -7,5 +7,6 @@ type Service struct {
 func NewService(repo Repository) Service {
 	return Service{
 		repo: repo,
+		// tmpQuizzes : make(map[ClientID]Quiz)
 	}
 }
