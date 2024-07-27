@@ -3,7 +3,6 @@ package pastgames
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -36,10 +35,12 @@ func (repo *repositorySQLite) createTables() error {
 
 		CREATE TABLE IF NOT EXISTS player_score (
 			id INTEGER PRIMARY KEY,
-			past_game_id INTEGER REFERENCES past_games(id) ON DELETE CASCADE,
+			past_game_id INTEGER REFERENCES past_game(id) ON DELETE CASCADE,
 			username TEXT,
 			score INTEGER
 		);
+
+		CREATE INDEX IF NOT EXISTS idx_player_score_past_game_id ON player_score(past_game_id);
 	`
 	_, err := repo.db.Exec(schema)
 	return err
@@ -53,12 +54,14 @@ func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	// Rollback if no tx.Commit (if there is commit, this is no-op)
+	defer tx.Rollback()
 
 	// Insert the game
 	res, err := tx.NamedExec(`
         INSERT INTO past_game (started_at, ended_at, quiz_title)
 		VALUES (:started_at, :ended_at, :quiz_title)
-    `, game)
+    `, &game)
 	if err != nil {
 		return 0, err
 	}
@@ -74,12 +77,7 @@ func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 			INSERT INTO player_score (past_game_id, username, score)
 			VALUES (?, ?, ?)
 		`, insertedGameID, score.Username, score.Score)
-
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 	}
@@ -93,51 +91,47 @@ func (repo *repositorySQLite) Upsert(game *PastGame) (int64, error) {
 	if game == nil {
 		return 0, errors.New("game is nil")
 	}
+
 	tx, err := repo.db.Beginx()
 	if err != nil {
 		return 0, err
 	}
+	// Rollback if no tx.Commit (if there is commit, this is no-op)
+	defer tx.Rollback()
 
-	res, err := tx.NamedExec(`
+	_, err = tx.NamedExec(`
         INSERT INTO past_game (id, started_at, ended_at, quiz_title)
 		VALUES (:id, :started_at, :ended_at, :quiz_title)
         ON CONFLICT(id) DO UPDATE SET
         started_at = EXCLUDED.started_at,
         ended_at = EXCLUDED.ended_at,
         quiz_title = EXCLUDED.quiz_title
-    `, game)
-	if err != nil {
-		return 0, err
-	}
-	upsertedGameID, err := res.LastInsertId()
+    `, &game)
 	if err != nil {
 		return 0, err
 	}
 
 	// Delete all scores as updating isn't an option
-	_, err = repo.db.Exec(`
+	_, err = tx.Exec(`
 		DELETE FROM player_score WHERE past_game_id = ?
-	`, upsertedGameID)
+	`, game.ID)
+	if err != nil {
+		return 0, err
+	}
 
 	// Insert all scores
 	for _, score := range game.Scores {
 		_, err := tx.Exec(`
 			INSERT INTO player_score (past_game_id, username, score)
 			VALUES (?, ?, ?)
-		`, upsertedGameID, score.Username, score.Score)
-
+		`, game.ID, score.Username, score.Score)
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 	}
 
 	err = tx.Commit()
-
-	return upsertedGameID, err
+	return game.ID, err
 }
 
 func (repo *repositorySQLite) GetByID(id int64) (*PastGame, error) {

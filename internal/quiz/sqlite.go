@@ -57,10 +57,13 @@ func (repo *repositorySQLite) Insert(quiz *Quiz) (int64, error) {
 	if quiz == nil {
 		return 0, errors.New("quiz is nil")
 	}
+
 	tx, err := repo.db.Beginx()
 	if err != nil {
 		return 0, err
 	}
+	// Rollback if no tx.Commit (if there is commit, this is no-op)
+	defer tx.Rollback()
 
 	// Insert the game
 	res, err := tx.NamedExec(`
@@ -82,16 +85,14 @@ func (repo *repositorySQLite) Insert(quiz *Quiz) (int64, error) {
 			INSERT INTO question (quiz_id, question_text)
 			VALUES (?, ?)
 		`, insertedQuizID, question.Text)
-
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 
 		insertedQuestionID, err := res.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
 
 		for i := range question.Answers {
 			question.Answers[i].QuestionID = insertedQuestionID
@@ -101,12 +102,7 @@ func (repo *repositorySQLite) Insert(quiz *Quiz) (int64, error) {
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
 		`, question.Answers)
-
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 	}
@@ -123,9 +119,11 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	// Rollback if no tx.Commit (if there is commit, this is no-op)
+	defer tx.Rollback()
 
 	// Insert the game
-	res, err := tx.NamedExec(`
+	_, err = tx.NamedExec(`
 		INSERT INTO quiz (quiz_id, title, password, description)
 		VALUES (:quiz_id, :title, :password, :description)
 		ON CONFLICT(quiz_id) DO UPDATE SET
@@ -137,32 +135,28 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 		return 0, err
 	}
 
-	upsertedQuizID, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
 	// Remove all questions (and answers because of CASCADE)
 	_, err = repo.db.Exec(`
 		DELETE FROM question WHERE quiz_id = ?
-	`, upsertedQuizID)
+	`, quiz.ID)
+	if err != nil {
+		return 0, err
+	}
 
 	// Insert all questions
 	for _, question := range quiz.Questions {
 		res, err := tx.Exec(`
 			INSERT INTO question (quiz_id, question_text)
 			VALUES (?, ?)
-		`, upsertedQuizID, question.Text)
-
+		`, quiz.ID, question.Text)
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 
 		insertedQuestionID, err := res.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
 
 		for i := range question.Answers {
 			question.Answers[i].QuestionID = insertedQuestionID
@@ -172,19 +166,14 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
 		`, question.Answers)
-
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 	}
 
 	err = tx.Commit()
 
-	return upsertedQuizID, err
+	return quiz.ID, err
 }
 
 func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
@@ -195,6 +184,13 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	// Rollback if no tx.Commit (if there is commit, this is no-op)
+	defer func() {
+		rErr := tx.Rollback()
+		if rErr != nil {
+			slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
+		}
+	}()
 
 	// Insert the game
 	res, err := tx.NamedExec(`
@@ -217,6 +213,9 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 	_, err = repo.db.Exec(`
 		DELETE FROM question WHERE quiz_id = ?
 	`, upsertedQuizID)
+	if err != nil {
+		return 0, err
+	}
 
 	// Insert all questions
 	for _, question := range quiz.Questions {
@@ -224,16 +223,14 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 			INSERT INTO question (quiz_id, question_text)
 			VALUES (?, ?)
 		`, upsertedQuizID, question.Text)
-
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 
 		insertedQuestionID, err := res.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
 
 		for i := range question.Answers {
 			question.Answers[i].QuestionID = insertedQuestionID
@@ -243,12 +240,7 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
 		`, question.Answers)
-
 		if err != nil {
-			rErr := tx.Rollback()
-			if rErr != nil {
-				slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-			}
 			return 0, err
 		}
 	}
