@@ -1,0 +1,17 @@
+bin/
+tmp/
+
+Dockerfile
+.dockerignore
+
+.ait.toml
+.env
+.gitignore
+.prettierrc.json
+
+CONTRIBUTING.md
+LICENSE
+README.md
+
+*.db
+
