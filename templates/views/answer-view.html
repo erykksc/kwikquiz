@@ -24,7 +24,7 @@
 
     {{ if eq .Lobby.CurrentQuestionIdx (decrement (len .Lobby.Quiz.Questions)) }}
     <button
-      name="next-question-btn"
+      name="finish-game-btn"
       ws-send
       class="mt-4 mb-4 bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-2xl"
     >

@@ -46,6 +46,9 @@ func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 	case "next-question-btn":
 		var event leNextQuestionRequested
 		return event, nil
+	case "finish-game-btn":
+		var event leEndGameRequested
+		return event, nil
 	case "change-username-btn":
 		var event leUsernameChangeRequested
 		return event, nil
@@ -283,6 +286,10 @@ func (e leNextQuestionRequested) String() string {
 }
 
 func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User) error {
+	if l.CurrentQuestionIdx >= len(l.Quiz.Questions)-1 {
+		slog.Warn("Next question requested after the last question", "Client-ID", initiator.ClientID)
+		return nil
+	}
 	// Reset Player answers
 	l.Host.SubmittedAnswerIdx = -1
 	l.Host.AnswerSubmissionTime = time.Time{}
@@ -293,19 +300,11 @@ func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User
 
 	l.State = LsQuestion
 	l.CurrentQuestionIdx++
+	l.CurrentQuestion = &l.Quiz.Questions[l.CurrentQuestionIdx]
 	l.CurrentQuestionStartTime = time.Now()
 	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion)
 	l.ReadingTimeout = l.CurrentQuestionStartTime.Add(l.TimeForReading)
 	l.PlayersAnswering = len(l.Players)
-
-	slog.Info("Next question", "Question-Index", l.CurrentQuestionIdx)
-
-	// Check if the game has finished
-	if l.CurrentQuestionIdx == len(l.Quiz.Questions) {
-		return leEndGameRequested{}.Handle(s, l, initiator)
-	}
-
-	l.CurrentQuestion = &l.Quiz.Questions[l.CurrentQuestionIdx]
 
 	// Start the question timer
 	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)
