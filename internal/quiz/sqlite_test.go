@@ -5,7 +5,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRepositorySQLite(t *testing.T) {
@@ -56,29 +55,54 @@ func TestRepositorySQLite(t *testing.T) {
 		repo := newRepo(db)
 
 		_, err := repo.Insert(nil)
-		assert.Error(t, err)
-		assert.Equal(t, "quiz is nil", err.Error())
+		if err == nil {
+			t.Errorf("Expected error, got nil")
+		}
 	})
 
 	t.Run("insert and get valid quiz", func(t *testing.T) {
 		db := newDB()
 		defer db.Close()
 		repo := newRepo(db)
-		assert := assert.New(t)
 
 		id, err := repo.Insert(&testQuiz)
-		assert.NoError(err)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
 
 		// Verify the inserted data
 		insertedQuiz, err := repo.Get(id)
-		assert.NoError(err)
-		assert.Equal(id, insertedQuiz.ID)
-		assert.Equal(testQuiz.Title, insertedQuiz.Title)
-		assert.Equal(testQuiz.Password, insertedQuiz.Password)
-		assert.Equal(testQuiz.Description, insertedQuiz.Description)
-		assert.Equal(testQuiz.Questions[0].Text, insertedQuiz.Questions[0].Text)
-		assert.Equal(testQuiz.Questions[0].Answers[0].Text, insertedQuiz.Questions[0].Answers[0].Text)
-		assert.Equal(testQuiz.Questions[0].Answers[0].IsCorrect, insertedQuiz.Questions[0].Answers[0].IsCorrect)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		if id != insertedQuiz.ID {
+			t.Errorf("Expected ID %v, got %v", id, insertedQuiz.ID)
+		}
+
+		if testQuiz.Title != insertedQuiz.Title {
+			t.Errorf("Expected Title %s, got %s", testQuiz.Title, insertedQuiz.Title)
+		}
+
+		if testQuiz.Password != insertedQuiz.Password {
+			t.Errorf("Expected Password %s, got %s", testQuiz.Password, insertedQuiz.Password)
+		}
+
+		if testQuiz.Description != insertedQuiz.Description {
+			t.Errorf("Expected Description %s, got %s", testQuiz.Description, insertedQuiz.Description)
+		}
+
+		if testQuiz.Questions[0].Text != insertedQuiz.Questions[0].Text {
+			t.Errorf("Expected Question Text %s, got %s", testQuiz.Questions[0].Text, insertedQuiz.Questions[0].Text)
+		}
+
+		if testQuiz.Questions[0].Answers[0].Text != insertedQuiz.Questions[0].Answers[0].Text {
+			t.Errorf("Expected Answer Text %s, got %s", testQuiz.Questions[0].Answers[0].Text, insertedQuiz.Questions[0].Answers[0].Text)
+		}
+
+		if testQuiz.Questions[0].Answers[0].IsCorrect != insertedQuiz.Questions[0].Answers[0].IsCorrect {
+			t.Errorf("Expected Answer IsCorrect %v, got %v", testQuiz.Questions[0].Answers[0].IsCorrect, insertedQuiz.Questions[0].Answers[0].IsCorrect)
+		}
 	})
 
 	t.Run("Upsert", func(t *testing.T) {
@@ -88,22 +112,47 @@ func TestRepositorySQLite(t *testing.T) {
 
 		testQuiz.ID = 123
 		id, err := repo.Upsert(&testQuiz)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
 
-		assert := assert.New(t)
-
-		assert.NoError(err)
-		assert.Equal(int64(123), id)
+		if id != int64(123) {
+			t.Errorf("Expected ID %v, got %v", 123, id)
+		}
 
 		// Verify the inserted data
 		upsertedQuiz, err := repo.Get(id)
-		assert.NoError(err)
-		assert.Equal(id, upsertedQuiz.ID)
-		assert.Equal(testQuiz.Title, upsertedQuiz.Title)
-		assert.Equal(testQuiz.Password, upsertedQuiz.Password)
-		assert.Equal(testQuiz.Description, upsertedQuiz.Description)
-		assert.Equal(testQuiz.Questions[0].Text, upsertedQuiz.Questions[0].Text)
-		assert.Equal(testQuiz.Questions[0].Answers[0].Text, upsertedQuiz.Questions[0].Answers[0].Text)
-		assert.Equal(testQuiz.Questions[0].Answers[0].IsCorrect, upsertedQuiz.Questions[0].Answers[0].IsCorrect)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		if id != upsertedQuiz.ID {
+			t.Errorf("Expected ID %v, got %v", id, upsertedQuiz.ID)
+		}
+
+		if testQuiz.Title != upsertedQuiz.Title {
+			t.Errorf("Expected Title %s, got %s", testQuiz.Title, upsertedQuiz.Title)
+		}
+
+		if testQuiz.Password != upsertedQuiz.Password {
+			t.Errorf("Expected Password %s, got %s", testQuiz.Password, upsertedQuiz.Password)
+		}
+
+		if testQuiz.Description != upsertedQuiz.Description {
+			t.Errorf("Expected Description %s, got %s", testQuiz.Description, upsertedQuiz.Description)
+		}
+
+		if testQuiz.Questions[0].Text != upsertedQuiz.Questions[0].Text {
+			t.Errorf("Expected Question Text %s, got %s", testQuiz.Questions[0].Text, upsertedQuiz.Questions[0].Text)
+		}
+
+		if testQuiz.Questions[0].Answers[0].Text != upsertedQuiz.Questions[0].Answers[0].Text {
+			t.Errorf("Expected Answer Text %s, got %s", testQuiz.Questions[0].Answers[0].Text, upsertedQuiz.Questions[0].Answers[0].Text)
+		}
+
+		if testQuiz.Questions[0].Answers[0].IsCorrect != upsertedQuiz.Questions[0].Answers[0].IsCorrect {
+			t.Errorf("Expected Answer IsCorrect %v, got %v", testQuiz.Questions[0].Answers[0].IsCorrect, upsertedQuiz.Questions[0].Answers[0].IsCorrect)
+		}
 	})
 
 	t.Run("DeleteQuiz", func(t *testing.T) {
