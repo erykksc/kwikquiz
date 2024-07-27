@@ -88,12 +88,6 @@ func (s Service) getLobbyByPinHandler(w http.ResponseWriter, r *http.Request) {
 
 // getLobbyByPinWsHandler handles requests to /lobbies/{pin}/ws
 func (s Service) getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) {
-	clientID, err := common.EnsureClientID(w, r)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
 	pin := r.PathValue("pin")
 
 	lobby, err := s.lRepo.GetLobby(pin)
@@ -107,6 +101,12 @@ func (s Service) getLobbyByPinWsHandler(w http.ResponseWriter, r *http.Request) 
 	default:
 		slog.Error("Error getting lobby", "err", err)
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
+		return
+	}
+
+	clientID, err := common.EnsureClientID(w, r)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
