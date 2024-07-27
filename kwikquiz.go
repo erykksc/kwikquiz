@@ -1,13 +1,13 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 
-	embed_files "github.com/erykksc/kwikquiz"
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
@@ -16,6 +16,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+//go:embed static
+var staticFS embed.FS
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +89,7 @@ func main() {
 	// Set up routes
 	router := http.NewServeMux()
 
-	fs := http.FileServer(http.FS(embed_files.Static))
+	fs := http.FileServer(http.FS(staticFS))
 	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	router.Handle("/quizzes/", quizService.NewQuizzesRouter())

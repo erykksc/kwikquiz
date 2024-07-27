@@ -3,21 +3,23 @@ package common
 import (
 	"html/template"
 	"path/filepath"
+	"strings"
 	"time"
 
-	embed_files "github.com/erykksc/kwikquiz"
-)
-
-const (
-	BaseTmplPath = "templates/base.html"
+	"github.com/erykksc/kwikquiz/templates"
 )
 
 // TmplParseWithBase parses the given template file and base template file
 func TmplParseWithBase(path string) *template.Template {
-	return template.Must(template.ParseFS(embed_files.Templates, path, BaseTmplPath))
+	// Path inside the <project-root>/templates/
+	embedPath := strings.TrimPrefix(path, "templates/")
+
+	return template.Must(template.ParseFS(templates.FS, embedPath, "base.html"))
 }
 
 func ParseTmplWithFuncs(path string) *template.Template {
+	// Path inside the <project-root>/templates/
+	embedPath := strings.TrimPrefix(path, "templates/")
 	// get base name of the path
 	baseName := filepath.Base(path)
 	viewTmpl := template.Must(template.New(baseName).Funcs(template.FuncMap{
@@ -31,7 +33,7 @@ func ParseTmplWithFuncs(path string) *template.Template {
 		"add": func(a, b int) int {
 			return a + b
 		},
-	}).ParseFS(embed_files.Templates, path, BaseTmplPath))
+	}).ParseFS(templates.FS, embedPath, "base.html"))
 
 	return viewTmpl
 }
