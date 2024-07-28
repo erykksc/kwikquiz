@@ -14,13 +14,13 @@ type RoundSettings struct {
 }
 
 type Round struct {
-	question  Question
-	startAt   time.Time
-	endedAt   time.Time
-	endedAtMu sync.RWMutex
-	players   map[Username]bool
-	answers   map[Username]roundAnswer
-	finished  chan struct{} // channel that closes once a round has finished
+	mu       sync.RWMutex
+	question Question
+	startAt  time.Time
+	endedAt  time.Time
+	players  map[Username]bool
+	answers  map[Username]roundAnswer
+	finished chan struct{} // channel that closes once a round has finished
 	RoundSettings
 }
 
@@ -39,23 +39,24 @@ func CreateRound(players []Username, question Question, settings RoundSettings) 
 }
 
 func (round *Round) Start() error {
+	round.mu.Lock()
+	defer round.mu.Unlock()
+
 	if !round.startAt.IsZero() {
 		return errors.New("Round already started")
 	}
 
-	round.endedAtMu.RLock()
 	if !round.endedAt.IsZero() {
 		return errors.New("Round already ended")
 	}
-	round.endedAtMu.RUnlock()
 
 	round.startAt = time.Now()
 
 	go func() {
 		select {
 		case <-time.After(round.ReadingTime + round.AnswerTime):
-			round.endedAtMu.Lock()
-			defer round.endedAtMu.Unlock()
+			round.mu.Lock()
+			defer round.mu.Unlock()
 
 			round.endedAt = time.Now()
 			close(round.finished)
@@ -70,8 +71,8 @@ func (round *Round) Start() error {
 
 // FinishEarly closes the finished channel, effectively ending the round early
 func (round *Round) FinishEarly() error {
-	round.endedAtMu.Lock()
-	defer round.endedAtMu.Unlock()
+	round.mu.Lock()
+	defer round.mu.Unlock()
 
 	if !round.endedAt.IsZero() {
 		return errors.New("Round already ended")
@@ -93,6 +94,9 @@ type roundAnswer struct {
 }
 
 func (round *Round) SubmitAnswer(player Username, answerIndex int) error {
+	round.mu.Lock()
+	defer round.mu.Unlock()
+
 	rAnswer := roundAnswer{
 		index:       answerIndex,
 		submittedAt: time.Now(),
@@ -112,8 +116,6 @@ func (round *Round) SubmitAnswer(player Username, answerIndex int) error {
 	}
 
 	// Check if answer was submitted after the round ended
-	round.endedAtMu.RLock()
-	defer round.endedAtMu.RUnlock()
 	if !round.endedAt.IsZero() {
 		return errors.New("answer submitted after round ended")
 	}
@@ -130,12 +132,12 @@ func (round *Round) SubmitAnswer(player Username, answerIndex int) error {
 
 // GetResults returns the scores of the players in the round, sorted by points in descending order
 func (round *Round) GetResults() ([]Score, error) {
-	round.endedAtMu.RLock()
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+
 	if round.endedAt.IsZero() {
-		round.endedAtMu.RUnlock()
 		return nil, errors.New("round has not ended")
 	}
-	round.endedAtMu.RUnlock()
 
 	scores := make([]Score, len(round.players))
 	i := 0
@@ -165,4 +167,20 @@ func (round *Round) GetResults() ([]Score, error) {
 	})
 
 	return scores, nil
+}
+
+func (round *Round) PlayersStillAnswering() []Username {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+
+	answering := []Username{}
+	for username := range round.players {
+		_, answered := round.answers[username]
+
+		if !answered {
+			answering = append(answering, username)
+		}
+	}
+
+	return answering
 }
