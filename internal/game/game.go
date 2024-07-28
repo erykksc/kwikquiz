@@ -31,6 +31,14 @@ func (_ ErrNoMoreQuestions) Error() string {
 	return "No more questions"
 }
 
+type ErrInvalidUsername struct {
+	Reason string
+}
+
+func (_ ErrInvalidUsername) Error() string {
+	return "Invalid username"
+}
+
 type game struct {
 	settings    GameSettings
 	startedAt   time.Time
@@ -57,6 +65,13 @@ func (game *game) AddPlayer(username Username) error {
 		return ErrGameAlreadyStarted{}
 	}
 
+	reason, isValid := username.IsValid()
+	if !isValid {
+		return ErrInvalidUsername{
+			Reason: reason,
+		}
+	}
+
 	_, isUsernameInGame := game.points[username]
 	if isUsernameInGame {
 		return errors.New("Username already in game")
@@ -74,6 +89,13 @@ func (game *game) ChangeUsername(oldName, newName Username) error {
 
 	if _, isNewUsernameInGame := game.points[newName]; isNewUsernameInGame {
 		return errors.New("New username is already in game: " + string(newName))
+	}
+
+	reason, isValid := newName.IsValid()
+	if !isValid {
+		return ErrInvalidUsername{
+			Reason: reason,
+		}
 	}
 
 	game.points[newName] = oldUsernamePoints
