@@ -151,6 +151,11 @@ func (game *game) StartRound(num uint) (*Round, error) {
 	return newRound, newRound.Start()
 }
 
+func (game game) PlayerExists(u Username) bool {
+	_, exists := game.points[u]
+	return exists
+}
+
 // GetPlayers returns the players in the game
 func (game game) GetPlayers() []Username {
 	players := make([]Username, len(game.points))

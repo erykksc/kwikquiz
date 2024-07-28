@@ -106,7 +106,7 @@ func TestGetResults(t *testing.T) {
 	question := MyQuestion{}
 	settings := RoundSettings{
 		ReadingTime: 0,
-		AnswerTime:  500 * time.Millisecond,
+		AnswerTime:  100 * time.Millisecond,
 	}
 
 	round := CreateRound(players, question, settings)
@@ -122,7 +122,7 @@ func TestGetResults(t *testing.T) {
 		t.Errorf("Expected error for getting results before round ends, got nil")
 	}
 
-	time.Sleep(settings.ReadingTime + settings.AnswerTime)
+	time.Sleep(settings.ReadingTime + settings.AnswerTime + 100*time.Millisecond)
 
 	results, err = round.GetResults()
 	if err != nil {
@@ -148,8 +148,8 @@ func TestFinished(t *testing.T) {
 	players := []Username{"Alice", "Bob"}
 	question := MyQuestion{}
 	settings := RoundSettings{
-		ReadingTime: 250 * time.Millisecond,
-		AnswerTime:  500 * time.Millisecond,
+		ReadingTime: 100 * time.Millisecond,
+		AnswerTime:  200 * time.Millisecond,
 	}
 
 	round := CreateRound(players, question, settings)
@@ -162,7 +162,7 @@ func TestFinished(t *testing.T) {
 
 	<-round.Finished()
 
-	if time.Now().Sub(startTime).Round(50*time.Millisecond) != settings.ReadingTime+settings.AnswerTime {
+	if time.Now().Sub(startTime).Round(100*time.Millisecond) != settings.ReadingTime+settings.AnswerTime {
 		t.Errorf("Expected round to finish after ReadingTime + AnswerTime, got %v", time.Now().Sub(startTime))
 	}
 }
