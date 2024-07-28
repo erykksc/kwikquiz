@@ -14,23 +14,25 @@ type RoundSettings struct {
 }
 
 type Round struct {
-	mu       sync.RWMutex
-	question Question
-	startAt  time.Time
-	endedAt  time.Time
-	players  map[Username]bool
-	answers  map[Username]roundAnswer
-	finished chan struct{} // channel that closes once a round has finished
-	RoundSettings
+	mu          sync.RWMutex
+	question    Question
+	startAt     time.Time
+	endedAt     time.Time
+	players     map[Username]bool
+	answers     map[Username]roundAnswer
+	finished    chan struct{} // channel that closes once a round has finished
+	readingTime time.Time
+	answerTIme  time.Time
+	settings    RoundSettings
 }
 
 func CreateRound(players []Username, question Question, settings RoundSettings) *Round {
 	round := Round{
-		question:      question,
-		RoundSettings: settings,
-		finished:      make(chan struct{}),
-		players:       make(map[Username]bool),
-		answers:       make(map[Username]roundAnswer),
+		question: question,
+		settings: settings,
+		finished: make(chan struct{}),
+		players:  make(map[Username]bool),
+		answers:  make(map[Username]roundAnswer),
 	}
 	for _, player := range players {
 		round.players[player] = true
@@ -54,7 +56,7 @@ func (round *Round) Start() error {
 
 	go func() {
 		select {
-		case <-time.After(round.ReadingTime + round.AnswerTime):
+		case <-time.After(round.settings.ReadingTime + round.settings.AnswerTime):
 			round.mu.Lock()
 			defer round.mu.Unlock()
 
@@ -111,7 +113,7 @@ func (round *Round) SubmitAnswer(player Username, answerIndex int) error {
 		return errors.New("round has not started")
 	}
 
-	if rAnswer.submittedAt.Before(round.startAt.Add(round.ReadingTime)) {
+	if rAnswer.submittedAt.Before(round.startAt.Add(round.settings.ReadingTime)) {
 		return errors.New("answer submitted before answering allowed")
 	}
 
@@ -146,12 +148,12 @@ func (round *Round) GetResults() ([]Score, error) {
 		pointsAwarded := 0
 
 		if hasAnswered && round.question.IsAnswerCorrect(answer.index) {
-			time2Answer := answer.submittedAt.Sub(round.startAt.Add(round.ReadingTime))
+			time2Answer := answer.submittedAt.Sub(round.startAt.Add(round.settings.ReadingTime))
 			if time2Answer < time.Millisecond*500 {
 				// Maximum points for answering in less than 500ms
 				pointsAwarded = 1000
 			} else {
-				pointsAwarded = int((1 - (float64(time2Answer) / float64(round.AnswerTime) / 2.0)) * 1000)
+				pointsAwarded = int((1 - (float64(time2Answer) / float64(round.settings.AnswerTime) / 2.0)) * 1000)
 			}
 		}
 		scores[i] = Score{
