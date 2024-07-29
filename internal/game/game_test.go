@@ -6,43 +6,40 @@ import (
 	"time"
 )
 
-// Mock Question implementation
-type MockQuestion struct{}
-
-func (q MockQuestion) IsAnswerCorrect(answerIndex int) bool {
-	return answerIndex == 1 // Mock implementation
-}
-
 // Mock Quiz implementation
 type MockQuiz struct {
 	questions []Question
 }
 
-func (q MockQuiz) GetQuestion(idx uint) (Question, error) {
-	if idx >= uint(len(q.questions)) {
+func (q MockQuiz) Title() string {
+	return "MockQuiz"
+}
+
+func (q MockQuiz) GetQuestion(idx int) (Question, error) {
+	if idx >= len(q.questions) {
 		return nil, errors.New("question not found")
 	}
 	return q.questions[idx], nil
 }
 
-func (q MockQuiz) QuestionsCount() uint {
-	return uint(len(q.questions))
+func (q MockQuiz) QuestionsCount() int {
+	return len(q.questions)
 }
 
 func createMockGame() Game {
-	quiz := MockQuiz{
-		questions: []Question{
-			MockQuestion{},
-			MockQuestion{},
-		},
-	}
 	settings := GameSettings{
+		Quiz: MockQuiz{
+			questions: []Question{
+				MyQuestion{},
+				MyQuestion{},
+			},
+		},
 		RoundSettings: RoundSettings{
 			ReadingTime: 1 * time.Second,
 			AnswerTime:  1 * time.Second,
 		},
 	}
-	return CreateGame(quiz, settings)
+	return CreateGame(settings)
 }
 
 // Contains checks if a slice contains a specific element
@@ -131,12 +128,12 @@ func TestRemovePlayer(t *testing.T) {
 func TestStartGame(t *testing.T) {
 	game := createMockGame()
 
-	_, err := game.Start()
+	err := game.Start()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	_, err = game.Start()
+	err = game.Start()
 	if err == nil {
 		t.Errorf("Expected error for starting already started game, got nil")
 	}
@@ -146,12 +143,12 @@ func TestStartNextRound(t *testing.T) {
 	game := createMockGame()
 	game.Start()
 
-	_, err := game.StartNextRound()
+	err := game.StartNextRound()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	_, err = game.StartNextRound()
+	err = game.StartNextRound()
 	if err != (ErrNoMoreQuestions{}) {
 		t.Errorf("Expected no more questions error, got: %v", err)
 	}

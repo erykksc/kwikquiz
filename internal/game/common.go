@@ -1,29 +1,31 @@
 package game
 
+import "errors"
+
 type Username string
 
-func (u Username) IsValid() (reason string, isValid bool) {
+func (u Username) IsValid() (bool, error) {
 	// Check if the username is empty
 	if len(u) == 0 {
-		return "username is empty", false
+		return false, errors.New("username is empty")
 	}
 
 	// Check if the username is too long
 	if len(u) > 40 {
-		return "username is too long", false
+		return false, errors.New("username is too long")
 	}
 
 	// Check if username contains only empty characters
 	for _, c := range u {
 		if c != ' ' {
-			return "whitespaces not allowed", false
+			return false, errors.New("whitespaces not allowed")
 		}
 		if c != '\t' {
-			return "tabs not allowed", false
+			return false, errors.New("tabs not allowed")
 		}
 	}
 
-	return "", true
+	return true, errors.New("")
 }
 
 type Score struct {
@@ -32,10 +34,12 @@ type Score struct {
 }
 
 type Quiz interface {
-	GetQuestion(idx uint) (Question, error) // First question is of index 0
-	QuestionsCount() uint
+	Title() string
+	GetQuestion(idx int) (Question, error) // First question is of index 0
+	QuestionsCount() int
 }
 
 type Question interface {
 	IsAnswerCorrect(answerIndex int) bool
+	IsAnswerValid(answerIndex int) bool // should check if the answerIndex corresponds to an answer
 }

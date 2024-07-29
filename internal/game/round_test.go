@@ -12,6 +12,10 @@ func (q MyQuestion) IsAnswerCorrect(index int) bool {
 	return index == 1 // Mock implementation
 }
 
+func (q MyQuestion) IsAnswerValid(index int) bool {
+	return index > -1
+}
+
 func TestCreateRound(t *testing.T) {
 	players := []Username{"Alice", "Bob"}
 	question := MyQuestion{}
@@ -133,13 +137,7 @@ func TestGetResults(t *testing.T) {
 		t.Errorf("Expected %d results, got %d", len(players), len(results))
 	}
 
-	number1Score := results[0]
-
-	if number1Score.Player != "Alice" {
-		t.Errorf("Expected Alice to be first in results, got %s", results[0].Player)
-	}
-
-	if number1Score.Points == 0 {
+	if results["Alice"] == 0 {
 		t.Errorf("Expected Alice to have points, got 0")
 	}
 }
