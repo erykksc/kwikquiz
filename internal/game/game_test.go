@@ -110,7 +110,7 @@ func TestRemovePlayer(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if Contains(game.GetPlayers(), "Alice") {
+	if Contains(game.Players(), "Alice") {
 		t.Errorf("Alice should not be in players")
 	}
 
@@ -129,6 +129,16 @@ func TestStartGame(t *testing.T) {
 	game := createMockGame()
 
 	err := game.Start()
+	if err == nil {
+		t.Errorf("Expected error because of 0 players, got nil")
+	}
+
+	err = game.AddPlayer("Jack")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	err = game.Start()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -141,9 +151,28 @@ func TestStartGame(t *testing.T) {
 
 func TestStartNextRound(t *testing.T) {
 	game := createMockGame()
-	game.Start()
 
-	err := game.StartNextRound()
+	err := game.AddPlayer("Jack")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	err = game.Start()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	err = game.FinishRoundEarly()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	err = game.StartNextRound()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	err = game.FinishRoundEarly()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -182,7 +211,7 @@ func TestGetPlayers(t *testing.T) {
 	game.AddPlayer("Alice")
 	game.AddPlayer("Bob")
 
-	players := game.GetPlayers()
+	players := game.Players()
 	if len(players) != 2 {
 		t.Errorf("Expected 2 players, got %d", len(players))
 	}

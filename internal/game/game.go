@@ -180,17 +180,31 @@ func (game *game) Start() error {
 		return ErrGameFinished{}
 	}
 
-	game.startedAt = time.Now()
+	err := game.startRound(0)
+	if err != nil {
+		return err
+	}
 
-	return game.startRound(0)
+	game.startedAt = time.Now()
+	return nil
 }
 
 func (game *game) StartNextRound() error {
 	game.mu.Lock()
 	defer game.mu.Unlock()
+
 	if !game.endedAt.IsZero() {
 		return ErrGameFinished{}
 	}
+
+	if game.startedAt.IsZero() {
+		return errors.New("Game not started")
+	}
+
+	if !game.round.HasFinished() {
+		return errors.New("Previous round not finished")
+	}
+
 	if game.roundNum+1 >= game.quiz.QuestionsCount() {
 		return ErrNoMoreQuestions{}
 	}
