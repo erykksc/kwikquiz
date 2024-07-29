@@ -80,7 +80,7 @@ func TestChangeUsername(t *testing.T) {
 	game := createMockGame()
 	game.AddPlayer("Alice")
 
-	if !game.PlayerExists("Alice") {
+	if !game.PlayerInGame("Alice") {
 		t.Errorf("Alice should be in players")
 	}
 
@@ -88,11 +88,11 @@ func TestChangeUsername(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if game.PlayerExists("Alice") {
+	if game.PlayerInGame("Alice") {
 		t.Errorf("Alice should not be in players")
 	}
 
-	if !game.PlayerExists("Bob") {
+	if !game.PlayerInGame("Bob") {
 		t.Errorf("Bob should be in players")
 	}
 

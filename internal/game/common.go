@@ -17,10 +17,10 @@ func (u Username) IsValid() (bool, error) {
 
 	// Check if username contains only empty characters
 	for _, c := range u {
-		if c != ' ' {
+		if c == ' ' {
 			return false, errors.New("whitespaces not allowed")
 		}
-		if c != '\t' {
+		if c == '\t' {
 			return false, errors.New("tabs not allowed")
 		}
 	}

@@ -62,7 +62,7 @@ func (round *Round) Start() error {
 
 			err := round.finishRound()
 			if err != nil {
-				slog.Error("Error finishing while round after timer", err)
+				slog.Error("Error finishing while round after timer", "err", err)
 			}
 
 		case <-round.finished:

@@ -37,8 +37,8 @@ type ErrInvalidUsername struct {
 	Reason string
 }
 
-func (_ ErrInvalidUsername) Error() string {
-	return "Invalid username"
+func (err ErrInvalidUsername) Error() string {
+	return "Invalid username: " + err.Reason
 }
 
 type game struct {
@@ -182,7 +182,7 @@ func (game *game) Start() error {
 
 	game.startedAt = time.Now()
 
-	return game.StartRound(0)
+	return game.startRound(0)
 }
 
 func (game *game) StartNextRound() error {
@@ -195,7 +195,7 @@ func (game *game) StartNextRound() error {
 		return ErrNoMoreQuestions{}
 	}
 
-	return game.StartRound(game.roundNum + 1)
+	return game.startRound(game.roundNum + 1)
 }
 
 // Finish finishes the game if it isn't finished already
@@ -239,10 +239,15 @@ func (game *game) RoundFinished() (chan struct{}, error) {
 	return game.round.Finished(), nil
 }
 
-// startRound starts a specific round in the game, first round is of index 0
 func (game *game) StartRound(num int) error {
 	game.mu.Lock()
 	defer game.mu.Unlock()
+	return game.startRound(num)
+}
+
+// startRound starts a specific round in the game, first round is of index 0
+// Thread unsafe
+func (game *game) startRound(num int) error {
 	if game.round != nil {
 		if !game.round.HasFinished() {
 			return errors.New("Round not finished")
@@ -257,16 +262,12 @@ func (game *game) StartRound(num int) error {
 		return errors.New("No players in game")
 	}
 
-	if !game.round.HasFinished() {
-		return errors.New("Round not finished")
-	}
-
 	question, err := game.quiz.GetQuestion(num)
 	if err != nil {
 		return err
 	}
 
-	newRound := CreateRound(game.GetPlayers(), question, game.settings.RoundSettings)
+	newRound := CreateRound(game.players(), question, game.settings.RoundSettings)
 	game.round = newRound
 	game.roundNum = num
 	return newRound.Start()
@@ -289,10 +290,15 @@ func (game *game) PlayerInGame(u Username) bool {
 	return exists
 }
 
-// GetPlayers returns the players in the game
-func (game *game) GetPlayers() []Username {
+// Players returns the players in the game
+func (game *game) Players() []Username {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
+	return game.players()
+}
+
+// Thread unsafe
+func (game *game) players() []Username {
 	players := make([]Username, len(game.points))
 	i := 0
 	for username := range game.points {
