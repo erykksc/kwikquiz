@@ -136,9 +136,9 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 	}
 
 	// Remove all questions (and answers because of CASCADE)
-	_, err = repo.db.Exec(`
-		DELETE FROM question WHERE quiz_id = ?
-	`, quiz.ID)
+	_, err = tx.NamedExec(`
+		DELETE FROM question WHERE quiz_id = :quiz_id
+	`, &quiz)
 	if err != nil {
 		return 0, err
 	}
@@ -210,7 +210,7 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 	}
 
 	// Remove all questions (and answers because of CASCADE)
-	_, err = repo.db.Exec(`
+	_, err = tx.Exec(`
 		DELETE FROM question WHERE quiz_id = ?
 	`, upsertedQuizID)
 	if err != nil {

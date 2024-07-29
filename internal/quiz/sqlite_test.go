@@ -9,7 +9,7 @@ import (
 
 func TestRepositorySQLite(t *testing.T) {
 	testQuiz := Quiz{
-		Title:       "Test Quiz",
+		TitleField:  "Test Quiz",
 		Password:    "password",
 		Description: "This is a test quiz",
 		Questions: []Question{
@@ -67,21 +67,21 @@ func TestRepositorySQLite(t *testing.T) {
 
 		id, err := repo.Insert(&testQuiz)
 		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
+			t.Fatalf("Expected no error, got: %v", err)
 		}
 
 		// Verify the inserted data
 		insertedQuiz, err := repo.Get(id)
 		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
+			t.Fatalf("Expected no error, got: %v", err)
 		}
 
 		if id != insertedQuiz.ID {
-			t.Errorf("Expected ID %v, got %v", id, insertedQuiz.ID)
+			t.Errorf("Expected ID %v, got: %v", id, insertedQuiz.ID)
 		}
 
-		if testQuiz.Title != insertedQuiz.Title {
-			t.Errorf("Expected Title %s, got %s", testQuiz.Title, insertedQuiz.Title)
+		if testQuiz.TitleField != insertedQuiz.TitleField {
+			t.Errorf("Expected Title %s, got %s", testQuiz.TitleField, insertedQuiz.TitleField)
 		}
 
 		if testQuiz.Password != insertedQuiz.Password {
@@ -101,7 +101,7 @@ func TestRepositorySQLite(t *testing.T) {
 		}
 
 		if testQuiz.Questions[0].Answers[0].IsCorrect != insertedQuiz.Questions[0].Answers[0].IsCorrect {
-			t.Errorf("Expected Answer IsCorrect %v, got %v", testQuiz.Questions[0].Answers[0].IsCorrect, insertedQuiz.Questions[0].Answers[0].IsCorrect)
+			t.Errorf("Expected Answer IsCorrect %v, got: %v", testQuiz.Questions[0].Answers[0].IsCorrect, insertedQuiz.Questions[0].Answers[0].IsCorrect)
 		}
 	})
 
@@ -113,25 +113,25 @@ func TestRepositorySQLite(t *testing.T) {
 		testQuiz.ID = 123
 		id, err := repo.Upsert(&testQuiz)
 		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
+			t.Fatalf("Expected no error, got: %v", err)
 		}
 
 		if id != int64(123) {
-			t.Errorf("Expected ID %v, got %v", 123, id)
+			t.Errorf("Expected ID %v, got: %v", 123, id)
 		}
 
 		// Verify the inserted data
 		upsertedQuiz, err := repo.Get(id)
 		if err != nil {
-			t.Fatalf("Expected no error, got %v", err)
+			t.Fatalf("Expected no error, got: %v", err)
 		}
 
 		if id != upsertedQuiz.ID {
-			t.Errorf("Expected ID %v, got %v", id, upsertedQuiz.ID)
+			t.Errorf("Expected ID %v, got: %v", id, upsertedQuiz.ID)
 		}
 
-		if testQuiz.Title != upsertedQuiz.Title {
-			t.Errorf("Expected Title %s, got %s", testQuiz.Title, upsertedQuiz.Title)
+		if testQuiz.TitleField != upsertedQuiz.TitleField {
+			t.Errorf("Expected Title %s, got %s", testQuiz.TitleField, upsertedQuiz.TitleField)
 		}
 
 		if testQuiz.Password != upsertedQuiz.Password {
@@ -151,7 +151,7 @@ func TestRepositorySQLite(t *testing.T) {
 		}
 
 		if testQuiz.Questions[0].Answers[0].IsCorrect != upsertedQuiz.Questions[0].Answers[0].IsCorrect {
-			t.Errorf("Expected Answer IsCorrect %v, got %v", testQuiz.Questions[0].Answers[0].IsCorrect, upsertedQuiz.Questions[0].Answers[0].IsCorrect)
+			t.Errorf("Expected Answer IsCorrect %v, got: %v", testQuiz.Questions[0].Answers[0].IsCorrect, upsertedQuiz.Questions[0].Answers[0].IsCorrect)
 		}
 	})
 
@@ -160,7 +160,7 @@ func TestRepositorySQLite(t *testing.T) {
 		defer db.Close()
 		repo := newRepo(db)
 
-		quiz := &Quiz{Title: "Test Quiz", Password: "1234", Description: "This is a test quiz"}
+		quiz := &Quiz{TitleField: "Test Quiz", Password: "1234", Description: "This is a test quiz"}
 		id, _ := repo.Insert(quiz)
 		err := repo.Delete(id)
 		if err != nil {
@@ -173,8 +173,8 @@ func TestRepositorySQLite(t *testing.T) {
 		defer db.Close()
 		repo := newRepo(db)
 
-		quiz1 := &Quiz{Title: "Test Quiz 1", Password: "1234", Description: "This is a test quiz"}
-		quiz2 := &Quiz{Title: "Test Quiz 2", Password: "1234", Description: "This is a test quiz"}
+		quiz1 := &Quiz{TitleField: "Test Quiz 1", Password: "1234", Description: "This is a test quiz"}
+		quiz2 := &Quiz{TitleField: "Test Quiz 2", Password: "1234", Description: "This is a test quiz"}
 		repo.Insert(quiz1)
 		repo.Insert(quiz2)
 		quizzes, err := repo.GetAll()
