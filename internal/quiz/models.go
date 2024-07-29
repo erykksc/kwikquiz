@@ -8,15 +8,15 @@ import (
 )
 
 type Quiz struct {
-	ID          int64 `db:"quiz_id"`
-	title       string
+	ID          int64  `db:"quiz_id"`
+	TitleField  string `db:"title"`
 	Password    string
 	Description string
 	Questions   []Question `gorm:"foreignKey:QuizID"`
 }
 
 func (q Quiz) Title() string {
-	return q.title
+	return q.TitleField
 }
 
 func (q Quiz) GetQuestion(idx int) (game.Question, error) {

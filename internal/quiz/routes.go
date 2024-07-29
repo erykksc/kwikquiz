@@ -131,7 +131,7 @@ func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 	// Return the Quiz model based on whether qid is provided or not
 	return Quiz{
 		ID:          qid,
-		Title:       title,
+		TitleField:  title,
 		Password:    password,
 		Description: description,
 		Questions:   questions,
@@ -214,7 +214,7 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 
 func (s Service) renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
 	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
-		Title:       quiz.Title,
+		Title:       quiz.TitleField,
 		Description: quiz.Description,
 		Questions:   quiz.Questions,
 		FormError:   err.Error(),

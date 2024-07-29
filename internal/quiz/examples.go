@@ -9,7 +9,7 @@ func GetExamples() []Quiz {
 
 var ExampleQuizGeography = Quiz{
 	ID:          999,
-	Title:       "Geography",
+	TitleField:  "Geography",
 	Description: "This is a quiz about capitals around the world",
 	Questions: []Question{
 		{
@@ -35,7 +35,7 @@ var ExampleQuizGeography = Quiz{
 
 var ExampleQuizMath = Quiz{
 	ID:          998,
-	Title:       "Math",
+	TitleField:  "Math",
 	Description: "This is a quiz about math",
 	Questions: []Question{
 		{
