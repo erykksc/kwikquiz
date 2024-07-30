@@ -57,7 +57,11 @@ func (s Service) postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Parse possible arguments
 	options := lobbyOptions{}
 	newLobby := createLobby(options)
-	s.lRepo.AddLobby(newLobby)
+	err = s.lRepo.AddLobby(newLobby)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 	slog.Info("Created new lobby", "lobby", newLobby)
 	// Redirect to the new lobby
 	w.Header().Add("HX-Redirect", "/lobbies/"+newLobby.Pin)
@@ -227,6 +231,7 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Only update settings if the method is PUT
 	if r.Method == "PUT" {
+		settings := lobby.GetSettings()
 		timePerQuestionStr := r.FormValue("time-per-question")
 		if timePerQuestionStr != "" {
 			timePerQuestion, err := time.ParseDuration(timePerQuestionStr + "s")
@@ -235,7 +240,7 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			lobby.TimePerQuestion = timePerQuestion
+			settings.AnswerTime = timePerQuestion
 			slog.Debug("Updated time-per-question", "lobby.Pin", lobby.Pin, "timePerQuestion", timePerQuestion.String())
 		}
 
@@ -247,7 +252,7 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			lobby.TimeForReading = timeForReading
+			settings.ReadingTime = timeForReading
 			slog.Debug("Updated time-for-reading", "lobby.Pin", lobby.Pin, "timeForReading", timeForReading.String())
 		}
 
@@ -265,8 +270,13 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 				common.ErrorHandler(w, r, http.StatusBadRequest)
 				return
 			}
-			lobby.Quiz = *quiz
-			slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz.Title)
+			settings.Quiz = *quiz
+			slog.Debug("Updated quiz", "lobby.Pin", lobby.Pin, "quizID", quizIDStr, "quiz.Title", lobby.Quiz().Title())
+		}
+		err := lobby.UpdateSettings(settings)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 	}
 

@@ -1,91 +1,80 @@
 package lobbies
 
 import (
-	"sync"
 	"time"
 
-	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/quiz"
 )
 
 func GetExamples() []*Lobby {
 	return []*Lobby{
-		&Example1234Lobby,
-		&Example1235Lobby,
-		&ExampleLobbyOnQuestionView,
+		Example1234Lobby(),
+		Example1235Lobby(),
+		ExampleLobbyOnReadingView(),
+		ExampleLobbyOnAnswerView(),
 	}
 }
 
-var Example1234Lobby = Lobby{
-	Pin:                      "1234",
-	mu:                       sync.Mutex{},
-	CreatedAt:                time.Now(),
-	StartedAt:                time.Time{},
-	FinishedAt:               time.Time{},
-	Quiz:                     quiz.ExampleQuizGeography,
-	Host:                     nil,
-	TimePerQuestion:          30 * time.Second,
-	TimeForReading:           time.Second * 5,
-	Players:                  make(map[common.ClientID]*User),
-	State:                    LsWaitingForPlayers,
-	questionTimer:            &cancellableTimer{},
-	CurrentQuestionStartTime: time.Time{},
-	CurrentQuestionTimeout:   time.Time{},
-	ReadingTimeout:           time.Time{},
-	CurrentQuestionIdx:       0,
-	CurrentQuestion:          &quiz.Question{},
-	PlayersAnswering:         0,
-	Leaderboard:              []*User{},
-}
-var Example1235Lobby = Lobby{
-	Pin:             "1235",
-	mu:              sync.Mutex{},
-	CreatedAt:       time.Now(),
-	StartedAt:       time.Time{},
-	FinishedAt:      time.Time{},
-	Quiz:            quiz.ExampleQuizGeography,
-	Host:            nil,
-	TimePerQuestion: 30 * time.Second,
-	TimeForReading:  time.Second * 5,
-	Players: map[common.ClientID]*User{
-		"IMPOSSIBLE_ID": {
-			Username: "Jeff",
-			Score:    100,
-		},
-	},
-	State:                    LsWaitingForPlayers,
-	questionTimer:            &cancellableTimer{},
-	CurrentQuestionStartTime: time.Time{},
-	CurrentQuestionTimeout:   time.Time{},
-	ReadingTimeout:           time.Time{},
-	CurrentQuestionIdx:       0,
-	CurrentQuestion:          &quiz.Question{},
-	PlayersAnswering:         0,
-	Leaderboard: []*User{
-		{
-			Username: "Jeff",
-			Score:    100,
-		}},
+func Example1234Lobby() *Lobby {
+	options := NewLobbyOptions()
+	options.Pin = "1234"
+	options.Quiz = quiz.ExampleQuizGeography
+	lobby := createLobby(options)
+	return lobby
 }
 
-var ExampleLobbyOnQuestionView = Lobby{
-	Pin:                      "0001",
-	mu:                       sync.Mutex{},
-	CreatedAt:                time.Now(),
-	StartedAt:                time.Now(),
-	FinishedAt:               time.Time{},
-	Quiz:                     quiz.ExampleQuizGeography,
-	Host:                     nil,
-	TimePerQuestion:          30 * time.Second,
-	TimeForReading:           time.Second * 5,
-	Players:                  make(map[common.ClientID]*User),
-	State:                    LsQuestion,
-	questionTimer:            &cancellableTimer{},
-	CurrentQuestionStartTime: time.Now(),
-	CurrentQuestionTimeout:   time.Now().Add(100 * time.Second),
-	ReadingTimeout:           time.Now(),
-	CurrentQuestionIdx:       0,
-	CurrentQuestion:          &quiz.ExampleQuizGeography.Questions[0],
-	PlayersAnswering:         3,
-	Leaderboard:              []*User{},
+// &Example1234Lobby,
+
+func Example1235Lobby() *Lobby {
+	options := NewLobbyOptions()
+	options.Pin = "1235"
+	options.Quiz = quiz.ExampleQuizGeography
+	lobby := createLobby(options)
+
+	err := lobby.AddPlayer("Jack")
+	if err != nil {
+		panic(err)
+	}
+	return lobby
+}
+
+func ExampleLobbyOnReadingView() *Lobby {
+	options := NewLobbyOptions()
+	options.Pin = "2345"
+	options.Quiz = quiz.ExampleQuizGeography
+	options.ReadingTime = 999 * time.Second
+	lobby := createLobby(options)
+
+	err := lobby.AddPlayer("Jack")
+	if err != nil {
+		panic(err)
+	}
+
+	err = lobby.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	return lobby
+}
+
+func ExampleLobbyOnAnswerView() *Lobby {
+	options := NewLobbyOptions()
+	options.Pin = "2346"
+	options.Quiz = quiz.ExampleQuizGeography
+	options.ReadingTime = 0
+	options.AnswerTime = 999 * time.Second
+	lobby := createLobby(options)
+
+	err := lobby.AddPlayer("Jack")
+	if err != nil {
+		panic(err)
+	}
+
+	err = lobby.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	return lobby
 }

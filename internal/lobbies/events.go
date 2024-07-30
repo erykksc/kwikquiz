@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sort"
-	"time"
 
 	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/internal/game"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/gorilla/websocket"
 )
@@ -74,13 +73,15 @@ func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID common.Clie
 		ClientID: clientID,
 	}
 
-	view := l.State.View()
+	// view := l.State.View()
+	view := l.View()
 
 	player, connectedUserIsPlayer := l.Players[clientID]
 	switch {
 	// Check if it is the first user, if so, he becomes the host
 	case l.Host == nil:
 		slog.Info("New Host for the Lobby", "Lobby-Pin", l.Pin, "Client-ID", connectedUser.ClientID)
+		connectedUser.Username = "HOST"
 		l.Host = connectedUser
 
 	// Check if host is trying to reconnect
@@ -116,64 +117,27 @@ func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID common.Clie
 
 // leNewUsernameSubmitted is an event that is triggered when a user submits a new username
 type leNewUsernameSubmitted struct {
-	Username string
+	Username game.Username
 }
 
 func (e leNewUsernameSubmitted) String() string {
-	return "GEUserSubmittedUsername: " + e.Username
+	return "GEUserSubmittedUsername: " + string(e.Username)
 }
 
 func (event leNewUsernameSubmitted) Handle(_ Service, l *Lobby, initiator *User) error {
-	// Check if the username is empty
-	if event.Username == "" {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Username cannot be empty")
-		return errors.New("new username is empty")
-	}
-
-	// Check if game hasn't started yet
-	if l.State != LsWaitingForPlayers {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
-		return errors.New("game already started")
-	}
-
-	// Check if new username isn't the same as the old one
-	if initiator.Username == event.Username {
-		slog.Info("Username is the same as the old one", "Username", event.Username)
-		vData := ViewData{
-			Lobby: l,
-			User:  initiator,
-		}
-		if err := initiator.writeTemplate(WaitingRoomView, vData); err != nil {
+	if initiator.Username == "" {
+		err := l.AddPlayer(event.Username)
+		if err != nil {
 			return err
 		}
-		return nil
-	}
-
-	// Create a set of all usernames in the lobby
-	usernames := make(map[string]bool)
-	for _, player := range l.Players {
-		usernames[player.Username] = true
-	}
-
-	// Check if the username is already in the lobby
-	if _, ok := usernames[event.Username]; ok {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Username already in the lobby")
-		return errors.New("username already in the lobby")
-	}
-
-	// Check if the initiator is in the players list
-	if _, ok := l.Players[initiator.ClientID]; !ok {
-		// If not, add him to the players list
-		slog.Info("Adding new player to the lobby", "Client-ID", initiator.ClientID)
-		initiator.Username = event.Username
-		l.Players[initiator.ClientID] = initiator
 	} else {
-		// If he is, update his username
-		slog.Info("Updating username", "old", initiator.Username, "new", event.Username)
-		initiator.Username = event.Username
+		err := l.ChangeUsername(initiator.Username, event.Username)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Send the lobby screen to all players
+	// TODO:Send updated player list to all
 	vData := ViewData{
 		Lobby: l,
 		User:  l.Host,
@@ -200,7 +164,7 @@ func (e leUsernameChangeRequested) String() string {
 
 func (event leUsernameChangeRequested) Handle(_ Service, l *Lobby, initiator *User) error {
 	// Check if the game has already started
-	if l.State != LsWaitingForPlayers {
+	if l.HasStarted() {
 		initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
 		return errors.New("Game already started")
 	}
@@ -231,39 +195,8 @@ func (event leGameStartRequested) Handle(s Service, l *Lobby, initiator *User) e
 		return errors.New("Non-host tried to start the game")
 	}
 
-	// Check if there are enough players
-	if len(l.Players) == 0 {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Not enough players")
-		return errors.New("Can't start the game: not enough players")
-	}
-
-	// Check if the game has already started
-	if l.State != LsWaitingForPlayers {
-		vData := ViewData{
-			Lobby: l,
-			User:  initiator,
-		}
-		if err := initiator.writeTemplate(l.State.View(), vData); err != nil {
-			return err
-		}
-		return errors.New("Game already started, sending current state to initiator")
-	}
-
-	// Check if the quiz has at least one question
-	if len(l.Quiz.Questions) == 0 {
-		err := initiator.writeTemplate(LobbyErrorAlertTmpl, "Quiz has no questions")
-		if err != nil {
-			return err
-		}
-		return errors.New("Can't start the game: quiz has no questions")
-	}
-
-	// Start game: go to the first question
-	l.StartedAt = time.Now()
-	// Next question increments the index, so we start at -1
-	l.CurrentQuestionIdx = -1
-
-	return leNextQuestionRequested{}.Handle(s, l, initiator)
+	err := l.Start()
+	return err
 }
 
 // leSkipToAnswerRequested is an event that is triggered when a user requests to skip to the answer
@@ -274,8 +207,8 @@ func (e leSkipToAnswerRequested) String() string {
 }
 
 func (event leSkipToAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error {
-	l.questionTimer.Cancel()
-	return nil
+	err := l.FinishRoundEarly()
+	return err
 }
 
 // leNextQuestionRequested is an event that is triggered when a user requests to go to the next question
@@ -286,52 +219,31 @@ func (e leNextQuestionRequested) String() string {
 }
 
 func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User) error {
-	if l.CurrentQuestionIdx >= len(l.Quiz.Questions)-1 {
-		slog.Warn("Next question requested after the last question", "Client-ID", initiator.ClientID)
-		return nil
-	}
-	// Reset Player answers
-	l.Host.SubmittedAnswerIdx = -1
-	l.Host.AnswerSubmissionTime = time.Time{}
-	for _, player := range l.Players {
-		player.SubmittedAnswerIdx = -1
-		player.AnswerSubmissionTime = time.Time{}
+	err := l.StartNextRound()
+	switch err {
+	case err.(game.ErrNoMoreQuestions):
+		return leEndGameRequested{}.Handle(s, l, initiator)
+	case nil:
+		// just continue
+	default:
+		return err
 	}
 
-	l.State = LsQuestion
-	l.CurrentQuestionIdx++
-	l.CurrentQuestion = &l.Quiz.Questions[l.CurrentQuestionIdx]
-	l.CurrentQuestionStartTime = time.Now()
-	l.CurrentQuestionTimeout = l.CurrentQuestionStartTime.Add(l.TimePerQuestion)
-	l.ReadingTimeout = l.CurrentQuestionStartTime.Add(l.TimeForReading)
-	l.PlayersAnswering = len(l.Players)
+	roundFinished, err := l.RoundFinished()
+	if err != nil {
+		return err
+	}
 
-	// Start the question timer
-	l.questionTimer = NewCancellableTimer(l.TimePerQuestion)
 	go func() {
-		select {
-		case <-l.questionTimer.timer.C:
-			// Time completed
-			slog.Debug("Question timeout reached")
-			l.mu.Lock()
-			err := leShowAnswerRequested{}.Handle(s, l, initiator)
-			if err != nil {
-				slog.Error("Error handling ShowAnswerRequested", "error", err)
-			}
-			l.mu.Unlock()
-			break
-		case <-l.questionTimer.cancelChan:
-			// Timer cancelled
-			slog.Debug("Question timer cancelled")
-			// Doesnt require a lock because cancel
-			// can only be triggered by an event
-			// and all events handlers are locked
-			err := leShowAnswerRequested{}.Handle(s, l, initiator)
-			if err != nil {
-				slog.Error("Error handling ShowAnswerRequested", "error", err)
-			}
-			break
+		<-roundFinished
+		// TODO: Show answer to everybody
+
+		l.mu.Lock()
+		err := leShowAnswerRequested{}.Handle(s, l, initiator)
+		if err != nil {
+			slog.Error("Error handling ShowAnswerRequested", "error", err)
 		}
+		l.mu.Unlock()
 	}()
 
 	// Send question view to all
@@ -363,39 +275,20 @@ func (e leAnswerSubmitted) String() string {
 }
 
 func (e leAnswerSubmitted) Handle(_ Service, l *Lobby, initiator *User) error {
-	// Check if the answer index is valid
-	if e.AnswerIdx < 0 || e.AnswerIdx >= len(l.CurrentQuestion.Answers) {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Invalid answer index")
-		return errors.New("Invalid answer index")
-	}
-
 	// Check if the question index is the current one
-	if e.QuestionIdx != l.CurrentQuestionIdx {
-		slog.Warn("Answer submitted for wrong question", "Client-ID", initiator.ClientID)
-		return nil
+	if e.QuestionIdx != l.RoundNum() {
+		return errors.New("Answer submitted for wrong question")
 	}
 
-	// Check if the initiator isn't the host
+	// Check if the initiator is the host
 	if initiator.ClientID == l.Host.ClientID {
-		slog.Warn("Host tried to submit an answer")
-		return nil
+		return errors.New("Host tried to submit an answer")
 	}
 
-	// Check if the game is in the question state
-	if l.State != LsQuestion {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Submitted after question timeout")
-		return errors.New("Submitted after question timeout")
+	err := l.SubmitAnswer(initiator.Username, e.AnswerIdx)
+	if err != nil {
+		return err
 	}
-
-	// Check if the user has already submitted an answer
-	if initiator.SubmittedAnswerIdx != -1 {
-		slog.Warn("User tried to submit an answer twice", "Client-ID", initiator.ClientID)
-		return nil
-	}
-
-	// Update the user's answer
-	initiator.SubmittedAnswerIdx = e.AnswerIdx
-	initiator.AnswerSubmissionTime = time.Now()
 
 	// Write updated view to the initiator
 	vData := ViewData{
@@ -404,14 +297,6 @@ func (e leAnswerSubmitted) Handle(_ Service, l *Lobby, initiator *User) error {
 	}
 	if err := initiator.writeNamedTemplate(QuestionView, "answer-options", vData); err != nil {
 		return err
-	}
-
-	l.PlayersAnswering--
-
-	// Check if all players have answered
-	if l.PlayersAnswering == 0 {
-		// End the question
-		l.questionTimer.Cancel()
 	}
 
 	// Send template for how many people are left to answer
@@ -432,35 +317,17 @@ func (e leShowAnswerRequested) String() string {
 }
 
 func (e leShowAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error {
-	l.State = LsAnswer
-
-	// Add points to players
-	for _, player := range l.Players {
-		// Check if player submitted an answer
-		if player.SubmittedAnswerIdx == -1 {
-			player.NewPoints = 0
-			continue
-		}
-		submittedAnswer := l.CurrentQuestion.Answers[player.SubmittedAnswerIdx]
-		// Give points based on time to answer
-		if submittedAnswer.IsCorrect {
-			timeToAnswer := player.AnswerSubmissionTime.Sub(l.CurrentQuestionStartTime)
-			if timeToAnswer < time.Millisecond*500 {
-				// Maximum points for answering in less than 500ms
-				player.NewPoints = 1000
-			} else {
-				player.NewPoints = int((1 - (float64(timeToAnswer) / float64(l.TimePerQuestion) / 2.0)) * 1000)
-			}
-			player.Score += player.NewPoints
-		}
+	err := l.FinishRoundEarly()
+	if err != nil {
+		return err
 	}
 
-	// Calculate leaderboard
-	l.Leaderboard = make([]*User, 0, len(l.Players))
-	for _, player := range l.Players {
-		l.Leaderboard = append(l.Leaderboard, player)
+	// Wait until the round has finished
+	ch, err := l.RoundFinished()
+	if err != nil {
+		return err
 	}
-	sort.Sort(sort.Reverse(ByScore(l.Leaderboard)))
+	<-ch
 
 	// Send answer view to all
 	vData := ViewData{
@@ -487,23 +354,27 @@ func (e leEndGameRequested) String() string {
 }
 
 func (e leEndGameRequested) Handle(s Service, l *Lobby, _ *User) error {
-	l.FinishedAt = time.Now()
+	err := l.Finish()
+	if err != nil {
+		return err
+	}
+
 	if err := s.lRepo.DeleteLobby(l.Pin); err != nil {
 		return err
 	}
 
-	scores := make([]pastgames.PlayerScore, 0, len(l.Players)+1)
-	for _, player := range l.Leaderboard {
+	scores := make([]pastgames.PlayerScore, 0, len(l.Players))
+	for _, player := range l.Leaderboard() {
 		scores = append(scores, pastgames.PlayerScore{
-			Username: player.Username,
-			Score:    player.Score,
+			Username: string(player.Player),
+			Score:    player.Points,
 		})
 	}
 
 	pastGame := pastgames.PastGame{
-		StartedAt: l.StartedAt,
-		EndedAt:   time.Now(),
-		QuizTitle: l.Quiz.Title,
+		StartedAt: l.StartedAt(),
+		EndedAt:   l.EndedAt(),
+		QuizTitle: l.Quiz().Title(),
 		Scores:    scores,
 	}
 	id, err := s.pgRepo.Insert(&pastGame)
