@@ -60,7 +60,11 @@ func CreateGame(settings GameSettings) Game {
 		},
 	}
 
-	game.UpdateSettings(settings)
+	err := game.UpdateSettings(settings)
+	if err != nil {
+		// This should never happen
+		panic(err)
+	}
 	return game
 }
 

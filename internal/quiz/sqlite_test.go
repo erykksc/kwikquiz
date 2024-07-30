@@ -175,8 +175,14 @@ func TestRepositorySQLite(t *testing.T) {
 
 		quiz1 := &Quiz{TitleField: "Test Quiz 1", Password: "1234", Description: "This is a test quiz"}
 		quiz2 := &Quiz{TitleField: "Test Quiz 2", Password: "1234", Description: "This is a test quiz"}
-		repo.Insert(quiz1)
-		repo.Insert(quiz2)
+
+		if _, err := repo.Insert(quiz1); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if _, err := repo.Insert(quiz2); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
 		quizzes, err := repo.GetAll()
 		if err != nil {
 			t.Errorf("Failed to get all quizzes: %v", err)

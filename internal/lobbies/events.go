@@ -165,7 +165,7 @@ func (e leUsernameChangeRequested) String() string {
 func (event leUsernameChangeRequested) Handle(_ Service, l *Lobby, initiator *User) error {
 	// Check if the game has already started
 	if l.HasStarted() {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
+		_ = initiator.writeTemplate(LobbyErrorAlertTmpl, "Game already started")
 		return errors.New("Game already started")
 	}
 
@@ -191,7 +191,7 @@ func (e leGameStartRequested) String() string {
 func (event leGameStartRequested) Handle(s Service, l *Lobby, initiator *User) error {
 	// Check if the initiator is the host
 	if l.Host.ClientID != initiator.ClientID {
-		initiator.writeTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
+		_ = initiator.writeTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
 		return errors.New("Non-host tried to start the game")
 	}
 
@@ -393,7 +393,7 @@ func (e leEndGameRequested) Handle(s Service, l *Lobby, _ *User) error {
 	// Close websocket connections
 	// The redirection to lobby results is handled by the view
 	if l.Host.Conn != nil {
-		l.Host.writeTemplate(onFinishView, data)
+		_ = l.Host.writeTemplate(onFinishView, data)
 		l.Host.Conn.Close()
 	}
 	for _, player := range l.Players {

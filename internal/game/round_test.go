@@ -84,7 +84,10 @@ func TestSubmitAnswer(t *testing.T) {
 	}
 
 	round := CreateRound(players, question, settings)
-	round.Start()
+	err := round.Start()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
 
 	if err := round.SubmitAnswer("Alice", 1); err == nil {
 		t.Errorf("Expected error for submitting answer during reading time, got nil")
@@ -114,21 +117,24 @@ func TestGetResults(t *testing.T) {
 	}
 
 	round := CreateRound(players, question, settings)
-	round.Start()
-
-	err := round.SubmitAnswer("Alice", 1)
+	err := round.Start()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	results, err := round.GetResults()
+	err = round.SubmitAnswer("Alice", 1)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	_, err = round.GetResults()
 	if err == nil {
 		t.Errorf("Expected error for getting results before round ends, got nil")
 	}
 
 	time.Sleep(settings.ReadingTime + settings.AnswerTime + 100*time.Millisecond)
 
-	results, err = round.GetResults()
+	results, err := round.GetResults()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -160,7 +166,7 @@ func TestFinished(t *testing.T) {
 
 	<-round.Finished()
 
-	if time.Now().Sub(startTime).Round(100*time.Millisecond) != settings.ReadingTime+settings.AnswerTime {
-		t.Errorf("Expected round to finish after ReadingTime + AnswerTime, got %v", time.Now().Sub(startTime))
+	if time.Since(startTime).Round(100*time.Millisecond) != settings.ReadingTime+settings.AnswerTime {
+		t.Errorf("Expected round to finish after ReadingTime + AnswerTime, got %v", time.Since(startTime))
 	}
 }

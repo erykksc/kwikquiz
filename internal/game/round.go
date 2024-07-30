@@ -14,16 +14,14 @@ type RoundSettings struct {
 }
 
 type Round struct {
-	mu          sync.RWMutex
-	question    Question
-	startAt     time.Time
-	endedAt     time.Time
-	players     map[Username]bool
-	answers     map[Username]roundAnswer
-	finished    chan struct{} // channel that closes once a round has finished
-	readingTime time.Time
-	answerTIme  time.Time
-	settings    RoundSettings
+	mu       sync.RWMutex
+	question Question
+	startAt  time.Time
+	endedAt  time.Time
+	players  map[Username]bool
+	answers  map[Username]roundAnswer
+	finished chan struct{} // channel that closes once a round has finished
+	settings RoundSettings
 }
 
 func CreateRound(players []Username, question Question, settings RoundSettings) *Round {

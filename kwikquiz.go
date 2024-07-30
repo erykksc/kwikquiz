@@ -106,17 +106,26 @@ func main() {
 		// Pastgames
 		slog.Debug("Upserting examples pastgames")
 		for _, example := range pastgames.GetExamples() {
-			pastGamesRepo.Upsert(&example)
+			_, err := pastGamesRepo.Upsert(&example)
+			if err != nil {
+				slog.Error("Failed to upsert example pastgame", "err", err)
+			}
 		}
 		// Quizzes
 		slog.Debug("Upserting example quizzes")
 		for _, example := range quiz.GetExamples() {
-			quizRepo.Insert(&example)
+			_, err := quizRepo.Insert(&example)
+			if err != nil {
+				slog.Error("Failed to upsert example quiz", "err", err)
+			}
 		}
 		// Lobbies
 		slog.Debug("Adding example lobbies")
 		for _, example := range lobbies.GetExamples() {
-			lobbiesRepo.AddLobby(example)
+			err := lobbiesRepo.AddLobby(example)
+			if err != nil {
+				slog.Error("Failed to add example lobbies", "err", err)
+			}
 		}
 		slog.Debug("Finished upserting example data")
 	}

@@ -55,7 +55,7 @@ func (repo *repositorySQLite) Insert(game *PastGame) (int64, error) {
 		return 0, err
 	}
 	// Rollback if no tx.Commit (if there is commit, this is no-op)
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint
 
 	// Insert the game
 	res, err := tx.NamedExec(`
@@ -97,7 +97,7 @@ func (repo *repositorySQLite) Upsert(game *PastGame) (int64, error) {
 		return 0, err
 	}
 	// Rollback if no tx.Commit (if there is commit, this is no-op)
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint
 
 	_, err = tx.NamedExec(`
         INSERT INTO past_game (id, started_at, ended_at, quiz_title)

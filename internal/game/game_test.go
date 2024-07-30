@@ -70,7 +70,10 @@ func TestAddPlayer(t *testing.T) {
 		t.Errorf("Expected error for adding existing player, got nil")
 	}
 
-	game.Start()
+	if err := game.Start(); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
 	if err := game.AddPlayer("Bob"); err == nil {
 		t.Errorf("Expected error for adding player after game started, got nil")
 	}
@@ -78,7 +81,10 @@ func TestAddPlayer(t *testing.T) {
 
 func TestChangeUsername(t *testing.T) {
 	game := createMockGame()
-	game.AddPlayer("Alice")
+	err := game.AddPlayer("Alice")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
 
 	if !game.PlayerInGame("Alice") {
 		t.Errorf("Alice should be in players")
@@ -104,7 +110,10 @@ func TestChangeUsername(t *testing.T) {
 
 func TestRemovePlayer(t *testing.T) {
 	game := createMockGame()
-	game.AddPlayer("Alice")
+
+	if err := game.AddPlayer("Alice"); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
 
 	if err := game.RemovePlayer("Alice"); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -118,8 +127,14 @@ func TestRemovePlayer(t *testing.T) {
 		t.Errorf("Expected error for removing non-existent player, got nil")
 	}
 
-	game.AddPlayer("Bob")
-	game.Start()
+	if err := game.AddPlayer("Bob"); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	if err := game.Start(); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
 	if err := game.RemovePlayer("Bob"); err == nil {
 		t.Errorf("Expected error for removing player after game started, got nil")
 	}
@@ -185,7 +200,9 @@ func TestStartNextRound(t *testing.T) {
 
 func TestFinishGame(t *testing.T) {
 	game := createMockGame()
-	game.Start()
+	if err := game.Start(); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	if err := game.Finish(); err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -198,8 +215,12 @@ func TestFinishGame(t *testing.T) {
 
 func TestIsFinished(t *testing.T) {
 	game := createMockGame()
-	game.Start()
-	game.Finish()
+	if err := game.Start(); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if err := game.Finish(); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	if !game.IsFinished() {
 		t.Errorf("Game should be finished")
@@ -208,8 +229,12 @@ func TestIsFinished(t *testing.T) {
 
 func TestGetPlayers(t *testing.T) {
 	game := createMockGame()
-	game.AddPlayer("Alice")
-	game.AddPlayer("Bob")
+	if err := game.AddPlayer("Alice"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if err := game.AddPlayer("Bob"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	players := game.Players()
 	if len(players) != 2 {
