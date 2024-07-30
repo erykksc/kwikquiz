@@ -63,7 +63,7 @@ func (repo *repositorySQLite) Insert(quiz *Quiz) (int64, error) {
 		return 0, err
 	}
 	// Rollback if no tx.Commit (if there is commit, this is no-op)
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint
 
 	// Insert the game
 	res, err := tx.NamedExec(`
@@ -98,7 +98,7 @@ func (repo *repositorySQLite) Insert(quiz *Quiz) (int64, error) {
 			question.Answers[i].QuestionID = insertedQuestionID
 		}
 
-		res, err = tx.NamedExec(`
+		_, err = tx.NamedExec(`
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
 		`, question.Answers)
@@ -120,7 +120,7 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 		return 0, err
 	}
 	// Rollback if no tx.Commit (if there is commit, this is no-op)
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint
 
 	// Insert the game
 	_, err = tx.NamedExec(`
@@ -162,7 +162,7 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 			question.Answers[i].QuestionID = insertedQuestionID
 		}
 
-		res, err = tx.NamedExec(`
+		_, err = tx.NamedExec(`
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
 		`, question.Answers)
@@ -236,7 +236,7 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 			question.Answers[i].QuestionID = insertedQuestionID
 		}
 
-		res, err = tx.NamedExec(`
+		_, err = tx.NamedExec(`
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
 		`, question.Answers)

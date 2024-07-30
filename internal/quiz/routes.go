@@ -117,15 +117,11 @@ func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 	title := r.FormValue("title")
 	password := r.FormValue("password")
 	description := r.FormValue("description")
+
+	// Parse questions
 	questions, err := s.parseQuestions(r)
 	if err != nil {
 		return Quiz{}, err
-	}
-
-	// Parse questions
-	questions, parseErr := s.parseQuestions(r)
-	if parseErr != nil {
-		return Quiz{}, parseErr
 	}
 
 	// Return the Quiz model based on whether qid is provided or not
@@ -354,6 +350,6 @@ func (s Service) deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	slog.Info("Quiz deleted", "qid", qid)
-	w.Header().Add("HX-Redirect", fmt.Sprintf("/"))
+	w.Header().Add("HX-Redirect", "/")
 	w.WriteHeader(http.StatusNoContent)
 }

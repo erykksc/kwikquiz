@@ -175,8 +175,7 @@ func (s Service) getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 
 	pin := r.URL.Query().Get("pin")
 	if pin == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("pin in form is required"))
+		http.Error(w, "pin in query is required", http.StatusBadRequest)
 		return
 	}
 
@@ -186,7 +185,7 @@ func (s Service) getLobbyJoinHandler(w http.ResponseWriter, r *http.Request) {
 		// Do nothing
 	case errLobbyNotFound:
 		w.WriteHeader(http.StatusNotFound)
-		common.JoinFormTmpl.Execute(w, common.JoinFormData{GamePinError: "Game not found"})
+		_ = common.JoinFormTmpl.Execute(w, common.JoinFormData{GamePinError: "Game not found"})
 		return
 	default:
 		common.ErrorHandler(w, r, http.StatusInternalServerError)
