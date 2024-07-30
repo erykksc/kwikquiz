@@ -8,6 +8,8 @@ tmp/
 *.dylib
 **/.DS_Store
 
+*.db
+
 # Test binary, built with `go test -c`
 *.test
 
