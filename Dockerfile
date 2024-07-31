@@ -23,6 +23,4 @@ COPY --from=builder /app/bin/kwikquiz /app/kwikquiz
 
 EXPOSE 3000
 
-ENV PROD=1
-
-CMD ["/app/kwikquiz"]
+CMD ["/app/kwikquiz", "-prod", "-port", "3000"]
