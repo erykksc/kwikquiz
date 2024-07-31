@@ -200,6 +200,11 @@ func TestStartNextRound(t *testing.T) {
 
 func TestFinishGame(t *testing.T) {
 	game := createMockGame()
+
+	if err := game.AddPlayer("Ricardo"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
 	if err := game.Start(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -215,9 +220,15 @@ func TestFinishGame(t *testing.T) {
 
 func TestIsFinished(t *testing.T) {
 	game := createMockGame()
+
+	if err := game.AddPlayer("Ricardo"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
 	if err := game.Start(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+
 	if err := game.Finish(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
