@@ -130,11 +130,15 @@ func (event leNewUsernameSubmitted) Handle(_ Service, l *Lobby, initiator *User)
 		if err != nil {
 			return err
 		}
+		initiator.Username = event.Username
+		l.Users[initiator.ClientID] = initiator
+
 	} else {
 		err := l.ChangeUsername(initiator.Username, event.Username)
 		if err != nil {
 			return err
 		}
+		l.Users[initiator.ClientID].Username = event.Username
 	}
 
 	// TODO:Send updated player list to all
@@ -196,6 +200,25 @@ func (event leGameStartRequested) Handle(s Service, l *Lobby, initiator *User) e
 	}
 
 	err := l.Start()
+	if err != nil {
+		return err
+	}
+
+	// Send question screen to players
+	vData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	if err := l.Host.writeTemplate(QuestionView, vData); err != nil {
+		return err
+	}
+	for _, user := range l.Users {
+		vData.User = user
+		err := user.writeTemplate(QuestionView, vData)
+		if err != nil {
+			slog.Error("Error sending QuestionView to user", "error", err)
+		}
+	}
 	return err
 }
 
