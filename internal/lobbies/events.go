@@ -76,7 +76,7 @@ func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID common.Clie
 	// view := l.State.View()
 	view := l.View()
 
-	player, connectedUserIsPlayer := l.Players[clientID]
+	player, connectedUserIsPlayer := l.Users[clientID]
 	switch {
 	// Check if it is the first user, if so, he becomes the host
 	case l.Host == nil:
@@ -146,7 +146,7 @@ func (event leNewUsernameSubmitted) Handle(_ Service, l *Lobby, initiator *User)
 		slog.Error("Error writing view to host", "error", err, "host", l.Host)
 	}
 
-	for _, player := range l.Players {
+	for _, player := range l.Users {
 		vData.User = player
 		if err := player.writeTemplate(WaitingRoomView, vData); err != nil {
 			slog.Error("Error writing view to user", "error", err, "user", player)
@@ -254,7 +254,7 @@ func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User
 	if err := l.Host.writeTemplate(QuestionView, vData); err != nil {
 		slog.Error("Error sending QuestionView to host", "error", err)
 	}
-	for _, player := range l.Players {
+	for _, player := range l.Users {
 		vData.User = player
 		err := player.writeTemplate(QuestionView, vData)
 		if err != nil {
@@ -300,7 +300,7 @@ func (e leAnswerSubmitted) Handle(_ Service, l *Lobby, initiator *User) error {
 	}
 
 	// Send template for how many people are left to answer
-	for _, player := range l.Players {
+	for _, player := range l.Users {
 		vData.User = player
 		if err := player.writeNamedTemplate(QuestionView, "player-count", vData); err != nil {
 			return err
@@ -338,7 +338,7 @@ func (e leShowAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error {
 		slog.Error("Error sending AnswerView to host", "error", err)
 	}
 
-	for _, player := range l.Players {
+	for _, player := range l.Users {
 		vData.User = player
 		if err := player.writeTemplate(AnswerView, vData); err != nil {
 			slog.Error("Error sending AnswerView to user", "error", err)
@@ -363,7 +363,7 @@ func (e leEndGameRequested) Handle(s Service, l *Lobby, _ *User) error {
 		return err
 	}
 
-	scores := make([]pastgames.PlayerScore, 0, len(l.Players))
+	scores := make([]pastgames.PlayerScore, 0, len(l.Users))
 	for _, player := range l.Leaderboard() {
 		scores = append(scores, pastgames.PlayerScore{
 			Username: string(player.Player),
@@ -396,7 +396,7 @@ func (e leEndGameRequested) Handle(s Service, l *Lobby, _ *User) error {
 		_ = l.Host.writeTemplate(onFinishView, data)
 		l.Host.Conn.Close()
 	}
-	for _, player := range l.Players {
+	for _, player := range l.Users {
 		if player.Conn == nil {
 			slog.Error("Player connection is nil", "player", player)
 			continue

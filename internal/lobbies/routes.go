@@ -230,7 +230,7 @@ func (s Service) lobbySettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Only update settings if the method is PUT
 	if r.Method == "PUT" {
-		settings := lobby.GetSettings()
+		settings := lobby.Settings()
 		timePerQuestionStr := r.FormValue("time-per-question")
 		if timePerQuestionStr != "" {
 			timePerQuestion, err := time.ParseDuration(timePerQuestionStr + "s")

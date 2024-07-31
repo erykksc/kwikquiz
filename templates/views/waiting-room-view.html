@@ -13,11 +13,11 @@
       <!-- Template lobby-settings should be returned here -->
       <p class="text-green-700">Loading lobby settings...</p>
     </div>
-    {{ if gt (len .Lobby.Players) 0 }}
+    {{ if gt (len .Lobby.Game.Players) 0 }}
     <h2 class="text-2xl font-semibold mt-6 mb-2 text-green-700">Players</h2>
     <ul class="list-disc pl-6 mb-4 text-green-700">
-      {{ range $key, $value := .Lobby.Players }}
-      <li class="text-lg">{{ $value.Username }}</li>
+      {{ range $Username := .Lobby.Game.Players }}
+      <li class="text-lg">{{ $Username }}</li>
       {{ end }}
     </ul>
     {{ end }}
@@ -53,7 +53,7 @@
       name="time-per-question"
       type="number"
       min="1"
-      value="{{ .Lobby.TimePerQuestion.Seconds }}"
+      value="{{ .Lobby.Settings.AnswerTime.Seconds }}"
       placeholder="seconds"
       class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
     />
@@ -64,7 +64,7 @@
       name="time-for-reading"
       type="number"
       min="0"
-      value="{{ .Lobby.TimeForReading.Seconds }}"
+      value="{{ .Lobby.Settings.ReadingTime.Seconds }}"
       placeholder="seconds"
       class="p-2 border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-700"
     />

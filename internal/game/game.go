@@ -68,7 +68,7 @@ func CreateGame(settings GameSettings) Game {
 	return game
 }
 
-func (game *game) GetSettings() GameSettings {
+func (game *game) Settings() GameSettings {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
 
