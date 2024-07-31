@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"os"
 
 	"github.com/erykksc/kwikquiz/internal/common"
-	"github.com/erykksc/kwikquiz/internal/config"
 	"github.com/erykksc/kwikquiz/internal/lobbies"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
 	"github.com/erykksc/kwikquiz/internal/quiz"
@@ -19,6 +19,21 @@ import (
 
 //go:embed static
 var staticFS embed.FS
+
+// Variables used for command line parameters
+var (
+	Port       uint
+	InProdMode bool
+	InDevMode  bool
+)
+
+func init() {
+	flag.UintVar(&Port, "port", 3000, "Port to host the app")
+	flag.BoolVar(&InProdMode, "prod", false, "Run the app in production mode")
+	flag.Parse()
+
+	InDevMode = !InProdMode
+}
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,21 +45,12 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	// Load config from environmental variables
-	if err := config.LoadEnv(".env"); err != nil {
-		slog.Warn("Couldn't load .env file", "error", err)
-	}
-	conf, err := config.LoadConfigFromEnv()
-	if err != nil {
-		panic(err)
-	}
-
 	// Set up logging
 	opts := slog.HandlerOptions{
 		AddSource: false,
 		Level:     slog.LevelInfo,
 	}
-	if conf.InDevMode {
+	if InDevMode {
 		slog.Info("Development mode enabled, setting LogLevel to Debug and adding source")
 		opts.Level = slog.LevelDebug
 		opts.AddSource = true
@@ -102,7 +108,7 @@ func main() {
 	})
 
 	// Add example data types
-	if conf.InDevMode {
+	if InDevMode {
 		// Pastgames
 		slog.Debug("Upserting examples pastgames")
 		for _, example := range pastgames.GetExamples() {
@@ -131,8 +137,7 @@ func main() {
 	}
 
 	// Start server
-	port := 3000
-	addr := fmt.Sprintf(":%d", port)
+	addr := fmt.Sprintf(":%d", Port)
 	slog.Info("Server listening", "addr", addr)
 
 	err = http.ListenAndServe(addr, loggingMiddleware(router))
