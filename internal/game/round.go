@@ -38,7 +38,7 @@ func CreateRound(players []Username, question Question, settings RoundSettings) 
 	return &round
 }
 
-func (round *Round) Start() error {
+func (round *Round) start() error {
 	round.mu.Lock()
 	defer round.mu.Unlock()
 
@@ -114,7 +114,7 @@ type roundAnswer struct {
 	submittedAt time.Time
 }
 
-func (round *Round) SubmitAnswer(player Username, answerIndex int) error {
+func (round *Round) submitAnswer(player Username, answerIndex int) error {
 	round.mu.Lock()
 	defer round.mu.Unlock()
 

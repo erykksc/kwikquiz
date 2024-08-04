@@ -47,11 +47,11 @@ func TestStart(t *testing.T) {
 
 	round := CreateRound(players, question, settings)
 
-	if err := round.Start(); err != nil {
+	if err := round.start(); err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if err := round.Start(); err == nil {
+	if err := round.start(); err == nil {
 		t.Errorf("Expected error for starting already started round, got nil")
 	}
 }
@@ -84,26 +84,26 @@ func TestSubmitAnswer(t *testing.T) {
 	}
 
 	round := CreateRound(players, question, settings)
-	err := round.Start()
+	err := round.start()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if err := round.SubmitAnswer("Alice", 1); err == nil {
+	if err := round.submitAnswer("Alice", 1); err == nil {
 		t.Errorf("Expected error for submitting answer during reading time, got nil")
 	}
 
 	time.Sleep(settings.ReadingTime)
 
-	if err := round.SubmitAnswer("Alice", 1); err != nil {
+	if err := round.submitAnswer("Alice", 1); err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if err := round.SubmitAnswer("Alice", 2); err == nil {
+	if err := round.submitAnswer("Alice", 2); err == nil {
 		t.Errorf("Expected error for already submitted answer, got nil")
 	}
 
-	if err := round.SubmitAnswer("Unknown", 1); err == nil {
+	if err := round.submitAnswer("Unknown", 1); err == nil {
 		t.Errorf("Expected error for unknown player, got nil")
 	}
 }
@@ -117,12 +117,12 @@ func TestGetResults(t *testing.T) {
 	}
 
 	round := CreateRound(players, question, settings)
-	err := round.Start()
+	err := round.start()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	err = round.SubmitAnswer("Alice", 1)
+	err = round.submitAnswer("Alice", 1)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestFinished(t *testing.T) {
 	round := CreateRound(players, question, settings)
 
 	startTime := time.Now()
-	err := round.Start()
+	err := round.start()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

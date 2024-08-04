@@ -48,7 +48,7 @@ type game struct {
 	endedAt     time.Time
 	quiz        Quiz
 	points      map[Username]int
-	round       *Round
+	Round       *Round
 	roundNum    int
 	leaderboard []Score //Scores are sorted descending by points
 }
@@ -205,7 +205,7 @@ func (game *game) StartNextRound() error {
 		return errors.New("Game not started")
 	}
 
-	if !game.round.HasFinished() {
+	if !game.Round.HasFinished() {
 		return errors.New("Previous round not finished")
 	}
 
@@ -250,11 +250,11 @@ func (game *game) RoundFinished() (chan struct{}, error) {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
 
-	if game.round == nil {
+	if game.Round == nil {
 		return nil, errors.New("Not in round")
 	}
 
-	return game.round.Finished(), nil
+	return game.Round.Finished(), nil
 }
 
 func (game *game) StartRound(num int) error {
@@ -266,8 +266,8 @@ func (game *game) StartRound(num int) error {
 // startRound starts a specific round in the game, first round is of index 0
 // Thread unsafe
 func (game *game) startRound(num int) error {
-	if game.round != nil {
-		if !game.round.HasFinished() {
+	if game.Round != nil {
+		if !game.Round.HasFinished() {
 			return errors.New("Round not finished")
 		}
 	}
@@ -286,19 +286,19 @@ func (game *game) startRound(num int) error {
 	}
 
 	newRound := CreateRound(game.players(), question, game.settings.RoundSettings)
-	game.round = newRound
+	game.Round = newRound
 	game.roundNum = num
-	return newRound.Start()
+	return newRound.start()
 }
 
 func (game *game) FinishRoundEarly() error {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
-	if game.round == nil {
+	if game.Round == nil {
 		return errors.New("Not in round")
 	}
 
-	return game.round.FinishEarly()
+	return game.Round.FinishEarly()
 }
 
 func (game *game) PlayerInGame(u Username) bool {
@@ -344,25 +344,25 @@ func (game *game) Leaderboard() []Score {
 }
 
 func (game *game) LastRoundPoints() (map[Username]int, error) {
-	if game.round == nil {
+	if game.Round == nil {
 		return nil, errors.New("There is no last round")
 	}
 
-	return game.round.GetResults()
+	return game.Round.GetResults()
 }
 
 func (game *game) SubmitAnswer(username Username, answerIndex int) error {
 	game.mu.Lock()
 	defer game.mu.Unlock()
-	if game.round == nil {
+	if game.Round == nil {
 		return errors.New("Not in round")
 	}
-	return game.round.SubmitAnswer(username, answerIndex)
+	return game.Round.submitAnswer(username, answerIndex)
 }
 
 // InRound returns true if the round is running (players are answering)
 func (game *game) InRound() bool {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
-	return game.round.HasStarted() && !game.round.HasFinished()
+	return game.Round.HasStarted() && !game.Round.HasFinished()
 }
