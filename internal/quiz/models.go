@@ -49,7 +49,7 @@ func (q Question) IsAnswerCorrect(answerIndex int) bool {
 }
 
 func (q Question) IsAnswerValid(answerIndex int) bool {
-	if len(q.Answers) > answerIndex {
+	if len(q.Answers) <= answerIndex {
 		return false
 	}
 	if 0 > answerIndex {
