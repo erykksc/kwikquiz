@@ -31,7 +31,7 @@ func Example1235Lobby() *Lobby {
 	options.Quiz = quiz.ExampleQuizGeography
 	lobby := createLobby(options)
 
-	err := lobby.AddPlayer("Jack")
+	err := lobby.AddPlayer(ExampleUser.Username)
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +45,7 @@ func ExampleLobbyOnReadingView() *Lobby {
 	options.ReadingTime = 999 * time.Second
 	lobby := createLobby(options)
 
-	err := lobby.AddPlayer("Jack")
+	err := lobby.AddPlayer(ExampleUser.Username)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +66,7 @@ func ExampleLobbyOnAnswerView() *Lobby {
 	options.AnswerTime = 999 * time.Second
 	lobby := createLobby(options)
 
-	err := lobby.AddPlayer("Jack")
+	err := lobby.AddPlayer(ExampleUser.Username)
 	if err != nil {
 		panic(err)
 	}
@@ -76,5 +76,17 @@ func ExampleLobbyOnAnswerView() *Lobby {
 		panic(err)
 	}
 
+	err = lobby.SubmitAnswer(ExampleUser.Username, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	_ = lobby.FinishRoundEarly()
+
 	return lobby
+}
+
+var ExampleUser = User{
+	ClientID: "THIS_IS_AN_IMPOSSIBLE_CLIENT_ID",
+	Username: "Jack",
 }
