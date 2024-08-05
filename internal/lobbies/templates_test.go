@@ -5,38 +5,53 @@ import (
 	"testing"
 )
 
-var viewData = ViewData{
-	Lobby: &Lobby{},
-	User:  &User{},
-}
-
 func TestChooseUsernameView(t *testing.T) {
+	data := ViewData{
+		Lobby: Example1234Lobby(),
+		User:  &ExampleUser,
+	}
 	w := io.Discard
-	err := ChooseUsernameView.Execute(w, viewData)
+
+	err := ChooseUsernameView.Execute(w, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 }
 
 func TestWaitingRoomView(t *testing.T) {
+	data := ViewData{
+		Lobby: Example1234Lobby(),
+		User:  &ExampleUser,
+	}
 	w := io.Discard
-	err := WaitingRoomView.Execute(w, viewData)
+
+	err := WaitingRoomView.Execute(w, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 }
 
 func TestQuestionView(t *testing.T) {
+	data := ViewData{
+		Lobby: ExampleLobbyOnReadingView(),
+		User:  &ExampleUser,
+	}
+
 	w := io.Discard
-	err := QuestionView.Execute(w, viewData)
+	err := QuestionView.Execute(w, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 }
 
 func TestAnswerView(t *testing.T) {
+	data := ViewData{
+		Lobby: ExampleLobbyOnAnswerView(),
+		User:  &ExampleUser,
+	}
 	w := io.Discard
-	err := AnswerView.Execute(w, viewData)
+
+	err := AnswerView.Execute(w, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -45,8 +60,12 @@ func TestAnswerView(t *testing.T) {
 func TestOnFinishView(t *testing.T) {
 	data := OnFinishData{
 		PastGameID: 120,
-		ViewData:   viewData,
+		ViewData: ViewData{
+			Lobby: ExampleLobbyOnAnswerView(),
+			User:  &ExampleUser,
+		},
 	}
+
 	w := io.Discard
 	err := onFinishView.Execute(w, data)
 	if err != nil {
