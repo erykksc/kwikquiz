@@ -94,14 +94,14 @@ func (repo *repositorySQLite) Insert(quiz *Quiz) (int64, error) {
 			return 0, err
 		}
 
-		for i := range question.Answers {
-			question.Answers[i].QuestionID = insertedQuestionID
+		for i := range question.answers {
+			question.answers[i].QuestionID = insertedQuestionID
 		}
 
 		_, err = tx.NamedExec(`
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
-		`, question.Answers)
+		`, question.answers)
 		if err != nil {
 			return 0, err
 		}
@@ -158,14 +158,14 @@ func (repo *repositorySQLite) Upsert(quiz *Quiz) (int64, error) {
 			return 0, err
 		}
 
-		for i := range question.Answers {
-			question.Answers[i].QuestionID = insertedQuestionID
+		for i := range question.answers {
+			question.answers[i].QuestionID = insertedQuestionID
 		}
 
 		_, err = tx.NamedExec(`
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
-		`, question.Answers)
+		`, question.answers)
 		if err != nil {
 			return 0, err
 		}
@@ -232,14 +232,14 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 			return 0, err
 		}
 
-		for i := range question.Answers {
-			question.Answers[i].QuestionID = insertedQuestionID
+		for i := range question.answers {
+			question.answers[i].QuestionID = insertedQuestionID
 		}
 
 		_, err = tx.NamedExec(`
 			INSERT INTO answer (question_id, is_correct, answer_text, latex)
 			VALUES (:question_id, :is_correct, :answer_text, :latex)
-		`, question.Answers)
+		`, question.answers)
 		if err != nil {
 			return 0, err
 		}
@@ -293,7 +293,7 @@ func (repo *repositorySQLite) Get(id int64) (*Quiz, error) {
 			currentQst = res.Question
 		}
 
-		currentQst.Answers = append(currentQst.Answers, res.Answer)
+		currentQst.answers = append(currentQst.answers, res.Answer)
 	}
 	if currentQst != nil {
 		quiz.Questions = append(quiz.Questions, *currentQst)

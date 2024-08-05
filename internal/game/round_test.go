@@ -16,6 +16,18 @@ func (q MyQuestion) IsAnswerValid(index int) bool {
 	return index > -1
 }
 
+type MockAnswer struct{}
+
+func (a MockAnswer) Text() string {
+	return "Mock answer"
+}
+
+func (q MyQuestion) Answers() []Answer {
+	return []Answer{
+		MockAnswer{},
+	}
+}
+
 func TestCreateRound(t *testing.T) {
 	players := []Username{"Alice", "Bob"}
 	question := MyQuestion{}

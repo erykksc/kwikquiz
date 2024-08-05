@@ -15,9 +15,9 @@ func TestRepositorySQLite(t *testing.T) {
 		Questions: []Question{
 			{
 				Text: "What is the capital of France?",
-				Answers: []Answer{
-					{Text: "Paris", IsCorrect: true},
-					{Text: "London", IsCorrect: false},
+				answers: []Answer{
+					{TextField: "Paris", IsCorrect: true},
+					{TextField: "London", IsCorrect: false},
 				},
 			},
 		},
@@ -96,12 +96,12 @@ func TestRepositorySQLite(t *testing.T) {
 			t.Errorf("Expected Question Text %s, got %s", testQuiz.Questions[0].Text, insertedQuiz.Questions[0].Text)
 		}
 
-		if testQuiz.Questions[0].Answers[0].Text != insertedQuiz.Questions[0].Answers[0].Text {
-			t.Errorf("Expected Answer Text %s, got %s", testQuiz.Questions[0].Answers[0].Text, insertedQuiz.Questions[0].Answers[0].Text)
+		if testQuiz.Questions[0].answers[0].TextField != insertedQuiz.Questions[0].answers[0].TextField {
+			t.Errorf("Expected Answer Text %s, got %s", testQuiz.Questions[0].answers[0].TextField, insertedQuiz.Questions[0].answers[0].TextField)
 		}
 
-		if testQuiz.Questions[0].Answers[0].IsCorrect != insertedQuiz.Questions[0].Answers[0].IsCorrect {
-			t.Errorf("Expected Answer IsCorrect %v, got: %v", testQuiz.Questions[0].Answers[0].IsCorrect, insertedQuiz.Questions[0].Answers[0].IsCorrect)
+		if testQuiz.Questions[0].answers[0].IsCorrect != insertedQuiz.Questions[0].answers[0].IsCorrect {
+			t.Errorf("Expected Answer IsCorrect %v, got: %v", testQuiz.Questions[0].answers[0].IsCorrect, insertedQuiz.Questions[0].answers[0].IsCorrect)
 		}
 	})
 
@@ -146,12 +146,12 @@ func TestRepositorySQLite(t *testing.T) {
 			t.Errorf("Expected Question Text %s, got %s", testQuiz.Questions[0].Text, upsertedQuiz.Questions[0].Text)
 		}
 
-		if testQuiz.Questions[0].Answers[0].Text != upsertedQuiz.Questions[0].Answers[0].Text {
-			t.Errorf("Expected Answer Text %s, got %s", testQuiz.Questions[0].Answers[0].Text, upsertedQuiz.Questions[0].Answers[0].Text)
+		if testQuiz.Questions[0].answers[0].TextField != upsertedQuiz.Questions[0].answers[0].TextField {
+			t.Errorf("Expected Answer Text %s, got %s", testQuiz.Questions[0].answers[0].TextField, upsertedQuiz.Questions[0].answers[0].TextField)
 		}
 
-		if testQuiz.Questions[0].Answers[0].IsCorrect != upsertedQuiz.Questions[0].Answers[0].IsCorrect {
-			t.Errorf("Expected Answer IsCorrect %v, got: %v", testQuiz.Questions[0].Answers[0].IsCorrect, upsertedQuiz.Questions[0].Answers[0].IsCorrect)
+		if testQuiz.Questions[0].answers[0].IsCorrect != upsertedQuiz.Questions[0].answers[0].IsCorrect {
+			t.Errorf("Expected Answer IsCorrect %v, got: %v", testQuiz.Questions[0].answers[0].IsCorrect, upsertedQuiz.Questions[0].answers[0].IsCorrect)
 		}
 	})
 

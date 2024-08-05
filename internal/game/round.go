@@ -143,8 +143,8 @@ func (round *Round) HasFinished() bool {
 }
 
 type roundAnswer struct {
-	index       int
-	submittedAt time.Time
+	Index       int
+	SubmittedAt time.Time
 }
 
 func (round *Round) submitAnswer(player Username, answerIndex int) error {
@@ -152,8 +152,8 @@ func (round *Round) submitAnswer(player Username, answerIndex int) error {
 	defer round.mu.Unlock()
 
 	rAnswer := roundAnswer{
-		index:       answerIndex,
-		submittedAt: time.Now(),
+		Index:       answerIndex,
+		SubmittedAt: time.Now(),
 	}
 
 	// Check if index is valid
@@ -170,7 +170,7 @@ func (round *Round) submitAnswer(player Username, answerIndex int) error {
 		return errors.New("round has not started")
 	}
 
-	if rAnswer.submittedAt.Before(round.startAt.Add(round.settings.ReadingTime)) {
+	if rAnswer.SubmittedAt.Before(round.startAt.Add(round.settings.ReadingTime)) {
 		return errors.New("answer submitted before answering allowed")
 	}
 
@@ -182,7 +182,7 @@ func (round *Round) submitAnswer(player Username, answerIndex int) error {
 	// Check if player has already submitted an answer
 	previousAnswer, playerAlreadySubmitted := round.answers[player]
 	if playerAlreadySubmitted {
-		return errors.New("player has already submitted an answer: answerSubmitted=" + strconv.Itoa(previousAnswer.index))
+		return errors.New("player has already submitted an answer: answerSubmitted=" + strconv.Itoa(previousAnswer.Index))
 	}
 
 	round.answers[player] = rAnswer
@@ -204,6 +204,12 @@ func (round *Round) PlayersAnswering() int {
 	return len(round.players) - len(round.answers)
 }
 
+func (round *Round) PlayerAnswers() map[Username]roundAnswer {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	return round.answers
+}
+
 // Results returns the scores of the players in the round, sorted by points in descending order
 func (round *Round) Results() (map[Username]int, error) {
 	round.mu.RLock()
@@ -219,8 +225,8 @@ func (round *Round) Results() (map[Username]int, error) {
 		answer, hasAnswered := round.answers[username]
 		pointsAwarded := 0
 
-		if hasAnswered && round.question.IsAnswerCorrect(answer.index) {
-			time2Answer := answer.submittedAt.Sub(round.startAt.Add(round.settings.ReadingTime))
+		if hasAnswered && round.question.IsAnswerCorrect(answer.Index) {
+			time2Answer := answer.SubmittedAt.Sub(round.startAt.Add(round.settings.ReadingTime))
 			if time2Answer < time.Millisecond*500 {
 				// Maximum points for answering in less than 500ms
 				pointsAwarded = 1000

@@ -168,7 +168,7 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 					}
 				} else {
 					answer = Answer{
-						Text: textValue,
+						TextField: textValue,
 					}
 				}
 			} else {
@@ -201,7 +201,7 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 
 		questions = append(questions, Question{
 			Text:    questionText,
-			Answers: answers,
+			answers: answers,
 		})
 		questionIndex++
 	}

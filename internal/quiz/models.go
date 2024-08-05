@@ -12,7 +12,7 @@ type Quiz struct {
 	TitleField  string `db:"title"`
 	Password    string
 	Description string
-	Questions   []Question `gorm:"foreignKey:QuizID"`
+	Questions   []Question
 }
 
 func (q Quiz) Title() string {
@@ -32,10 +32,10 @@ func (q Quiz) QuestionsCount() int {
 }
 
 type Question struct {
-	id      int64    `db:"question_id"`
-	QuizID  int64    `db:"quiz_id"`
-	Text    string   `db:"question_text"`
-	Answers []Answer `gorm:"foreignKey:QuestionID"`
+	id      int64  `db:"question_id"`
+	QuizID  int64  `db:"quiz_id"`
+	Text    string `db:"question_text"`
+	answers []Answer
 }
 
 func (q Question) IsAnswerCorrect(answerIndex int) bool {
@@ -45,11 +45,11 @@ func (q Question) IsAnswerCorrect(answerIndex int) bool {
 		return false
 	}
 
-	return q.Answers[answerIndex].IsCorrect
+	return q.answers[answerIndex].IsCorrect
 }
 
 func (q Question) IsAnswerValid(answerIndex int) bool {
-	if len(q.Answers) <= answerIndex {
+	if len(q.answers) <= answerIndex {
 		return false
 	}
 	if 0 > answerIndex {
@@ -59,14 +59,28 @@ func (q Question) IsAnswerValid(answerIndex int) bool {
 	return true
 }
 
+func (q Question) Answers() []game.Answer {
+	answers := make([]game.Answer, len(q.answers))
+
+	for i, answer := range q.answers {
+		answers[i] = answer
+	}
+
+	return answers
+}
+
 type Answer struct {
 	ID         int64  `db:"answer_id"`
 	QuestionID int64  `db:"question_id"`
 	IsCorrect  bool   `db:"is_correct"`
-	Text       string `db:"answer_text"`
+	TextField  string `db:"answer_text"`
 	LaTeX      string `db:"latex"`
 	ImageName  string
 	Image      []byte
+}
+
+func (a Answer) Text() string {
+	return a.TextField
 }
 
 // It is used for faster lookups if only limited data is needed

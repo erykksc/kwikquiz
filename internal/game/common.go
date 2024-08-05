@@ -29,8 +29,8 @@ func (u Username) IsValid() (bool, error) {
 }
 
 type Score struct {
-	Points int
-	Player Username
+	Points   int
+	Username Username
 }
 
 type Quiz interface {
@@ -40,6 +40,11 @@ type Quiz interface {
 }
 
 type Question interface {
+	Answers() []Answer
 	IsAnswerCorrect(answerIndex int) bool
 	IsAnswerValid(answerIndex int) bool // should check if the answerIndex corresponds to an answer
+}
+
+type Answer interface {
+	Text() string
 }

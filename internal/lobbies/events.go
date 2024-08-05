@@ -416,7 +416,7 @@ func (e leEndGameRequested) Handle(s Service, l *Lobby, _ *User) error {
 	scores := make([]pastgames.PlayerScore, 0, len(l.Users))
 	for _, player := range l.Leaderboard() {
 		scores = append(scores, pastgames.PlayerScore{
-			Username: string(player.Player),
+			Username: string(player.Username),
 			Score:    player.Points,
 		})
 	}

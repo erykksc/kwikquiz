@@ -2,6 +2,8 @@ package game
 
 import (
 	"errors"
+	"log/slog"
+	"slices"
 	"sync"
 	"time"
 )
@@ -42,15 +44,14 @@ func (err ErrInvalidUsername) Error() string {
 }
 
 type game struct {
-	mu          sync.RWMutex
-	settings    GameSettings
-	startedAt   time.Time
-	endedAt     time.Time
-	quiz        Quiz
-	points      map[Username]int
-	Round       *Round
-	roundNum    int
-	leaderboard []Score //Scores are sorted descending by points
+	mu        sync.RWMutex
+	settings  GameSettings
+	startedAt time.Time
+	endedAt   time.Time
+	quiz      Quiz
+	points    map[Username]int
+	Round     *Round
+	roundNum  int
 }
 
 func CreateGame(settings GameSettings) Game {
@@ -288,7 +289,28 @@ func (game *game) startRound(num int) error {
 	newRound := CreateRound(game.players(), question, game.settings.RoundSettings)
 	game.Round = newRound
 	game.roundNum = num
-	return newRound.start()
+	err = newRound.start()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		<-game.Round.Finished()
+		slog.Debug("Round finished, adding points")
+		game.mu.Lock()
+
+		results, err := game.Round.Results()
+		if err != nil {
+			slog.Error("Error getting round results", "err", err)
+			return
+		}
+		for username, points := range results {
+			game.points[username] = points
+		}
+
+		game.mu.Unlock()
+	}()
+	return nil
 }
 
 func (game *game) FinishRoundEarly() error {
@@ -346,7 +368,19 @@ func (game *game) Scores() map[Username]int {
 func (game *game) Leaderboard() []Score {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
-	return game.leaderboard
+	leaderboard := make([]Score, len(game.points))
+	for username, points := range game.points {
+		leaderboard = append(leaderboard, Score{
+			Points:   points,
+			Username: username,
+		})
+	}
+	// sort leaderboard
+	slices.SortFunc(leaderboard, func(i, j Score) int {
+		return i.Points - j.Points
+	})
+
+	return leaderboard
 }
 
 func (game *game) LastRoundPoints() (map[Username]int, error) {
