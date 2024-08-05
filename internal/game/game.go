@@ -337,6 +337,12 @@ func (game *game) RoundNum() int {
 	return int(game.roundNum)
 }
 
+func (game *game) Scores() map[Username]int {
+	game.mu.RLock()
+	defer game.mu.RUnlock()
+	return game.points
+}
+
 func (game *game) Leaderboard() []Score {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
@@ -348,7 +354,7 @@ func (game *game) LastRoundPoints() (map[Username]int, error) {
 		return nil, errors.New("There is no last round")
 	}
 
-	return game.Round.GetResults()
+	return game.Round.Results()
 }
 
 func (game *game) SubmitAnswer(username Username, answerIndex int) error {

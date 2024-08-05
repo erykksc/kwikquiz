@@ -19,6 +19,10 @@ type lobbyEvent interface {
 	Handle(s Service, lobby *Lobby, initiator *User) error // Handles the event, is executed with the lobby's mutex locked
 }
 
+var lobbySystemUser = &User{
+	Username: "SYSTEM",
+}
+
 // parseLobbyEvent parses a [lobbyEvent] from a JSON in a byte slice
 func parseLobbyEvent(jsonData []byte) (lobbyEvent, error) {
 	type WsRequest struct {
@@ -204,6 +208,23 @@ func (event leGameStartRequested) Handle(s Service, l *Lobby, initiator *User) e
 		return err
 	}
 
+	roundFinished, err := l.RoundFinished()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		<-roundFinished
+		slog.Debug("Round finished, requesting to show answer")
+
+		l.mu.Lock()
+		err := leShowAnswerRequested{}.Handle(s, l, lobbySystemUser)
+		if err != nil {
+			slog.Error("Error handling ShowAnswerRequested", "error", err)
+		}
+		l.mu.Unlock()
+	}()
+
 	// Send question screen to players
 	vData := ViewData{
 		Lobby: l,
@@ -231,7 +252,25 @@ func (e leSkipToAnswerRequested) String() string {
 
 func (event leSkipToAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error {
 	err := l.FinishRoundEarly()
-	return err
+	if err != nil {
+		return err
+	}
+
+	vData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	if err := l.Host.writeTemplate(AnswerView, vData); err != nil {
+		slog.Error("Error sending AnswerView to host", "error", err)
+	}
+	for _, user := range l.Users {
+		vData.User = user
+		err := user.writeTemplate(AnswerView, vData)
+		if err != nil {
+			slog.Error("Error sending AnswerView to user", "error", err, "client-id", user.ClientID)
+		}
+	}
+	return nil
 }
 
 // leNextQuestionRequested is an event that is triggered when a user requests to go to the next question
@@ -243,12 +282,7 @@ func (e leNextQuestionRequested) String() string {
 
 func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User) error {
 	err := l.StartNextRound()
-	switch err {
-	case err.(game.ErrNoMoreQuestions):
-		return leEndGameRequested{}.Handle(s, l, initiator)
-	case nil:
-		// just continue
-	default:
+	if err != nil {
 		return err
 	}
 
@@ -259,10 +293,10 @@ func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User
 
 	go func() {
 		<-roundFinished
-		// TODO: Show answer to everybody
+		slog.Debug("Round finished, requesting to show answer")
 
 		l.mu.Lock()
-		err := leShowAnswerRequested{}.Handle(s, l, initiator)
+		err := leShowAnswerRequested{}.Handle(s, l, lobbySystemUser)
 		if err != nil {
 			slog.Error("Error handling ShowAnswerRequested", "error", err)
 		}
@@ -341,16 +375,9 @@ func (e leShowAnswerRequested) String() string {
 
 func (e leShowAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error {
 	err := l.FinishRoundEarly()
-	if err != nil {
+	if err != nil && !errors.Is(err, game.ErrRoundAlreadyEnded) {
 		return err
 	}
-
-	// Wait until the round has finished
-	ch, err := l.RoundFinished()
-	if err != nil {
-		return err
-	}
-	<-ch
 
 	// Send answer view to all
 	vData := ViewData{

@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var ErrRoundAlreadyEnded = errors.New("Round already ended")
+
 type RoundSettings struct {
 	ReadingTime time.Duration
 	AnswerTime  time.Duration
@@ -43,11 +45,11 @@ func (round *Round) start() error {
 	defer round.mu.Unlock()
 
 	if !round.startAt.IsZero() {
-		return errors.New("Round already started")
+		return ErrRoundAlreadyEnded
 	}
 
 	if !round.endedAt.IsZero() {
-		return errors.New("Round already ended")
+		return ErrRoundAlreadyEnded
 	}
 
 	round.startAt = time.Now()
@@ -72,10 +74,41 @@ func (round *Round) start() error {
 	return nil
 }
 
+func (round *Round) Question() Question {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	return round.question
+}
+
+func (round *Round) Answers() map[Username]roundAnswer {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	return round.answers
+}
+
+func (round *Round) StartedAt() time.Time {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	return round.startAt
+}
+
 func (round *Round) HasStarted() bool {
 	round.mu.RLock()
 	defer round.mu.RUnlock()
 	return !round.startAt.IsZero()
+}
+
+func (round *Round) ReadingTimeout() time.Time {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	return round.startAt.Add(round.settings.ReadingTime)
+}
+
+func (round *Round) Timeout() time.Time {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	duration := round.settings.ReadingTime + round.settings.AnswerTime
+	return round.startAt.Add(duration)
 }
 
 // FinishEarly closes the finished channel, effectively ending the round early
@@ -89,7 +122,7 @@ func (round *Round) FinishEarly() error {
 // Thread unsafe
 func (round *Round) finishRound() error {
 	if !round.endedAt.IsZero() {
-		return errors.New("Round already ended")
+		return ErrRoundAlreadyEnded
 	}
 
 	round.endedAt = time.Now()
@@ -165,8 +198,14 @@ func (round *Round) submitAnswer(player Username, answerIndex int) error {
 	return nil
 }
 
-// GetResults returns the scores of the players in the round, sorted by points in descending order
-func (round *Round) GetResults() (map[Username]int, error) {
+func (round *Round) PlayersAnswering() int {
+	round.mu.RLock()
+	defer round.mu.RUnlock()
+	return len(round.players) - len(round.answers)
+}
+
+// Results returns the scores of the players in the round, sorted by points in descending order
+func (round *Round) Results() (map[Username]int, error) {
 	round.mu.RLock()
 	defer round.mu.RUnlock()
 

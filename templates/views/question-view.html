@@ -109,7 +109,7 @@
           <span
             class="text-2xl font-bold font-mono text-dark-green"
             id="timer"
-            data-finish-time="{{.Lobby.CurrentQuestionTimeout | formatAsISO}}"
+            data-finish-time="{{.Lobby.Round.Timeout | formatAsISO}}"
           >
             <!-- Countdown of current question will be displayed here using JS -->
           </span>
@@ -153,15 +153,13 @@
       <!-- Question and Answer Options Container -->
       <div class="flex flex-col items-center justify-center w-full mt-4 md:mt-8 px-4">
         <!-- Question -->
-        <h2 class="text-xl md:text-3xl font-bold text-dark-green mb-4 text-center">
-          {{ .Lobby.CurrentQuestion.Text }}
-        </h2>
+        <h2 class="text-xl md:text-3xl font-bold text-dark-green mb-4 text-center">{{ .Lobby.Round.Question.Text }}</h2>
 
         <!-- Show loading bar, while reading time is not over -->
         <div
           id="reading-time-elem"
-          data-reading-timeout="{{ .Lobby.ReadingTimeout | formatAsISO }}"
-          data-question-start-time="{{ .Lobby.CurrentQuestionStartTime | formatAsISO }}"
+          data-reading-timeout="{{ .Lobby.Round.ReadingTimeout | formatAsISO }}"
+          data-round-start-time="{{ .Lobby.Round.StartedAt | formatAsISO }}"
           class="w-full pt-4"
         >
           <div id="reading-loading-bar" class="w-full h-4 bg-gray-200">
@@ -176,16 +174,16 @@
         {{ block "answer-options" . }}
         <div id="answer-options" class="answer-container p-6 shadow-md rounded-lg flex flex-col items-center w-full">
           <div
-            class="answer-grid hidden {{ if gt (len .Lobby.CurrentQuestion.Answers) 4 }} more-than-four {{ end }} {{ if gt (len .Lobby.CurrentQuestion.Answers) 6 }} more-than-six {{ end }}"
+            class="answer-grid hidden {{ if gt (len .Lobby.Round.Answers) 4 }} more-than-four {{ end }} {{ if gt (len .Lobby.Round.Answers) 6 }} more-than-six {{ end }}"
           >
-            {{ range $index, $answer := .Lobby.CurrentQuestion.Answers }}
+            {{ range $index, $answer := .Lobby.Round.Answers }}
             <button
               class="
                 py-5 md:py-6 px-5 md:px-10 text-white text-xl rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-75 transition duration-200 ease-in-out
                 btn-color btn-color-{{$index}}
                 {{ if eq $.User.SubmittedAnswerIdx $index}} bg-dark-blue hover:bg-blue-700 focus:ring-dark-blue {{ end }}
               "
-              id="answer-q{{$.Lobby.CurrentQuestionIdx}}-a{{$index}}"
+              id="answer-q{{$.Lobby.RoundNum}}-a{{$index}}"
               name="answer"
               ws-send
             >
@@ -202,7 +200,9 @@
         <!-- Player Count -->
         <p class="text-lg md:text-xl font-semibold text-dark-green mb-2 md:mb-0">
           Players Answering: {{ block "player-count" . }}
-          <span class="text-2xl font-bold text-dark-green" id="player-count"> {{ .Lobby.PlayersAnswering }} </span>
+          <span class="text-2xl font-bold text-dark-green" id="player-count">
+            {{ .Lobby.Round.PlayersAnswering }}
+          </span>
           {{ end }}
         </p>
         <!-- Score Counter -->
@@ -211,7 +211,7 @@
         {{ else }}
         <p class="text-lg md:text-xl font-semibold text-dark-green">
           Your Score:
-          <span class="text-2xl font-bold text-dark-green" id="score"> {{ .User.Score }} </span>
+          <span class="text-2xl font-bold text-dark-green" id="score"> {{ index .Lobby.Scores .User.Username }} </span>
         </p>
         {{ end }}
       </div>
@@ -237,7 +237,7 @@
       document.getElementById("reading-time-elem").classList.remove("hidden");
       document.getElementById("answer-options").classList.add("hidden");
 
-      const startTime = new Date(readingElement.dataset.questionStartTime);
+      const startTime = new Date(readingElement.dataset.roundStartTime);
       const finishTime = new Date(readingElement.dataset.readingTimeout);
 
       const totalTime = finishTime - startTime;

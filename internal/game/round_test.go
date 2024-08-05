@@ -127,14 +127,14 @@ func TestGetResults(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	_, err = round.GetResults()
+	_, err = round.Results()
 	if err == nil {
 		t.Errorf("Expected error for getting results before round ends, got nil")
 	}
 
 	time.Sleep(settings.ReadingTime + settings.AnswerTime + 100*time.Millisecond)
 
-	results, err := round.GetResults()
+	results, err := round.Results()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
