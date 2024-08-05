@@ -29,6 +29,8 @@ func Example1235Lobby() *Lobby {
 	options := NewLobbyOptions()
 	options.Pin = "1235"
 	options.Quiz = quiz.ExampleQuizGeography
+	options.ReadingTime = 2 * time.Second
+	options.AnswerTime = 3 * time.Second
 	lobby := createLobby(options)
 
 	err := lobby.AddPlayer(ExampleUser.Username)

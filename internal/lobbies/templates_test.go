@@ -53,7 +53,26 @@ func TestAnswerView(t *testing.T) {
 	}
 }
 
+func TestAnswerViewHost(t *testing.T) {
+	lobby := ExampleLobbyOnAnswerView()
+	lobby.Host = &ExampleUser
+	data := ViewData{
+		Lobby: lobby,
+		User:  &ExampleUser,
+	}
+
+	err := AnswerView.Execute(io.Discard, data)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+}
+
 func TestOnFinishView(t *testing.T) {
+	lobby := ExampleLobbyOnAnswerView()
+	if err := lobby.Finish(); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
 	data := OnFinishData{
 		PastGameID: 120,
 		ViewData: ViewData{

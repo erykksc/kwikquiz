@@ -3,6 +3,7 @@ package lobbies
 import (
 	"errors"
 	"html/template"
+	"log/slog"
 
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/game"
@@ -17,6 +18,7 @@ type User struct {
 
 // writeTemplate does tmpl.Execute(w, data) on websocket connection to the user
 func (client *User) writeTemplate(tmpl *template.Template, data any) error {
+	slog.Debug("writeTemplate", "template", tmpl.Name(), "client-id", client.ClientID)
 	if client.Conn == nil {
 		return errors.New("client.Conn is nil")
 	}
