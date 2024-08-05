@@ -108,15 +108,9 @@ func handleNewWebsocketConn(l *Lobby, conn *websocket.Conn, clientID common.Clie
 		view = ChooseUsernameView
 	}
 
-	vData := ViewData{
-		Lobby: l,
-		User:  connectedUser,
-	}
-	if err := connectedUser.writeTemplate(view, vData); err != nil {
-		return nil, err
-	}
+	err := l.sendViewToUser(view, connectedUser)
 
-	return connectedUser, nil
+	return connectedUser, err
 }
 
 // leNewUsernameSubmitted is an event that is triggered when a user submits a new username
@@ -146,20 +140,7 @@ func (event leNewUsernameSubmitted) Handle(_ Service, l *Lobby, initiator *User)
 	}
 
 	// TODO:Send updated player list to all
-	vData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.writeTemplate(WaitingRoomView, vData); err != nil {
-		slog.Error("Error writing view to host", "error", err, "host", l.Host)
-	}
-
-	for _, player := range l.Users {
-		vData.User = player
-		if err := player.writeTemplate(WaitingRoomView, vData); err != nil {
-			slog.Error("Error writing view to user", "error", err, "user", player)
-		}
-	}
+	l.sendViewToAll(WaitingRoomView)
 	return nil
 }
 
@@ -177,16 +158,7 @@ func (event leUsernameChangeRequested) Handle(_ Service, l *Lobby, initiator *Us
 		return errors.New("Game already started")
 	}
 
-	// Send the choose username screen to the player
-	vData := ViewData{
-		Lobby: l,
-		User:  initiator,
-	}
-	if err := initiator.writeTemplate(ChooseUsernameView, vData); err != nil {
-		return err
-	}
-
-	return nil
+	return l.sendViewToUser(ChooseUsernameView, initiator)
 }
 
 // leGameStartRequested is an event that is triggered when a user requests to start the game
@@ -225,22 +197,8 @@ func (event leGameStartRequested) Handle(s Service, l *Lobby, initiator *User) e
 		l.mu.Unlock()
 	}()
 
-	// Send question screen to players
-	vData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.writeTemplate(QuestionView, vData); err != nil {
-		return err
-	}
-	for _, user := range l.Users {
-		vData.User = user
-		err := user.writeTemplate(QuestionView, vData)
-		if err != nil {
-			slog.Error("Error sending QuestionView to user", "error", err)
-		}
-	}
-	return err
+	l.sendViewToAll(QuestionView)
+	return nil
 }
 
 // leSkipToAnswerRequested is an event that is triggered when a user requests to skip to the answer
@@ -256,20 +214,7 @@ func (event leSkipToAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error 
 		return err
 	}
 
-	vData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.writeTemplate(AnswerView, vData); err != nil {
-		slog.Error("Error sending AnswerView to host", "error", err)
-	}
-	for _, user := range l.Users {
-		vData.User = user
-		err := user.writeTemplate(AnswerView, vData)
-		if err != nil {
-			slog.Error("Error sending AnswerView to user", "error", err, "client-id", user.ClientID)
-		}
-	}
+	l.sendViewToAll(AnswerView)
 	return nil
 }
 
@@ -303,21 +248,7 @@ func (event leNextQuestionRequested) Handle(s Service, l *Lobby, initiator *User
 		l.mu.Unlock()
 	}()
 
-	// Send question view to all
-	vData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.writeTemplate(QuestionView, vData); err != nil {
-		slog.Error("Error sending QuestionView to host", "error", err)
-	}
-	for _, player := range l.Users {
-		vData.User = player
-		err := player.writeTemplate(QuestionView, vData)
-		if err != nil {
-			slog.Error("Error sending QuestionView to user", "error", err)
-		}
-	}
+	l.sendViewToAll(QuestionView)
 	return nil
 }
 
@@ -379,21 +310,7 @@ func (e leShowAnswerRequested) Handle(_ Service, l *Lobby, _ *User) error {
 		return err
 	}
 
-	// Send answer view to all
-	vData := ViewData{
-		Lobby: l,
-		User:  l.Host,
-	}
-	if err := l.Host.writeTemplate(AnswerView, vData); err != nil {
-		slog.Error("Error sending AnswerView to host", "error", err)
-	}
-
-	for _, player := range l.Users {
-		vData.User = player
-		if err := player.writeTemplate(AnswerView, vData); err != nil {
-			slog.Error("Error sending AnswerView to user", "error", err)
-		}
-	}
+	l.sendViewToAll(AnswerView)
 	return nil
 }
 

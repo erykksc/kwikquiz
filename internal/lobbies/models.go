@@ -1,7 +1,9 @@
 package lobbies
 
 import (
+	"fmt"
 	"html/template"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -59,4 +61,32 @@ func createLobby(options lobbyOptions) *Lobby {
 		Users: make(map[common.ClientID]*User),
 		Game:  game.CreateGame(options.GameSettings),
 	}
+}
+
+func (l *Lobby) sendViewToAll(tmpl *template.Template) {
+	vData := ViewData{
+		Lobby: l,
+		User:  l.Host,
+	}
+	if err := l.Host.writeTemplate(tmpl, vData); err != nil {
+		slog.Error("Error sending view to host", "template", tmpl.Name(), "error", err)
+	}
+	for _, user := range l.Users {
+		vData.User = user
+		if err := user.writeTemplate(tmpl, vData); err != nil {
+			slog.Error("Error sending view to user", "template", tmpl.Name(), "error", err)
+		}
+	}
+}
+
+func (l *Lobby) sendViewToUser(tmpl *template.Template, user *User) error {
+	vData := ViewData{
+		Lobby: l,
+		User:  user,
+	}
+
+	if err := user.writeTemplate(tmpl, vData); err != nil {
+		return fmt.Errorf("sending view to user: %w", err)
+	}
+	return nil
 }
