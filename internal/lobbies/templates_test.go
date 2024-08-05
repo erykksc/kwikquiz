@@ -10,9 +10,8 @@ func TestChooseUsernameView(t *testing.T) {
 		Lobby: Example1234Lobby(),
 		User:  &ExampleUser,
 	}
-	w := io.Discard
 
-	err := ChooseUsernameView.Execute(w, data)
+	err := ChooseUsernameView.Execute(io.Discard, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -23,9 +22,8 @@ func TestWaitingRoomView(t *testing.T) {
 		Lobby: Example1234Lobby(),
 		User:  &ExampleUser,
 	}
-	w := io.Discard
 
-	err := WaitingRoomView.Execute(w, data)
+	err := WaitingRoomView.Execute(io.Discard, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -37,8 +35,7 @@ func TestQuestionView(t *testing.T) {
 		User:  &ExampleUser,
 	}
 
-	w := io.Discard
-	err := QuestionView.Execute(w, data)
+	err := QuestionView.Execute(io.Discard, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -49,9 +46,8 @@ func TestAnswerView(t *testing.T) {
 		Lobby: ExampleLobbyOnAnswerView(),
 		User:  &ExampleUser,
 	}
-	w := io.Discard
 
-	err := AnswerView.Execute(w, data)
+	err := AnswerView.Execute(io.Discard, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -66,8 +62,7 @@ func TestOnFinishView(t *testing.T) {
 		},
 	}
 
-	w := io.Discard
-	err := onFinishView.Execute(w, data)
+	err := onFinishView.Execute(io.Discard, data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
