@@ -55,7 +55,7 @@ func (s Service) postLobbiesHandler(w http.ResponseWriter, r *http.Request) {
 	// Otherwise, create a new lobby
 
 	// TODO: Parse possible arguments
-	options := lobbyOptions{}
+	options := NewLobbyOptions()
 	newLobby := createLobby(options)
 	err = s.lRepo.AddLobby(newLobby)
 	if err != nil {
