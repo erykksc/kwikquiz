@@ -369,11 +369,13 @@ func (game *game) Leaderboard() []Score {
 	game.mu.RLock()
 	defer game.mu.RUnlock()
 	leaderboard := make([]Score, len(game.points))
+	i := 0
 	for username, points := range game.points {
-		leaderboard = append(leaderboard, Score{
+		leaderboard[i] = Score{
 			Points:   points,
 			Username: username,
-		})
+		}
+		i++
 	}
 	// sort leaderboard
 	slices.SortFunc(leaderboard, func(i, j Score) int {
