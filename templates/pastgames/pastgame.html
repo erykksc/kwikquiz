@@ -40,7 +40,13 @@
       <h1 class="text-5xl mb-4 text-green-700">Of the {{ .QuizTitle }} Quiz</h1>
       <main class="w-full max-w-3xl"></main>
       <div class="podium mb-5">
-        {{ $top3 := slice .Scores 0 3 }} {{ range $index, $element := $top3 }}
+        <!-- prettier-ignore -->
+        {{ $top3 := .Scores }}
+	{{ if ge (len .Scores) 3 }}
+	    {{ $top3 = slice .Scores 0 3 }}
+	{{ end }}
+
+	{{range $index, $element := $top3 }}
         <div class="{{ if eq $index 0 }}first{{ else if eq $index 1 }}second{{ else }}third{{ end }}">
           <p class="text-2xl">{{ .Username }}</p>
           <p class="text-xl">{{ .Score }} points</p>
