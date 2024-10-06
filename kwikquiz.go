@@ -120,7 +120,7 @@ func main() {
 		// Quizzes
 		slog.Debug("Upserting example quizzes")
 		for _, example := range quiz.GetExamples() {
-			_, err := quizRepo.Insert(&example)
+			_, err := quizRepo.Upsert(&example)
 			if err != nil {
 				slog.Error("Failed to upsert example quiz", "err", err)
 			}
