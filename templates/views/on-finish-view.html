@@ -1,13 +1,8 @@
-<div id="view">
-  {{ if eq .Lobby.Host .User }}
-  <script>
-    // Sends Host to the lobby results view
-    window.location.href = "/past-games/{{ .PastGameID }}";
-  </script>
-  {{ else }}
-  <script>
-    // Sends Player to the lobby results view for him
-    window.location.href = "/past-games/{{ .PastGameID }}";
-  </script>
-  {{ end }}
-</div>
+<div
+  id="view"
+  hx-get="/past-games/{{ .PastGameID }}"
+  hx-trigger="load"
+  hx-target="body"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+></div>

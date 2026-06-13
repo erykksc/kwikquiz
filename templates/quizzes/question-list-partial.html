@@ -1,0 +1,72 @@
+{{ define "question-list" }}
+<div id="questions-list">
+  {{ range $qidx, $question := .Questions }}
+  <div class="question-item mb-4 p-4 border border-baby-pink rounded-lg">
+    <label class="block text-gray-700 font-semibold mb-2">Question {{ add $qidx 1 }}</label>
+    <input
+      type="text"
+      name="question-{{ add $qidx 1 }}"
+      value="{{ $question.Text }}"
+      class="w-full px-4 py-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      placeholder="Enter question text"
+      required
+    />
+    <label class="block text-gray-700 font-semibold mb-2">Answer Options</label>
+    <div class="answers-container answers-container-{{ add $qidx 1 }}">
+      {{ range $aidx, $answer := $question.Answers }}
+      <div class="answer-option mb-2">
+        <input
+          type="text"
+          name="answer-{{ add $qidx 1 }}-{{ add $aidx 1 }}"
+          value="{{ $answer.Text }}"
+          class="w-full px-4 py-2 border border-dark-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green mb-2"
+          placeholder="Option {{ add $aidx 1 }}"
+          required
+        />
+        <div class="flex justify-between items-center mt-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="correct-{{ add $qidx 1 }}"
+              value="{{ add $aidx 1 }}"
+              {{ if $answer.IsCorrect }}checked{{ end }}
+              class="w-4 h-4 text-dark-green focus:ring-dark-green"
+            />
+            <span class="text-sm text-gray-700">Correct</span>
+          </label>
+          {{ if gt (len $question.Answers) 1 }}
+          <button
+            type="button"
+            class="delete-answer-btn text-sm px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+            hx-post="{{ $.ActionPrefix }}/delete-answer/{{ add $qidx 1 }}/{{ add $aidx 1 }}"
+            hx-target="#questions-list"
+          >
+            Delete
+          </button>
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    <button
+      type="button"
+      class="add-answer-btn mt-2 bg-green-700 hover:bg-green-600 text-white font-bold py-1 px-2 border-b-4 border-green-800 hover:border-green-700 rounded"
+      hx-post="{{ $.ActionPrefix }}/add-answer/{{ add $qidx 1 }}"
+      hx-target="#questions-list"
+    >
+      Add Answer
+    </button>
+    {{ if gt (len $.Questions) 1 }}
+    <button
+      type="button"
+      class="delete-question-btn mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 border-b-4 border-red-700 hover:border-red-800 rounded"
+      hx-post="{{ $.ActionPrefix }}/delete-question/{{ add $qidx 1 }}"
+      hx-target="#questions-list"
+    >
+      Delete Question
+    </button>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ end }}

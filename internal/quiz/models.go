@@ -32,7 +32,7 @@ func (q Quiz) QuestionsCount() int {
 }
 
 type Question struct {
-	id      int64  `db:"question_id"`
+	ID      int64  `db:"question_id"`
 	QuizID  int64  `db:"quiz_id"`
 	Text    string `db:"question_text"`
 	answers []Answer

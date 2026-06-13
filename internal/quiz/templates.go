@@ -1,9 +1,41 @@
 package quiz
 
-import "github.com/erykksc/kwikquiz/internal/common"
+import (
+	"html/template"
+	"path/filepath"
+	"strings"
 
-// Templates used to render the different pages of the quiz
+	"github.com/erykksc/kwikquiz/internal/common"
+	"github.com/erykksc/kwikquiz/templates"
+)
+
+var funcMap = template.FuncMap{
+	"add": func(a, b int) int { return a + b },
+}
+
 var QuizzesTemplate = common.TmplParseWithBase("templates/quizzes/quizzes.html")
 var QuizPreviewTemplate = common.TmplParseWithBase("templates/quizzes/quiz-preview.html")
-var QuizCreateTemplate = common.TmplParseWithBase("templates/quizzes/quiz-create.html")
-var QuizUpdateTemplate = common.TmplParseWithBase("templates/quizzes/quiz-update-2.0.html")
+
+func parseWithFuncs(path string) *template.Template {
+	embedPath := strings.TrimPrefix(path, "templates/")
+	baseName := filepath.Base(embedPath)
+	return template.Must(
+		template.New(baseName).Funcs(funcMap).ParseFS(
+			templates.FS, embedPath, "quizzes/question-list-partial.html", "base.html",
+		),
+	)
+}
+
+var QuizCreateTemplate = parseWithFuncs("templates/quizzes/quiz-create.html")
+var QuizUpdateTemplate = parseWithFuncs("templates/quizzes/quiz-update-2.0.html")
+
+var QuestionListTmpl = template.Must(
+	template.New("question-list-partial.html").Funcs(funcMap).ParseFS(
+		templates.FS, "quizzes/question-list-partial.html",
+	),
+)
+
+type QuestionListData struct {
+	Questions    []Question
+	ActionPrefix string
+}

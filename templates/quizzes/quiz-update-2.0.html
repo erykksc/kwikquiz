@@ -5,12 +5,8 @@
     {{ template "header-content" }}
   </head>
   <body class="bg-baby-pink min-h-screen flex items-center justify-center p-4">
-    <!-- Embed quiz data as JSON -->
-    <script id="quiz-data" type="application/json">
-      {{.QuizJSON}}
-    </script>
     <div class="bg-white shadow-lg rounded-lg p-8 md:p-10 w-full md:max-w-2xl flex flex-col overflow-auto">
-      <h2 class="text-2xl md:text-3xl font-bold mb-6 text-dark-green">Create a new KWIKQUIZ</h2>
+      <h2 class="text-2xl md:text-3xl font-bold mb-6 text-dark-green">Update KWIKQUIZ</h2>
 
       <form
         id="quiz-form"
@@ -23,6 +19,7 @@
 
         <!-- Hidden LobbyPin Input -->
         <input type="hidden" id="lobbyPin" name="lobbyPin" value="{{ .LobbyPin.Pin }}" />
+
         <!-- Quiz Title -->
         <div>
           <label for="title" class="block text-dark-green font-semibold mb-2">Quiz Title</label>
@@ -65,9 +62,7 @@
         <!-- Questions -->
         <div id="questions-section" class="flex-grow overflow-auto mb-4">
           <label class="block text-dark-green font-semibold mb-2">Questions</label>
-          <div id="questions-list" class="flex-grow overflow-auto border border-gray-200 rounded-lg p-4">
-            <!-- Questions will be added here dynamically -->
-          </div>
+          {{ template "question-list" . }}
         </div>
 
         <!-- Buttons -->
@@ -76,17 +71,18 @@
             type="button"
             id="add-question-btn"
             class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-xl"
+            hx-post="{{ .ActionPrefix }}/add-question"
+            hx-target="#questions-list"
           >
             Add Question
           </button>
           <div>
-            <button
-              type="button"
-              class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 border-b-4 border-yellow-600 hover:border-yellow-700 rounded text-xl mr-2"
-              onclick="window.location.href='/'"
+            <a
+              href="/"
+              class="inline-block mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 border-b-4 border-yellow-600 hover:border-yellow-700 rounded text-xl mr-2"
             >
               Cancel
-            </button>
+            </a>
             <button
               type="button"
               class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 border-b-4 border-red-700 hover:border-red-800 rounded text-xl mr-2"
@@ -106,6 +102,5 @@
         {{ end }} {{ template "create-form" . }}
       </form>
     </div>
-    <script src="/static/js/quiz-update.js"></script>
   </body>
 </html>

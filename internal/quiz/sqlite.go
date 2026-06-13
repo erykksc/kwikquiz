@@ -2,7 +2,6 @@ package quiz
 
 import (
 	"errors"
-	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -185,15 +184,10 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 		return 0, err
 	}
 	// Rollback if no tx.Commit (if there is commit, this is no-op)
-	defer func() {
-		rErr := tx.Rollback()
-		if rErr != nil {
-			slog.Error("During handling an insert error with rollback, another error appeared", "err", rErr)
-		}
-	}()
+	defer tx.Rollback() //nolint
 
-	// Insert the game
-	res, err := tx.NamedExec(`
+	// Update the quiz row
+	_, err = tx.NamedExec(`
 		UPDATE quiz SET
 		title = :title,
 		password = :password,
@@ -204,15 +198,10 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 		return 0, err
 	}
 
-	upsertedQuizID, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
 	// Remove all questions (and answers because of CASCADE)
 	_, err = tx.Exec(`
 		DELETE FROM question WHERE quiz_id = ?
-	`, upsertedQuizID)
+	`, quiz.ID)
 	if err != nil {
 		return 0, err
 	}
@@ -222,7 +211,7 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 		res, err := tx.Exec(`
 			INSERT INTO question (quiz_id, question_text)
 			VALUES (?, ?)
-		`, upsertedQuizID, question.Text)
+		`, quiz.ID, question.Text)
 		if err != nil {
 			return 0, err
 		}
@@ -247,7 +236,7 @@ func (repo *repositorySQLite) Update(quiz *Quiz) (int64, error) {
 
 	err = tx.Commit()
 
-	return upsertedQuizID, err
+	return quiz.ID, err
 }
 
 func (repo *repositorySQLite) Get(id int64) (*Quiz, error) {
@@ -288,7 +277,7 @@ func (repo *repositorySQLite) Get(id int64) (*Quiz, error) {
 			currentQst = res.Question
 		}
 
-		if res.Question.id != currentQst.id {
+		if res.Question.ID != currentQst.ID {
 			quiz.Questions = append(quiz.Questions, *currentQst)
 			currentQst = res.Question
 		}

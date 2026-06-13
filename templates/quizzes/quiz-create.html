@@ -29,6 +29,7 @@
             name="title"
             class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
             placeholder="Enter Quiz Title"
+            value="{{ .Title }}"
             required
           />
         </div>
@@ -39,8 +40,7 @@
             type="hidden"
             id="password"
             name="password"
-            class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
-            placeholder="Enter Quiz Password"
+            value="{{ .Password }}"
           />
         </div>
 
@@ -53,15 +53,19 @@
             name="description"
             class="w-full px-4 py-2 border input-border-green rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-green"
             placeholder="Enter Description"
+            value="{{ .Description }}"
           />
         </div>
+
+        <!-- Form Error -->
+        {{ if .FormError }}
+        <p class="text-red-500 font-semibold">{{ .FormError }}</p>
+        {{ end }}
 
         <!-- Questions -->
         <div id="questions-section" class="flex-grow overflow-auto mb-4">
           <label class="block text-green-700 font-semibold mb-2">Questions</label>
-          <div id="questions-list" class="flex-grow overflow-auto border border-gray-200 rounded-lg p-4">
-            <!-- Questions will be added here dynamically -->
-          </div>
+          {{ template "question-list" . }}
         </div>
 
         <!-- Buttons -->
@@ -70,17 +74,18 @@
             type="button"
             id="add-question-btn"
             class="mt-4 bg-main-color hover:bg-main-color-hover text-white font-bold py-2 px-4 border-b-4 border-main-color-dark hover:border-main-color-hover rounded text-xl"
+            hx-post="{{ .ActionPrefix }}/add-question"
+            hx-target="#questions-list"
           >
             Add Question
           </button>
           <div>
-            <button
-              type="button"
-              class="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 border-b-4 border-red-700 hover:border-red-800 rounded text-xl mr-2"
-              onclick="window.location.href='/'"
+            <a
+              href="/"
+              class="inline-block mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 border-b-4 border-red-700 hover:border-red-800 rounded text-xl mr-2"
             >
               Cancel
-            </button>
+            </a>
             <button
               type="submit"
               class="bg-green-700 hover:bg-green-600 text-white font-bold mt-4 py-2 px-4 border-b-4 border-green-800 hover:border-green-700 rounded text-xl"
@@ -92,6 +97,5 @@
         {{ end }} {{ template "create-form" . }}
       </form>
     </div>
-    <script src="/static/js/quiz.js"></script>
   </body>
 </html>

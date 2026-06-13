@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -16,9 +15,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-//go:embed static
-var staticFS embed.FS
 
 // Variables used for command line parameters
 var (
@@ -94,9 +90,6 @@ func main() {
 
 	// Set up routes
 	router := http.NewServeMux()
-
-	fs := http.FileServer(http.FS(staticFS))
-	router.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	router.Handle("/quizzes/", quizService.NewQuizzesRouter())
 	router.Handle("/lobbies/", lobbiesService.NewLobbiesRouter())

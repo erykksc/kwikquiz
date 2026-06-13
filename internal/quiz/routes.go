@@ -2,7 +2,6 @@ package quiz
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +24,18 @@ func (s Service) NewQuizzesRouter() http.Handler {
 	mux.HandleFunc("PUT /quizzes/update/{qid}", s.updateQuizHandler)
 	mux.HandleFunc("DELETE /quizzes/delete/{qid}", s.deleteQuizHandler)
 
+	// HTMX question/answer CRUD endpoints for create form
+	mux.HandleFunc("POST /quizzes/create/add-question", s.addQuestionCreateHandler)
+	mux.HandleFunc("POST /quizzes/create/delete-question/{qidx}", s.deleteQuestionCreateHandler)
+	mux.HandleFunc("POST /quizzes/create/add-answer/{qidx}", s.addAnswerCreateHandler)
+	mux.HandleFunc("POST /quizzes/create/delete-answer/{qidx}/{aidx}", s.deleteAnswerCreateHandler)
+
+	// HTMX question/answer CRUD endpoints for update form
+	mux.HandleFunc("POST /quizzes/update/{qid}/add-question", s.addQuestionUpdateHandler)
+	mux.HandleFunc("POST /quizzes/update/{qid}/delete-question/{qidx}", s.deleteQuestionUpdateHandler)
+	mux.HandleFunc("POST /quizzes/update/{qid}/add-answer/{qidx}", s.addAnswerUpdateHandler)
+	mux.HandleFunc("POST /quizzes/update/{qid}/delete-answer/{qidx}/{aidx}", s.deleteAnswerUpdateHandler)
+
 	return mux
 }
 
@@ -46,10 +57,8 @@ func (s Service) getQuizHandler(w http.ResponseWriter, r *http.Request) {
 
 	qidStr := r.PathValue("qid")
 
-	// Convert the string to an integer
 	qid, err := strconv.Atoi(qidStr)
 	if err != nil {
-		// Handle the error if conversion fails
 		http.Error(w, "Invalid qid value", http.StatusBadRequest)
 		return
 	}
@@ -72,13 +81,14 @@ func (s Service) getQuizHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type createQuizForm struct {
-	Qid         uint
-	Title       string
-	Password    string
-	Description string
-	Questions   []Question
-	FormError   string
+type createFormData struct {
+	LobbyPin     string
+	ActionPrefix string
+	Title        string
+	Password     string
+	Description  string
+	FormError    string
+	Questions    []Question
 }
 
 func (s Service) postQuizHandler(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +115,6 @@ func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 	qidStr := r.PathValue("qid")
 	var qid int64
 
-	// Convert the string to an integer if qidStr is not empty
 	if qidStr != "" {
 		qidInt, convErr := strconv.Atoi(qidStr)
 		if convErr != nil {
@@ -118,13 +127,11 @@ func (s Service) parseQuizForm(r *http.Request) (Quiz, error) {
 	password := r.FormValue("password")
 	description := r.FormValue("description")
 
-	// Parse questions
 	questions, err := s.parseQuestions(r)
 	if err != nil {
 		return Quiz{}, err
 	}
 
-	// Return the Quiz model based on whether qid is provided or not
 	return Quiz{
 		ID:          qid,
 		TitleField:  title,
@@ -149,19 +156,16 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 		for {
 			answerPrefix := "answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex)
 
-			// Check if any input with this name exists
 			_, _, err := r.FormFile(answerPrefix)
 			textValue := r.FormValue(answerPrefix)
 
 			if err != nil && textValue == "" {
-				break // No more answers for this question
+				break
 			}
 
 			var answer Answer
 
-			// Determine answer type based on the input field present
 			if textValue != "" {
-				// Check if it's a textarea (LaTeX) or text input
 				if strings.Contains(textValue, "\n") {
 					answer = Answer{
 						LaTeX: textValue,
@@ -172,7 +176,6 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 					}
 				}
 			} else {
-				// It's an image file
 				file, header, err := r.FormFile(answerPrefix)
 				if err != nil {
 					return nil, fmt.Errorf("error reading image file: %v", err)
@@ -191,9 +194,14 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 				}
 			}
 
-			// Check if the answer is correct
-			correctBtnValue := r.FormValue("correct-answer-" + strconv.Itoa(questionIndex) + "-" + strconv.Itoa(answerIndex))
-			answer.IsCorrect = correctBtnValue == "Correct"
+			// Read checkbox values for correct answers
+			correctAnswers := r.Form["correct-"+strconv.Itoa(questionIndex)]
+			for _, correctIdx := range correctAnswers {
+				if correctIdx == strconv.Itoa(answerIndex) {
+					answer.IsCorrect = true
+					break
+				}
+			}
 
 			answers = append(answers, answer)
 			answerIndex++
@@ -209,12 +217,15 @@ func (s Service) parseQuestions(r *http.Request) ([]Question, error) {
 }
 
 func (s Service) renderQuizCreateForm(w http.ResponseWriter, quiz Quiz, err error) {
-	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", createQuizForm{
+	data := createFormData{
 		Title:       quiz.TitleField,
+		Password:    quiz.Password,
 		Description: quiz.Description,
 		Questions:   quiz.Questions,
 		FormError:   err.Error(),
-	})
+		ActionPrefix: "/quizzes/create",
+	}
+	err = QuizCreateTemplate.ExecuteTemplate(w, "create-form", data)
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -229,15 +240,13 @@ func (s Service) redirectToQuiz(w http.ResponseWriter, lobbyPin string) {
 func (s Service) getQuizCreateHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("Handling request", "method", r.Method, "path", r.URL.Path)
 
-	// Extract the 'LobbyPin' query parameter
 	queryParams := r.URL.Query()
 	lobbyPin := queryParams.Get("LobbyPin")
 
-	// Create data to pass to the template
-	data := struct {
-		LobbyPin string
-	}{
-		LobbyPin: lobbyPin,
+	data := createFormData{
+		LobbyPin:     lobbyPin,
+		ActionPrefix: "/quizzes/create",
+		Questions:    []Question{},
 	}
 
 	err := QuizCreateTemplate.Execute(w, data)
@@ -252,10 +261,8 @@ func (s Service) getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	qidStr := r.PathValue("qid")
 
-	// Convert the string to an integer
 	qid, err := strconv.Atoi(qidStr)
 	if err != nil {
-		// Handle the error if conversion fails
 		http.Error(w, "Invalid qid value", http.StatusBadRequest)
 		return
 	}
@@ -266,26 +273,15 @@ func (s Service) getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		case ErrQuizNotFound:
 			common.ErrorHandler(w, r, http.StatusNotFound)
 			return
-
 		default:
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// Serialize quiz data to JSON
-	quizJSON, err := json.Marshal(quiz)
-	if err != nil {
-		slog.Error("Error marshaling quiz data to JSON", "err", err)
-		http.Error(w, "Error processing quiz data", http.StatusInternalServerError)
-		return
-	}
-
-	// Extract the 'LobbyPin' query parameter
 	queryParams := r.URL.Query()
 	lobbyPin := queryParams.Get("LobbyPin")
 
-	// Create data to pass to the template
 	data := struct {
 		Pin string
 	}{
@@ -293,9 +289,13 @@ func (s Service) getQuizUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = QuizUpdateTemplate.Execute(w, map[string]interface{}{
-		"Quiz":     quiz,
-		"QuizJSON": string(quizJSON),
-		"LobbyPin": data,
+		"Quiz":         quiz,
+		"LobbyPin":     data,
+		"ActionPrefix": "/quizzes/update/" + qidStr,
+		"Questions":    quiz.Questions,
+		"Title":        quiz.TitleField,
+		"Password":     quiz.Password,
+		"Description":  quiz.Description,
 	})
 	if err != nil {
 		slog.Error("Error rendering template", "err", err)
@@ -329,10 +329,8 @@ func (s Service) deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 
 	qidStr := r.PathValue("qid")
 
-	// Convert the string to an integer
 	qid, err := strconv.Atoi(qidStr)
 	if err != nil {
-		// Handle the error if conversion fails
 		http.Error(w, "Invalid qid value", http.StatusBadRequest)
 		return
 	}
@@ -343,7 +341,6 @@ func (s Service) deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 		case ErrQuizNotFound:
 			common.ErrorHandler(w, r, http.StatusNotFound)
 			return
-
 		default:
 			common.ErrorHandler(w, r, http.StatusInternalServerError)
 			return
@@ -352,4 +349,143 @@ func (s Service) deleteQuizHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Quiz deleted", "qid", qid)
 	w.Header().Add("HX-Redirect", "/")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// ---------------------------------------------------------------------------
+// HTMX question/answer CRUD handlers
+// ---------------------------------------------------------------------------
+// All these handlers receive the full form data via HTMX, parse out the
+// existing questions, mutate them, then re-render the #questions-list partial.
+// ---------------------------------------------------------------------------
+
+func (s Service) addQuestionCreateHandler(w http.ResponseWriter, r *http.Request) {
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		return append(qs, Question{
+			Text:    "",
+			answers: []Answer{{TextField: ""}},
+		})
+	})
+	s.renderQuestionList(w, questions, "/quizzes/create")
+}
+
+func (s Service) deleteQuestionCreateHandler(w http.ResponseWriter, r *http.Request) {
+	qidx := parseIntPathValue(r, "qidx")
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		idx := qidx - 1
+		if idx >= 0 && idx < len(qs) {
+			qs = append(qs[:idx], qs[idx+1:]...)
+		}
+		return qs
+	})
+	s.renderQuestionList(w, questions, "/quizzes/create")
+}
+
+func (s Service) addAnswerCreateHandler(w http.ResponseWriter, r *http.Request) {
+	qidx := parseIntPathValue(r, "qidx")
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		idx := qidx - 1
+		if idx >= 0 && idx < len(qs) {
+			qs[idx].answers = append(qs[idx].answers, Answer{TextField: ""})
+		}
+		return qs
+	})
+	s.renderQuestionList(w, questions, "/quizzes/create")
+}
+
+func (s Service) deleteAnswerCreateHandler(w http.ResponseWriter, r *http.Request) {
+	qidx := parseIntPathValue(r, "qidx")
+	aidx := parseIntPathValue(r, "aidx")
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		qIdx := qidx - 1
+		aIdx := aidx - 1
+		if qIdx >= 0 && qIdx < len(qs) && aIdx >= 0 && aIdx < len(qs[qIdx].answers) {
+			qs[qIdx].answers = append(qs[qIdx].answers[:aIdx], qs[qIdx].answers[aIdx+1:]...)
+		}
+		return qs
+	})
+	s.renderQuestionList(w, questions, "/quizzes/create")
+}
+
+func (s Service) addQuestionUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		return append(qs, Question{
+			Text:    "",
+			answers: []Answer{{TextField: ""}},
+		})
+	})
+	s.renderQuestionList(w, questions, "/quizzes/update/"+r.PathValue("qid"))
+}
+
+func (s Service) deleteQuestionUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	qidx := parseIntPathValue(r, "qidx")
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		idx := qidx - 1
+		if idx >= 0 && idx < len(qs) {
+			qs = append(qs[:idx], qs[idx+1:]...)
+		}
+		return qs
+	})
+	s.renderQuestionList(w, questions, "/quizzes/update/"+r.PathValue("qid"))
+}
+
+func (s Service) addAnswerUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	qidx := parseIntPathValue(r, "qidx")
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		idx := qidx - 1
+		if idx >= 0 && idx < len(qs) {
+			qs[idx].answers = append(qs[idx].answers, Answer{TextField: ""})
+		}
+		return qs
+	})
+	s.renderQuestionList(w, questions, "/quizzes/update/"+r.PathValue("qid"))
+}
+
+func (s Service) deleteAnswerUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	qidx := parseIntPathValue(r, "qidx")
+	aidx := parseIntPathValue(r, "aidx")
+	questions := s.mutateQuestions(r, func(qs []Question) []Question {
+		qIdx := qidx - 1
+		aIdx := aidx - 1
+		if qIdx >= 0 && qIdx < len(qs) && aIdx >= 0 && aIdx < len(qs[qIdx].answers) {
+			qs[qIdx].answers = append(qs[qIdx].answers[:aIdx], qs[qIdx].answers[aIdx+1:]...)
+		}
+		return qs
+	})
+	s.renderQuestionList(w, questions, "/quizzes/update/"+r.PathValue("qid"))
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+// mutateQuestions parses the form data, applies a mutation function to the
+// questions slice, and returns the result.
+func (s Service) mutateQuestions(r *http.Request, mutate func([]Question) []Question) []Question {
+	questions, err := s.parseQuestions(r)
+	if err != nil {
+		slog.Error("Error parsing questions from form", "err", err)
+		return []Question{}
+	}
+	return mutate(questions)
+}
+
+func (s Service) renderQuestionList(w http.ResponseWriter, questions []Question, actionPrefix string) {
+	err := QuestionListTmpl.ExecuteTemplate(w, "question-list", QuestionListData{
+		Questions:    questions,
+		ActionPrefix: actionPrefix,
+	})
+	if err != nil {
+		slog.Error("Error rendering question list", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
+func parseIntPathValue(r *http.Request, name string) int {
+	val := r.PathValue(name)
+	n, err := strconv.Atoi(val)
+	if err != nil {
+		slog.Error("Invalid path value", "name", name, "value", val)
+		return 0
+	}
+	return n
 }
