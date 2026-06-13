@@ -9,6 +9,7 @@ import (
 	"github.com/erykksc/kwikquiz/internal/common"
 	"github.com/erykksc/kwikquiz/internal/game"
 	"github.com/erykksc/kwikquiz/internal/pastgames"
+	"github.com/erykksc/kwikquiz/internal/quiz"
 	"github.com/gorilla/websocket"
 )
 
@@ -173,6 +174,21 @@ func (event leGameStartRequested) Handle(s Service, l *Lobby, initiator *User) e
 	if l.Host.ClientID != initiator.ClientID {
 		_ = initiator.writeTemplate(LobbyErrorAlertTmpl, "Only the host can start the game")
 		return errors.New("Non-host tried to start the game")
+	}
+
+	// Re-fetch the quiz from the database so that any edits made since the
+	// quiz was last selected are picked up.
+	if q, ok := l.Quiz().(quiz.Quiz); ok && q.ID > 0 {
+		fresh, err := s.qRepo.Get(q.ID)
+		if err == nil && fresh != nil {
+			settings := l.Settings()
+			settings.Quiz = *fresh
+			if err := l.UpdateSettings(settings); err != nil {
+				return err
+			}
+		} else {
+			slog.Warn("Could not re-fetch quiz from DB, using cached version", "quizID", q.ID, "err", err)
+		}
 	}
 
 	err := l.Start()
